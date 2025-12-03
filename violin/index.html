@@ -2336,12 +2336,139 @@
     setupVideoWatermark();
     clearVideo();
     setupUserInteractionListeners();
+   setupAudioRecording();
 
     loadComments().catch((err) => {
       console.error(err);
       alert("載入列表失敗：" + err.message);
     });
   });
+
+
+ // ===== 錄音功能設定 =====
+  function setupAudioRecording() {
+    const startBtn  = document.getElementById("audio-rec-start");
+    const stopBtn   = document.getElementById("audio-rec-stop");
+    const cancelBtn = document.getElementById("audio-rec-cancel");
+    const statusEl  = document.getElementById("audio-rec-status");
+    const previewEl = document.getElementById("audio-rec-preview");
+    const audioFile = document.getElementById("audio-file-input");
+    const audioLabel = document.getElementById("audio-file-label");
+
+    if (!startBtn || !stopBtn || !cancelBtn || !statusEl || !previewEl) return;
+
+    // 瀏覽器不支援
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      statusEl.textContent = "此瀏覽器不支援錄音，請改用音檔上傳。";
+      startBtn.disabled = true;
+      stopBtn.disabled = true;
+      cancelBtn.disabled = true;
+      return;
+    }
+
+    let mediaRecorder = null;
+    let chunks = [];
+    let streamRef = null;
+
+    function resetButtons() {
+      startBtn.disabled  = false;
+      stopBtn.disabled   = true;
+      cancelBtn.disabled = false;
+    }
+
+    function stopStream() {
+      if (streamRef) {
+        streamRef.getTracks().forEach(t => t.stop());
+        streamRef = null;
+      }
+    }
+
+    // 開始錄音
+    startBtn.disabled  = false;
+    stopBtn.disabled   = true;
+    cancelBtn.disabled = false;
+    statusEl.textContent = "錄音預備";
+
+    startBtn.addEventListener("click", async () => {
+      try {
+        // 切到「錄音」模式
+        if (typeof setMediaMode === "function") {
+          setMediaMode("audio");
+        }
+
+        // 清掉原本選的音檔與錄音
+        window.recordedAudioBlob = null;
+        if (audioFile) {
+          audioFile.value = "";
+        }
+        if (audioLabel) {
+          audioLabel.textContent = "";
+        }
+        previewEl.src = "";
+
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        streamRef = stream;
+        chunks = [];
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            chunks.push(e.data);
+          }
+        };
+
+        mediaRecorder.onstop = () => {
+          // 把錄到的資料變成 Blob
+          if (chunks.length) {
+            const blob = new Blob(chunks, { type: "audio/webm" });
+            window.recordedAudioBlob = blob;
+            const url = URL.createObjectURL(blob);
+            previewEl.src = url;
+            statusEl.textContent = "錄音完成，可按播放預覽。";
+          } else {
+            statusEl.textContent = "沒有錄到聲音，請再試一次。";
+          }
+          stopStream();
+          resetButtons();
+          updateSubmitButtonState();
+        };
+
+        mediaRecorder.start();
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        cancelBtn.disabled = false;
+        statusEl.textContent = "錄音中… 再按 ■ 停止。";
+
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = "無法開始錄音：" + err.message;
+        stopStream();
+        resetButtons();
+      }
+    });
+
+    // 停止錄音（保留結果）
+    stopBtn.addEventListener("click", () => {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+        statusEl.textContent = "處理錄音中…";
+      }
+    });
+
+    // 取消錄音（不保留）
+    cancelBtn.addEventListener("click", () => {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+      }
+      chunks = [];
+      window.recordedAudioBlob = null;
+      previewEl.src = "";
+      statusEl.textContent = "已取消錄音。";
+      stopStream();
+      resetButtons();
+      updateSubmitButtonState();
+    });
+  }
 </script>
 
 </body>
