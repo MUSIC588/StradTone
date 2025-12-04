@@ -3,16 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="referrer" content="strict-origin-when-cross-origin" />
   <title>StradTone Violin</title>
 
   <style>
-    /*
-     * 程式碼夥伴修改：
-     * 1. 移除 comments-wrapper 的 overflow-y: auto，以避免在 iframe 內層產生滾動條，
-     * 進而解決手機上拖拉邊界不動的問題。
-     * 2. 在手機版中，將所有主要的版面結構的 overflow 設為 visible，讓滾動交由外部 Google Sites Iframe 處理。
-    */
     * { box-sizing: border-box; }
 
     body {
@@ -20,9 +13,9 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, "Microsoft JhengHei", sans-serif;
       background: #222629;
       color: #f5f5f5;
-      overflow-y: visible !important;
     }
 
+    /* 整個頁面的容器：桌機置中、固定寬度，避免縮放時整塊亂飄 */
     .page {
       min-height: 100vh;
       padding: 12px;
@@ -57,20 +50,23 @@
       min-height: 220px;
     }
 
+    /* 左 40%、右 60%（桌機） */
     .panel-left  { flex: 0 0 40%; max-width: 40%; display: flex; flex-direction: column; }
     .panel-right { flex: 0 0 60%; max-width: 60%; display: flex; flex-direction: column; }
 
     h2 { font-size: 16px; margin: 0 0 4px; }
 
+    /* 「給站主看的說明」文字 → 改成跟背景一樣色，等於隱藏 */
     .hint,
     .reply-note {
       font-size: 12px;
       line-height: 1.4;
-      color: #222629;
+      color: #222629;  /* 和 body 背景一樣 */
     }
 
     .hidden { display: none !important; }
 
+    /* placeholder 顏色再淡一點 */
     input::placeholder,
     textarea::placeholder {
       color: #999;
@@ -82,7 +78,9 @@
       opacity: 0.7;
     }
 
-    /* 左側：工具列 + 表單 */
+    /* =====================================================
+     * [CSS-1] 左側：工具列 + 表單
+     * ===================================================== */
 
     .toolbar {
       display: flex;
@@ -107,18 +105,11 @@
       flex-direction: column;
       gap: 6px;
       margin-bottom: 8px;
-      padding: 10px;
+      padding: 6px 8px;
       border-radius: 6px;
-      border: 1px solid #777;
-      background: #111417;
+      border: 1px solid #444;
+      background: #202427;
     }
-
-    form#community-form.form-open-state {
-      border-color: #ffcc55;
-      box-shadow: 0 0 0 1px #ffcc55;
-      background: #151b22;
-    }
-
     form#community-form label {
       font-size: 13px;
       display: block;
@@ -135,11 +126,13 @@
       font-size: 13px;
     }
 
+    /* 編輯 / 發表時可輸入 → 白底 */
     form#community-form input[type="text"]:not(:disabled) {
       background: #ffffff;
       color: #111;
     }
 
+    /* 鎖定狀態（等名稱驗證）→ 深底 */
     form#community-form input[type="text"]:disabled {
       background: #1f2326;
       color: #999;
@@ -152,7 +145,7 @@
       background: #3a3f44;
       color: #f5f5f5;
       font-size: 12px;
-      cursor: not-allowed;
+      cursor: not-allowed; /* 預留錄音 */
       opacity: 0.6;
     }
 
@@ -181,17 +174,14 @@
       font-size: 13px;
       cursor: pointer;
     }
-    #submit-btn:disabled {
-      opacity: 0.5;
-      cursor: default;
-    }
-    #submit-btn:not(:disabled):hover { background: #e0b85f; }
+    #submit-btn:hover { background: #e0b85f; }
 
     .sub-hint {
       font-size: 11px;
       opacity: 0.8;
     }
 
+    /* 三顆媒體選擇按鈕 */
     .media-select-row {
       margin: 4px 0 2px;
       gap: 6px;
@@ -207,13 +197,6 @@
       cursor: pointer;
       opacity: 0.9;
     }
-    .media-select-btn#btn-media-youtube {
-      background: #cc0000;
-      border-color: #ff0000;
-    }
-    .media-select-btn#btn-media-youtube:hover {
-      background: #ff0000;
-    }
     .media-select-btn.active {
       border-color: #d1a343;
       background: #e0b85f;
@@ -221,6 +204,7 @@
       font-weight: 600;
     }
 
+    /* 表單內：錄影/錄音控制列（目前只給錄音用） */
     .media-record-toolbar {
       display: flex;
       align-items: center;
@@ -228,7 +212,6 @@
       margin-top: 4px;
       font-size: 11px;
     }
-
     .media-record-btn {
       width: 26px;
       height: 26px;
@@ -246,12 +229,12 @@
       opacity: 0.5;
       cursor: default;
     }
-
     .media-record-status {
       font-size: 11px;
       opacity: 0.8;
     }
 
+    /* 錄影 / 錄音預覽區 */
     .rec-preview {
       width: 100%;
       max-height: 140px;
@@ -260,32 +243,30 @@
       background: #111;
     }
 
-    /* 左側：留言表格 - 修改此處，移除內部滾動條 */
+    /* =====================================================
+     * [CSS-2] 左側：留言列表表格
+     * ===================================================== */
 
     .comments-wrapper {
       flex: 1 1 auto;
-      overflow-y: visible;
-      overflow-x: hidden;
+      overflow: auto;
       border-radius: 6px;
       border: 1px solid #444;
       background: #202427;
-      height: auto;
     }
-
     table#comments-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 12px;
-      table-layout: fixed;
+      min-width: 420px;
+      table-layout: fixed; /* 固定欄寬，避免展開往左右擴充 */
     }
-
     table#comments-table thead {
       position: sticky;
       top: 0;
       background: #33383c;
       z-index: 1;
     }
-
     table#comments-table th,
     table#comments-table td {
       border-bottom: 1px solid #333;
@@ -294,39 +275,43 @@
       vertical-align: top;
       word-wrap: break-word;
       word-break: break-word;
-      overflow: hidden;
     }
-
     table#comments-table th {
       font-weight: 600;
       font-size: 12px;
     }
-
     table#comments-table tbody tr:nth-child(even) {
       background: #252a2e;
     }
 
     .col-nick  { width: 80px; white-space: nowrap; }
-    .col-text  { width: auto; }
-    .col-media { width: 40px; text-align: right; }
+    .col-text  { width: 50%; position: relative; }
+    .col-media { width: 90px; }
 
     .media-icons {
       display: flex;
       gap: 4px;
       align-items: center;
       flex-wrap: wrap;
-      font-size: 16px;
-      justify-content: flex-end;
+      font-size: 13px;
     }
 
     .media-flag {
-      font-size: 16px;
+      font-size: 14px;
     }
 
     .play-video-btn {
-      display: none;
+      padding: 2px 6px;
+      border-radius: 12px;
+      border: 1px solid #888;
+      background: #3a3f44;
+      color: #f5f5f5;
+      font-size: 11px;
+      cursor: pointer;
+      margin-top: 2px;
     }
 
+    /* 表頭的「編輯」小鈕 */
     .edit-header-btn {
       margin-left: 6px;
       padding: 1px 6px;
@@ -343,29 +328,50 @@
       background: #4a5056;
     }
 
-    #comments-tbody tr.selected {
-      background: #4f7a3b !important;
+    .expand-arrow {
+      font-size: 10px;
+      opacity: 0.7;
+      float: right;
+      margin-left: 4px;
+      cursor: pointer;
     }
 
+    #comments-tbody tr.selected {
+      background: #4f7a3b !important; /* 比原本再亮一點 */
+    }
+
+    /* 選到的列閃一下（給回覆區名稱按鈕用） */
     .row-flash {
       animation: rowFlash 0.8s ease-out;
     }
-
     @keyframes rowFlash {
       0%   { background-color: #7fbf4f; }
       100% { background-color: inherit; }
     }
 
-    /* 右側：視覺區 */
+    /* 左側 Back 按鈕（移到表格底下） */
+    #back-button {
+      margin-top: 6px;
+      align-self: flex-start;
+      padding: 4px 10px;
+      border-radius: 14px;
+      border: 1px solid #777;
+      background: #3a3f44;
+      color: #f5f5f5;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    /* =====================================================
+     * [CSS-3] 右側：視覺區框架
+     * ===================================================== */
 
     .visual-wrapper {
       display: flex;
       flex-direction: column;
       gap: 8px;
       height: 100%;
-      overflow-y: visible;
     }
-
     .visual-header {
       font-size: 13px;
       display: flex;
@@ -373,9 +379,12 @@
       align-items: center;
       gap: 8px;
     }
-
     .current-point { font-size: 12px; opacity: 0.9; }
-    .current-point { display: none; }
+
+    /* 右上角「尚未選取留言 / 播放中…」暫時不顯示 */
+    .current-point {
+      display: none;
+    }
 
     .visual-body {
       flex: 1 1 auto;
@@ -383,7 +392,6 @@
       flex-direction: column;
       gap: 8px;
       min-height: 260px;
-      overflow-y: visible;
     }
 
     .top-row {
@@ -392,6 +400,7 @@
       min-height: 170px;
     }
 
+    /* 左：影片／錄音格子 */
     .video-frame-wrap {
       flex: 1 1 60%;
       background: #111315;
@@ -401,23 +410,11 @@
       position: relative;
       min-height: 150px;
     }
-
     .video-frame-wrap iframe {
       width: 100%;
       height: 100%;
       border: none;
     }
-
-    /* YouTube API 容器：由 YT.Player 建立 iframe */
-    #youtube-player {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: none; /* 預設隱藏，播放 YouTube 時才顯示 */
-    }
-
     .video-placeholder {
       position: absolute;
       inset: 0;
@@ -430,52 +427,9 @@
       padding: 8px;
     }
 
-    .mute-toggle {
-      position: absolute;
-      top: 6px;
-      right: 6px;
-      width: 24px;
-      height: 24px;
-      background: rgba(0, 0, 0, 0.6);
-      color: white;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      cursor: pointer;
-      z-index: 10;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-    }
-    .mute-toggle.hidden {
-      display: none !important;
-    }
-
-    .video-watermark {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 15;
-      pointer-events: auto;
-    }
-
-    .video-watermark-content {
-      background: rgba(0, 0, 0, 0.7);
-      color: white;
-      padding: 10px 15px;
-      border-radius: 8px;
-      font-size: 16px;
-      cursor: pointer;
-      user-select: none;
-    }
-    .video-watermark-content:hover {
-      background: rgba(0, 0, 0, 0.9);
-    }
+    /* =====================================================
+     * [CSS-4] 右側：多層圓
+     * ===================================================== */
 
     .circle-area {
       flex: 1 1 40%;
@@ -516,14 +470,14 @@
       opacity: 0.9;
     }
 
-    .ring-b45 { inset: 4%;  }
-    .ring-4   { inset: 10%; }
-    .ring-b35 { inset: 20%; }
-    .ring-3   { inset: 26%; }
-    .ring-b25 { inset: 36%; }
-    .ring-2   { inset: 42%; }
-    .ring-b15 { inset: 52%; }
-    .ring-1   { inset: 60%; }
+    .ring-b45 { inset: 4%;  } /* 4.5 */
+    .ring-4   { inset: 10%; } /* 4   */
+    .ring-b35 { inset: 20%; } /* 3.5 */
+    .ring-3   { inset: 26%; } /* 3   */
+    .ring-b25 { inset: 36%; } /* 2.5 */
+    .ring-2   { inset: 42%; } /* 2   */
+    .ring-b15 { inset: 52%; } /* 1.5 */
+    .ring-1   { inset: 60%; } /* 1   */
 
     .ring.active {
       border-color: var(--ring-highlight-color);
@@ -538,18 +492,31 @@
       font-size: 11px;
       color: #cfe9cf;
       text-shadow: 0 0 3px #000;
+    }
+
+    /* 暫時隱藏層級文字 */
+    .layer-label {
       display: none;
     }
+
+    /* =====================================================
+     * [CSS-5] 右側下半：回覆區 + 指板
+     * ===================================================== */
 
     .bottom-row {
       display: flex;
       gap: 8px;
       align-items: stretch;
-      overflow-y: visible;
     }
 
+    /* 回覆區寬度改成和影片同樣比例（約 6:4） */
     .reply-area {
       flex: 1 1 60%;
+    }
+
+    .reply-area-header {
+      font-size: 13px;
+      margin: 0 0 4px;
     }
 
     .reply-target {
@@ -572,10 +539,18 @@
       opacity: 0.6;
       cursor: default;
     }
+
+    /* 被項目連動時，顏色跟 .selected row 一致 */
     .reply-target-btn.linked {
       background: #4f7a3b;
       border-color: #4f7a3b;
       color: #f5f5f5;
+    }
+
+    .reply-note {
+      font-size: 11px;
+      opacity: 0.75;
+      margin-bottom: 4px;
     }
 
     #admin-reply {
@@ -586,8 +561,8 @@
       font-size: 12px;
       border-radius: 4px;
       min-height: 80px;
-      resize: none;
-      overflow: hidden;
+      resize: none;           /* 先由 JS 控制拖拉 */
+      overflow: hidden;       /* 由 JS 控制是否出現卷軸 */
       line-height: 1.4;
     }
 
@@ -632,62 +607,26 @@
       pointer-events: none;
     }
 
-    /* 手機版 - 確保滾動順暢 */
-
-    .mobile-fixed-header {
-      display: none;
-    }
+    /* =====================================================
+     * [CSS-6] 手機版
+     * ===================================================== */
 
     @media (max-width: 820px) {
-      body {
-        padding-top: 40px;
-      }
-
-      .mobile-fixed-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 8px 12px;
-        background: #33383c;
-        border-bottom: 1px solid #444;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        z-index: 999;
-      }
-
-      .mobile-fixed-header button {
-        padding: 4px 10px;
-        border-radius: 14px;
-        border: 1px solid #777;
-        background: #3a3f44;
-        color: #f5f5f5;
-        font-size: 12px;
-        cursor: pointer;
-      }
-
       .page {
-        padding: 0;
+        padding: 0;         /* 手機版滿版 */
         max-width: 100%;
-      }
-
-      header {
-        display: none;
       }
 
       main.layout {
         flex-direction: column;
       }
 
+      /* 手機版：順序改成 右（影片+多層圓+回覆+指板）在上，左（表格）在下 */
       #visual-panel {
         order: 1;
-        padding-top: 10px;
       }
-
       #comments-section {
         order: 2;
-        padding-top: 10px;
       }
 
       .panel-left,
@@ -695,25 +634,13 @@
         max-width: 100%;
         width: 100%;
         border-radius: 0;
-        overflow-y: visible;
-        overflow-x: hidden;
-      }
-
-      .panel-left {
-        height: auto !important;
-        min-height: auto;
-      }
-
-      .comments-wrapper {
-        height: auto;
-        min-height: 200px;
-        overflow-y: visible;
       }
 
       .panel-right .visual-body {
         min-height: 420px;
       }
 
+      /* 手機版：上層只要影片，影片高度固定 */
       .top-row {
         flex-direction: column;
         min-height: 0;
@@ -739,6 +666,7 @@
         height: 220px;
       }
 
+      /* 手機版：中層 回覆區 + 指板 左右並排 */
       .bottom-row {
         flex-direction: row;
       }
@@ -755,11 +683,6 @@
 </head>
 
 <body>
-  <div class="mobile-fixed-header">
-    <button type="button" id="mobile-back-button">← 回到影片</button>
-    <button type="button" id="mobile-items-button">☰ 項目</button>
-  </div>
-
   <div class="page">
     <header>
       <h1>StradTone Violin</h1>
@@ -767,18 +690,17 @@
     </header>
 
     <main class="layout">
+      <!-- 左：留言 / 發表 / 錄音 / 影片 -->
       <section class="panel panel-left" id="comments-section">
-        <p class="hint">小提琴</p>
+        <p class="hint">
+          小提琴
+        </p>
 
         <div class="toolbar">
           <button type="button" id="btn-new">新增</button>
-          <button type="button" id="btn-edit" class="edit-header-btn">編輯</button>
         </div>
 
-        <div id="edit-wait-hint" class="sub-hint hidden">
-          📌 請在下方表格點一下你要編輯的那一列。
-        </div>
-
+        <!-- 起始收起來 -->
         <form id="community-form" class="hidden">
           <label>
             username（5–12 字必填,修改編輯用）：
@@ -799,6 +721,7 @@
             />
           </label>
 
+          <!-- 三顆媒體按鈕：只能選一種媒體 -->
           <div class="form-row-inline media-select-row">
             <button
               type="button"
@@ -826,12 +749,14 @@
             </button>
           </div>
 
+          <!-- 影片欄位（包含 YouTube / 上傳） -->
           <div id="video-fields" class="hidden">
+            <!-- YouTube 區塊（只在「YouTube」模式顯示） -->
             <div class="form-row-inline" id="youtube-row" style="margin-top:4px;">
               <input
                 type="text"
                 id="youtube-url-input"
-                placeholder="影片或網頁連結（含 YouTube）"
+                placeholder="https://youtu.be/....(Link)…"
               />
               <input
                 type="text"
@@ -845,32 +770,37 @@
               />
             </div>
 
+            <!-- 上傳影片 / 圖片檔案（只在「影片」模式顯示） -->
             <div class="form-row-inline" id="video-upload-row" style="margin-top:4px;">
               <input type="file" id="video-file-input" accept="video/*,image/*" />
               <span id="video-file-label" class="sub-hint"></span>
             </div>
           </div>
 
+          <!-- 錄音欄位 -->
           <div id="audio-fields" class="hidden">
+            <!-- 錄音控制列 -->
             <div class="media-record-toolbar" id="audio-record-toolbar">
-              <button type="button" class="media-record-btn" id="audio-rec-start" disabled>●</button>
+              <button type="button" class="media-record-btn" id="audio-rec-start">●</button>
               <button type="button" class="media-record-btn" id="audio-rec-stop" disabled>■</button>
               <button type="button" class="media-record-btn" id="audio-rec-cancel" disabled>✕</button>
               <span class="media-record-status" id="audio-rec-status">錄音預備</span>
             </div>
 
+            <!-- 上傳現有音檔 -->
             <div class="form-row-inline" id="audio-upload-row" style="margin-top:4px;">
               <input type="file" id="audio-file-input" accept="audio/*" />
               <span id="audio-file-label" class="sub-hint"></span>
             </div>
 
+            <!-- 錄音預覽 -->
             <div class="form-row-inline" id="audio-preview-row" style="margin-top:4px;">
               <audio id="audio-rec-preview" class="rec-preview" controls></audio>
             </div>
           </div>
 
           <div class="form-row-inline">
-            <button type="submit" id="submit-btn" disabled>發表</button>
+            <button type="submit" id="submit-btn">發表</button>
           </div>
         </form>
 
@@ -879,16 +809,30 @@
             <thead>
               <tr>
                 <th class="col-nick">username</th>
-                <th class="col-text">項目</th>
-                <th class="col-media">媒體</th>
+                <th class="col-text">
+                  項目
+                  <button
+                    type="button"
+                    id="btn-edit"
+                    class="edit-header-btn"
+                  >
+                    編輯
+                  </button>
+                </th>
+                <th class="col-media">錄音 / 影片</th>
               </tr>
             </thead>
             <tbody id="comments-tbody">
+              <!-- JS 動態插入 -->
             </tbody>
           </table>
         </div>
+
+        <!-- Back 按鈕移到左邊表格底下 -->
+        <button id="back-button" type="button">Back</button>
       </section>
 
+      <!-- 右：影片 + 多層圓 + 回覆 + 指板 -->
       <section class="panel panel-right" id="visual-panel">
         <div class="visual-wrapper">
           <div class="visual-header">
@@ -898,44 +842,46 @@
           </div>
 
           <div class="visual-body">
+            <!-- 上層：影片 + 多層圓（桌機）；手機時會調整排版 -->
             <div class="top-row">
+              <!-- 左：影片格 -->
               <div class="video-frame-wrap">
-                <div class="mute-toggle hidden" id="mute-toggle">🔇</div>
-
-                <div class="video-watermark" id="video-watermark">
-                  <div class="video-watermark-content">
-                    🔇 點一下開啟聲音 / 播放
-                  </div>
-                </div>
-
-                <!-- YouTube IFrame API 容器 -->
-                <div id="youtube-player"></div>
-
-                <!-- 其他來源（Google Drive / 非 YouTube）使用的 iframe -->
-                <iframe
-                  id="video-iframe"
-                  src=""
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  referrerpolicy="origin-when-cross-origin"
-                  allowfullscreen
-                  style="display:none;"
-                ></iframe>
+<iframe
+  id="video-iframe"
+  src=""
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  referrerpolicy="origin-when-cross-origin"
+  allowfullscreen
+></iframe>
 
                 <div class="video-placeholder" id="video-placeholder">
-                  請先選擇左側項目。
+                  <!-- 初始占位文字可在 CSS 或 JS 控制 -->
                 </div>
               </div>
 
+              <!-- 右：多層圓 -->
               <div class="circle-area">
                 <div class="circle-stack" id="circle-stack">
                   <div class="ring ring-main ring-1" data-layer="1"></div>
                   <div class="ring ring-main ring-2" data-layer="2"></div>
                   <div class="ring ring-main ring-3" data-layer="3"></div>
                   <div class="ring ring-main ring-4" data-layer="4"></div>
-                  <div class="ring ring-boundary ring-b15" data-layer="1.5"></div>
-                  <div class="ring ring-boundary ring-b25" data-layer="2.5"></div>
-                  <div class="ring ring-boundary ring-b35" data-layer="3.5"></div>
-                  <div class="ring ring-b45" data-layer="4.5"></div>
+                  <div
+                    class="ring ring-boundary ring-b15"
+                    data-layer="1.5"
+                  ></div>
+                  <div
+                    class="ring ring-boundary ring-b25"
+                    data-layer="2.5"
+                  ></div>
+                  <div
+                    class="ring ring-boundary ring-b35"
+                    data-layer="3.5"
+                  ></div>
+                  <div
+                    class="ring ring-b45"
+                    data-layer="4.5"
+                  ></div>
 
                   <div class="layer-label" id="layer-label">
                     layers: –
@@ -944,6 +890,7 @@
               </div>
             </div>
 
+            <!-- 中層：回覆區 + 點點位置圖 -->
             <div class="bottom-row">
               <div class="reply-area">
                 <div class="reply-target" id="reply-target">
@@ -956,6 +903,9 @@
                     From: —
                   </button>
                 </div>
+                <p class="reply-note">
+                  <!-- 給管理員看的說明，已在 CSS 隱藏 -->
+                </p>
                 <textarea
                   id="admin-reply"
                   placeholder="提琴聲學實驗室："
@@ -969,14 +919,55 @@
                   <div class="fb-string fb-s3"></div>
                   <div class="fb-string fb-s4"></div>
 
-                  <div class="fingerboard-note" style="left:24%; top:8%;">G0</div>
-                  <div class="fingerboard-note" style="left:24%; top:26%;">G3</div>
-                  <div class="fingerboard-note" style="left:38%; top:18%;">D5</div>
-                  <div class="fingerboard-note" style="left:38%; top:40%;">D8</div>
-                  <div class="fingerboard-note" style="left:62%; top:22%;">A7</div>
-                  <div class="fingerboard-note" style="left:62%; top:44%;">A10</div>
-                  <div class="fingerboard-note" style="left:76%; top:30%;">E9</div>
-                  <div class="fingerboard-note" style="left:76%; top:52%;">E12</div>
+                  <!-- 示意點 -->
+                  <div
+                    class="fingerboard-note"
+                    style="left:24%; top:8%;"
+                  >
+                    G0
+                  </div>
+                  <div
+                    class="fingerboard-note"
+                    style="left:24%; top:26%;"
+                  >
+                    G3
+                  </div>
+                  <div
+                    class="fingerboard-note"
+                    style="left:38%; top:18%;"
+                  >
+                    D5
+                  </div>
+                  <div
+                    class="fingerboard-note"
+                    style="left:38%; top:40%;"
+                  >
+                    D8
+                  </div>
+                  <div
+                    class="fingerboard-note"
+                    style="left:62%; top:22%;"
+                  >
+                    A7
+                  </div>
+                  <div
+                    class="fingerboard-note"
+                    style="left:62%; top:44%;"
+                  >
+                    A10
+                  </div>
+                  <div
+                    class="fingerboard-note"
+                    style="left:76%; top:30%;"
+                  >
+                    E9
+                  </div>
+                  <div
+                    class="fingerboard-note"
+                    style="left:76%; top:52%;"
+                  >
+                    E12
+                  </div>
                 </div>
               </div>
             </div>
@@ -987,650 +978,250 @@
   </div>
 
 <script>
-  // ===== 全域狀態 =====
-  const API_URL = "https://script.google.com/macros/s/AKfycbwl01SQAIhOcdVdlm5bia7qelXHJW8pjWeypkk7_DxBiY37-WSRN81QKmpO-CyIA-Q58w/exec";
+// ====== [JS-0] 全域狀態 ======
+const API_URL =
+  "https://script.google.com/macros/s/AKfycbxn5aDCimtZmvgK4uEGr5fIyNItY2wZgQyO2LVEZkggFkO0VZ_YdDMyspGpzpkYy5W6-A/exec";
 
-  let commentsCache = [];
-  let currentSelectedId = null;
+let commentsCache = [];
+let currentSelectedId = null;
 
-  let isFormOpen = false;
-  let isAddMode  = false;
+// 新增 / 編輯欄是否展開
+let isFormOpen = false;
 
-  let editState = {
-    active: false,
-    id: null,
-    nickname: "",
-    originalText: "",
-    waitForSelect: false,
-    nameVerified: false
-  };
+// 編輯狀態：按下「編輯」後才會啟動
+let editState = {
+  active: false,
+  id: null,
+  nickname: "",
+  originalText: "",
+  waitForSelect: false
+};
 
-  window.recordedAudioBlob = null;
-  window.recordedVideoBlob = null;
+// 錄音 / 錄影 blob（預留）
+window.recordedAudioBlob = null;
+window.recordedVideoBlob = null;
+// 左側「錄音」面板用的錄音控制
+let audioRecStream = null;
+let audioRecRecorder = null;
+let audioRecChunks = [];
+let audioRecActive = false;
+// ====== [JS-1] 小工具 ======
 
-  let carouselInterval = null;
-  let carouselIndex = 0;
-  let carouselItems = [];
-  const CAROUSEL_DURATION = 30000;
+// 遮蔽名稱
+function maskName(name) {
+  const s = String(name || "").trim();
+  if (!s) return "匿名";
+  if (s.length <= 2) return s[0] + "*";
+  const first = s[0];
+  const last = s[s.length - 1];
+  const middle = "*".repeat(s.length - 2);
+  return first + middle + last;
+}
 
-  let autoSelectParams = { id: null, nick: null };
+// 名稱需 5～12 字 & 禁止特殊符號（允許純數字、英文、中文字）
+function validateNameLength(name) {
+  const s = String(name || "").trim();
+  if (s.length < 5 || s.length > 12) return false;
+  if (!/^[A-Za-z0-9\u4E00-\u9FFF]+$/.test(s)) return false;
+  return true;
+}
 
-  let isVideoMuted = false;
-  let isComposingName = false;
-
-  const REPLY_PREFIX = "提琴聲學實驗室：";
-
-  // YouTube IFrame API 狀態
-  let ytPlayer = null;
-  let ytApiReady = false;
-  let pendingYtLoad = null;
-
-  // ===== 小工具 =====
-  function isIOS() {
-    return /iP(ad|hone|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+// 時間字串 → 秒數
+function parseTimeToSec(str) {
+  if (!str) return "";
+  const s = String(str).trim();
+  let m = s.match(/^(\d+):(\d{1,2})$/);
+  if (m) {
+    const min = Number(m[1]);
+    const sec = Number(m[2]);
+    if (!isNaN(min) && !isNaN(sec)) return min * 60 + sec;
   }
-
-  function maskName(name) {
-    const s = (name === null || name === undefined) ? "" : String(name).trim();
-    if (!s) return "匿名";
-    if (s.length <= 2) return s[0] + "*";
-    const first = s[0];
-    const last  = s[s.length - 1];
-    const middle = "*".repeat(s.length - 2);
-    return first + middle + last;
+  m = s.match(/^(\d{3,4})$/);
+  if (m) {
+    const digits = m[1];
+    const sec = Number(digits.slice(-2));
+    const min = Number(digits.slice(0, -2));
+    if (!isNaN(min) && !isNaN(sec)) return min * 60 + sec;
   }
+  return "";
+}
 
-  function validateNameLength(name) {
-    const s = String(name || "").trim();
-    if (s.length < 5 || s.length > 12) return false;
-    if (!/^[A-Za-z0-9\u4E00-\u99FF]+$/.test(s)) return false;
-    return true;
-  }
+function escapeHtml(str) {
+  return String(str || "").replace(/[&<>"']/g, (c) => {
+    return (
+      {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      }[c] || c
+    );
+  });
+}
 
-  function parseTimeToSec(str) {
-    if (!str) return "";
-    const s = String(str).trim();
-    let m = s.match(/^(\d+):(\d{1,2})$/);
-    if (m) {
-      const min = Number(m[1]);
-      const sec = Number(m[2]);
-      if (!isNaN(min) && !isNaN(sec)) return min * 60 + sec;
+// YouTube ID
+function extractYoutubeId(url) {
+  if (!url) return "";
+  const m1 = url.match(/youtu\.be\/([^?]+)/);
+  if (m1) return m1[1];
+  const m2 = url.match(/[?&]v=([^&]+)/);
+  if (m2) return m2[1];
+  return "";
+}
+
+
+/*
+// 判斷是否為 iOS（iPhone / iPad）
+function isIOS() {
+  return /iP(ad|hone|od)/.test(navigator.userAgent);
+}
+*/
+
+// YouTube embed（使用 youtube-nocookie + origin，iOS 靜音自動播放，非 iOS 嘗試有聲自動播放）
+function buildYoutubeEmbedUrl(url, startSec, endSec) {
+  const id = extractYoutubeId(url);
+  if (!id) return "";
+
+  // 使用隱私加強的 youtube-nocookie 網域
+  const base = "https://www.youtube-nocookie.com/embed/" + id;
+  const params = [];
+
+  // --- 核心優化參數：自動播放與聲音處理 ---
+  
+  // 所有裝置都嘗試自動播放
+  params.push("autoplay=1"); 
+
+/*
+  // 根據設備類型設置靜音參數
+  if (isIOS()) {
+    // 判斷為 iOS 時，必須設定靜音 (mute=1)，才能規避限制並增加自動播放成功率
+    // 同時，這也是規避 iOS Webview 153 錯誤的最佳實務
+    params.push("mute=1");
+  } 
+*/
+
+  // --- 防跳轉與基本參數 (所有裝置通用) ---
+  
+  // 1. 防跳轉 (rel=0)：播放結束不顯示相關影片
+  // 2. 減少標誌 (modestbranding=1)：盡可能隱藏 YouTube 標誌，減少點擊跳轉點
+  // 3. Playsinline (playsinline=1)：允許在 iOS 設備上網頁內播放
+  params.push("rel=0", "modestbranding=1", "playsinline=1");
+  
+  // ------------------------------------------
+
+  // 告訴 YouTube 這個內嵌的來源
+  try {
+    if (window.location && window.location.origin) {
+      params.push("origin=" + encodeURIComponent(window.location.origin));
     }
-    m = s.match(/^(\d{3,4})$/);
-    if (m) {
-      const digits = m[1];
-      const sec = Number(digits.slice(-2));
-      const min = Number(digits.slice(0, -2));
-      if (!isNaN(min) && !isNaN(sec)) return min * 60 + sec;
-    }
-    return "";
+  } catch (e) {
+    // 忽略例外
   }
 
-  function escapeHtml(str) {
-    return String(str || "").replace(/[&<>"']/g, (c) => {
-      return (
-        {
-          "&": "&amp;",
-          "<": "&lt;",
-          ">": "&gt;",
-          '"': "&quot;",
-          "'": "&#39;",
-        }[c] || c
-      );
+  // 設定開始與結束時間
+  if (startSec !== "" && !isNaN(startSec)) {
+    params.push("start=" + startSec);
+  }
+  if (endSec !== "" && !isNaN(endSec)) {
+    params.push("end=" + endSec);
+  }
+
+  return params.length ? base + "?" + params.join("&") : base;
+}
+
+
+
+
+// Google Drive embed
+function buildDriveEmbedUrl(fid) {
+  return fid
+    ? "https://drive.google.com/file/d/" + fid + "/preview"
+    : "";
+}
+
+// 卷軸往回（影片上方，桌機 + 手機共用）
+function scrollToVideoTop() {
+  const el = document.querySelector(".video-frame-wrap");
+  if (el) {
+    el.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
     });
   }
+}
 
-  function extractYoutubeId(url) {
-    if (!url) return "";
-    const m1 = url.match(/youtu\.be\/([^?]+)/);
-    if (m1) return m1[1];
-    const m2 = url.match(/[?&]v=([^&]+)/);
-    if (m2) return m2[1];
-    const m3 = url.match(/youtube\.com\/watch\?v=([^&]+)/);
-    if (m3) return m3[1];
-    return "";
-  }
-
-  function isYoutubeUrl(url) {
-    return /youtu\.be|youtube\.com/.test(url || "");
-  }
-
-  function buildDriveEmbedUrl(fid) {
-    return fid
-      ? "https://drive.google.com/file/d/" + fid + "/preview"
-      : "";
-  }
-
-  function readFileAsBase64(file) {
-    return new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => {
-        const result = r.result || "";
-        const idx = String(result).indexOf(",");
-        resolve(idx >= 0 ? result.slice(idx + 1) : result);
-      };
-      r.onerror = () => reject(r.error);
-      r.readAsDataURL(file);
-    });
-  }
-
-  function findRowById(id) {
-    return commentsCache.find((r) => String(r.id) === String(id));
-  }
-
-  // ===== 多層圓 (略) =====
-  function highlightLayers(layerStr) {
-    const rings = document.querySelectorAll(".ring");
-    rings.forEach((r) => r.classList.remove("active"));
-    if (!layerStr) return;
-
-    const parts = String(layerStr)
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-    rings.forEach((r) => {
-      const v = r.getAttribute("data-layer");
-      if (parts.includes(v)) r.classList.add("active");
-    });
-  }
-
-  // ===== 回覆區：前綴 & 自動高度 & 儲存 (略) =====
-  function ensureReplyPrefix() {
-    const box = document.getElementById("admin-reply");
-    if (!box) return;
-
-    const prefix = REPLY_PREFIX + "\n";
-    let val = box.value || "";
-
-    if (val.startsWith(REPLY_PREFIX)) {
-      let rest = val.slice(REPLY_PREFIX.length);
-      rest = rest.replace(/^\s*\n?/, "");
-      val = prefix + rest;
-    } else {
-      val = prefix + val.replace(/^提琴聲學實驗室：\s*/g, "");
-    }
-
-    const oldPos = box.selectionStart || val.length;
-    box.value = val;
-
-    const firstNewline = box.value.indexOf("\n");
-    const minPos = firstNewline + 1;
-    const newPos = Math.max(oldPos, minPos);
-    box.setSelectionRange(newPos, newPos);
-
-    box.onkeydown = (e) => {
-      const pos = box.selectionStart;
-      if (pos <= prefix.length && (e.key === "Backspace" || e.key === "Delete")) {
-        e.preventDefault();
-      }
+// Base64
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const result = r.result || "";
+      const idx = String(result).indexOf(",");
+      resolve(idx >= 0 ? result.slice(idx + 1) : result);
     };
-    box.oncut = (e) => {
-      if (box.selectionStart < prefix.length) {
-        e.preventDefault();
-      }
-    };
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+}
+
+// ====== [JS-2] 載入與表格列表 ======
+
+async function loadComments() {
+  const res = await fetch(API_URL + "?action=list", { cache: "no-cache" });
+  const data = await res.json();
+  commentsCache = data.posts || [];
+  renderCommentsTable();
+}
+
+// ====== [JS-3] 渲染表格 ======
+
+function renderCommentsTable() {
+  const tbody = document.getElementById("comments-tbody");
+  if (!tbody) return;
+
+  if (!commentsCache.length) {
+    tbody.innerHTML = `<tr><td colspan="3">目前尚無項目</td></tr>`;
+    return;
   }
 
-  function autoResizeReply() {
-    const box = document.getElementById("admin-reply");
-    if (!box) return;
+  const rows = commentsCache.slice().reverse();
 
-    let maxH = 260;
-    const fb = document.getElementById("fingerboard");
-    if (fb) {
-      const rect = fb.getBoundingClientRect();
-      if (rect.height > 0) maxH = rect.height;
-    }
-
-    box.style.height = "auto";
-    const scrollH = box.scrollHeight;
-
-    if (scrollH <= maxH) {
-      box.style.height = scrollH + "px";
-      box.style.overflowY = "hidden";
-      box.style.resize = "none";
-    } else {
-      box.style.height = maxH + "px";
-      box.style.overflowY = "auto";
-      box.style.resize = "vertical";
-    }
-  }
-
-  async function saveAdminReply() {
-    const box = document.getElementById("admin-reply");
-    if (!box || !currentSelectedId) return;
-
-    ensureReplyPrefix();
-    autoResizeReply();
-
-    const full = box.value || "";
-
-    try {
-      const params = new URLSearchParams({
-        action: "reply",
-        id: String(currentSelectedId),
-        reply: full,
-      });
-
-      const res  = await fetch(API_URL + "?" + params.toString());
-      const data = await res.json();
-
-      if (!data || data.status !== "ok") {
-        throw new Error(data && data.error ? data.error : "reply 失敗");
-      }
-
-      const r = findRowById(currentSelectedId);
-      if (r) r.reply = full;
-
-      await loadComments(currentSelectedId);
-
-    } catch (err) {
-      console.error(err);
-      alert("儲存回覆失敗：" + err.message);
-    }
-  }
-
-  // ===== YouTube Player API 建立 =====
-  function createYoutubePlayer() {
-    const containerId = "youtube-player";
-    const el = document.getElementById(containerId);
-    if (!el || typeof YT === "undefined" || !YT.Player) return;
-
-    ytPlayer = new YT.Player(containerId, {
-      playerVars: {
-        host: "https://www.youtube-nocookie.com",
-        rel: 0,
-        controls: 1,
-        showinfo: 0,
-        playsinline: 1
-      },
-      events: {
-        onReady: function () {
-          ytApiReady = true;
-          if (pendingYtLoad) {
-            pendingYtLoad();
-            pendingYtLoad = null;
-          }
-        }
-      }
-    });
-  }
-
-  // YouTube IFrame API 會呼叫這個全域函式
-  function onYouTubeIframeAPIReady() {
-    ytApiReady = true;
-    createYoutubePlayer();
-  }
-
- // ===== 影片顯示（簡化版：只用 iframe，不用 YouTube API） =====
-  function clearVideo() {
-    const iframe      = document.getElementById("video-iframe");
-    const ph          = document.getElementById("video-placeholder");
-    const muteToggle  = document.getElementById("mute-toggle");
-    const watermark   = document.getElementById("video-watermark");
-
-    // 不再管 YouTube Player，只把 iframe 關掉
-    if (iframe) {
-      iframe.src = "";
-      iframe.style.display = "none";
-    }
-
-    if (ph) {
-      ph.style.display = "flex";
-      ph.textContent   = "請先選擇左側項目。";
-    }
-
-    // 這兩個目前先不使用，但順手一起隱藏
-    if (muteToggle)  muteToggle.classList.add("hidden");
-    if (watermark)   watermark.style.display = "none";
-
-    // 也順便把多層圓效果清掉
-    highlightLayers("");
-  }
-
-  function showVideoForRow(row, isCarousel = false) {
-    if (!row) return;
-    clearVideo();
-
-    const iframe = document.getElementById("video-iframe");
-    const ph     = document.getElementById("video-placeholder");
-
-    // ===== 1. 純音訊（沒有畫面，只顯示提示文字） =====
-    if (row.type === "audio" && (row.hasAudio || row.driveAudioId)) {
-      if (ph) {
-        ph.style.display = "flex";
-        ph.textContent   = `音訊項目：${row.text || ""}`;
-      }
-      return;
-    }
-
-    // ===== 2. YouTube 影片（直接用 embed 連結，帶 autoplay） =====
-    if (row.type === "youtube" && row.youtubeUrl && isYoutubeUrl(row.youtubeUrl)) {
-      const videoId = extractYoutubeId(row.youtubeUrl);
-      if (!videoId) {
-        if (ph) {
-          ph.style.display = "flex";
-          ph.textContent   = "無法解析 YouTube 影片連結。";
-        }
-        return;
-      }
-
-      const startSec = row.startSec ?? "";
-      const endSec   = row.endSec   ?? "";
-
-      // 基本 embed網址（已經不再用 youtube-nocookie）
-      let src = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1`;
-
-      const extra = [];
-      const sNum = Number(startSec);
-      const eNum = Number(endSec);
-
-      // 有設定起始/結束秒數才加參數
-      if (startSec !== "" && !isNaN(sNum)) extra.push("start=" + sNum);
-      if (endSec   !== "" && !isNaN(eNum)) extra.push("end="   + eNum);
-
-      if (extra.length) {
-        src += "&" + extra.join("&");
-      }
-
-      if (iframe) {
-        iframe.src          = src;
-        iframe.style.display = "block";
-      }
-      if (ph) ph.style.display = "none";
-
-      // 這裡沒有再做靜音處理，直接嘗試帶聲音自動播放
-      // （若瀏覽器政策不允許有聲自動播放，會自動改成需要手動按一下）
-      return;
-    }
-
-    // ===== 3. 其他上傳 / 一般連結（Drive 或非 YouTube 網址） =====
-    let url = "";
-
-    // Google Drive 上傳的影片
-    if (row.type === "upload" && row.driveFileId) {
-      url = buildDriveEmbedUrl(row.driveFileId);
-    }
-    // 其他情況，如果有網址，就直接當一般連結處理
-    else if (row.youtubeUrl) {
-      url = row.youtubeUrl;
-    }
-
-    if (url) {
-      // 嘗試加上 autoplay 參數（不是每個網站都會理會，但加上不會壞）
-      if (!/[?]/.test(url)) {
-        url += "?autoplay=1";
-      } else if (!/[?&]autoplay=1/.test(url)) {
-        url += "&autoplay=1";
-      }
-
-      if (iframe) {
-        iframe.src           = url;
-        iframe.style.display = "block";
-      }
-      if (ph) ph.style.display = "none";
-    } else {
-      // 完全沒有可播的媒體 → 顯示文字提示
-      if (ph) {
-        ph.style.display = "flex";
-        ph.textContent   = `選取項目：${row.text || ""}（無可播放媒體）`;
-      }
-    }
-  }
-
-
-  // ===== 回覆標的按鈕 (略) =====
-  function resetReplyTargetButton() {
-    const btn = document.getElementById("reply-target-btn");
-    if (!btn) return;
-    btn.textContent = "From: —";
-    btn.disabled = true;
-    btn.removeAttribute("data-id");
-    btn.classList.remove("linked");
-  }
-
-  function selectRowForReply(row, isCarousel = false) {
-    if (!row) return;
-
-    if (isCarousel && isFormOpen) {
-      stopCarousel();
-      return;
-    }
-
-    if (!isCarousel && isAddMode) {
-      resetFormToAddMode();
-    }
-
-    if (editState.active && !editState.nameVerified && editState.waitForSelect) {
-      return;
-    }
-
-    if (!isCarousel && editState.active && String(row.id) !== String(currentSelectedId)) {
-      resetFormToAddMode();
-    }
-
-    currentSelectedId = row.id;
-
-    const tbody = document.getElementById("comments-tbody");
-    if (tbody) {
-      Array.from(tbody.querySelectorAll("tr")).forEach((tr) => {
-        const isThis = tr.getAttribute("data-id") === String(row.id);
-        tr.classList.toggle("selected", isThis);
-        tr.classList.remove("row-flash");
-        if (isThis && isCarousel) {
-          tr.classList.add("row-flash");
-          setTimeout(() => tr.classList.remove("row-flash"), 800);
-        }
-      });
-
-      if (isCarousel) {
-        const tr = tbody.querySelector(`tr[data-id="${row.id}"]`);
-        if (tr) {
-          tr.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-      }
-    }
-
-    const btn = document.getElementById("reply-target-btn");
-    if (btn) {
-      btn.textContent = "From: " + maskName(row.nickname);
-      btn.disabled = false;
-      btn.setAttribute("data-id", String(row.id));
-      btn.classList.add("linked");
-    }
-
-    const box = document.getElementById("admin-reply");
-    if (box) {
-      const raw = row.reply || "";
-      if (!raw || !raw.startsWith(REPLY_PREFIX)) {
-        box.value = REPLY_PREFIX + "\n";
-      } else {
-        box.value = raw;
-      }
-      ensureReplyPrefix();
-      autoResizeReply();
-    }
-
-    showVideoForRow(row, isCarousel);
-
-    if (!isCarousel) {
-      stopCarousel();
-    }
-  }
-
-  // ===== 表單模式／清除 (略) =====
-  function setMediaMode(modeName) {
-    window.currentMediaMode = modeName || null;
-
-    const btnYoutube = document.getElementById("btn-media-youtube");
-    const btnUpload  = document.getElementById("btn-media-upload");
-    const btnAudio   = document.getElementById("btn-media-audio");
-
-    const videoFields = document.getElementById("video-fields");
-    const audioFields = document.getElementById("audio-fields");
-
-    [btnYoutube, btnUpload, btnAudio].forEach((btn) => {
-      if (!btn) return;
-      btn.classList.toggle("active", btn.dataset.media === modeName);
-    });
-
-    if (videoFields) {
-      videoFields.classList.toggle("hidden", modeName !== "youtube" && modeName !== "upload");
-    }
-    if (audioFields) {
-      audioFields.classList.toggle("hidden", modeName !== "audio");
-    }
-  }
-
-  function clearRecordedMediaState() {
-    window.recordedAudioBlob = null;
-    window.recordedVideoBlob = null;
-
-    const audioPreview = document.getElementById("audio-rec-preview");
-    if (audioPreview) {
-      audioPreview.src = "";
-    }
-  }
-
-  function resetFormToAddMode() {
-    const form      = document.getElementById("community-form");
-    const btnNew    = document.getElementById("btn-new");
-    const submitBtn = document.getElementById("submit-btn");
-    const nickEl    = document.getElementById("nickname-input");
-    const textEl    = document.getElementById("text-input");
-
-    if (form) {
-      form.reset?.();
-      form.classList.add("hidden");
-      form.style.display = "none";
-      form.classList.remove("form-open-state");
-    }
-
-    if (btnNew) {
-      btnNew.textContent = "新增";
-    }
-
-    if (submitBtn) {
-      submitBtn.textContent = "發表";
-      submitBtn.disabled = true;
-    }
-
-    if (nickEl) {
-      nickEl.disabled = false;
-      nickEl.placeholder = "Mr,s 09….";
-    }
-    if (textEl) {
-      textEl.disabled = false;
-      textEl.style.opacity = "1";
-    }
-
-    setMediaMode(null);
-    clearRecordedMediaState();
-
-    isFormOpen = false;
-    isAddMode  = false;
-    editState.active = false;
-    editState.waitForSelect = false;
-    editState.nameVerified = false;
-
-    const hint = document.getElementById("edit-wait-hint");
-    if (hint) hint.classList.add("hidden");
-  }
-
-  // ===== 名稱驗證 / 送出按鈕狀態 (略) =====
-  function tryUnlockEditByName() {
-    const nickEl    = document.getElementById("nickname-input");
-    const textEl    = document.getElementById("text-input");
-    const submitBtn = document.getElementById("submit-btn");
-    if (!nickEl || !textEl || !submitBtn) return;
-    if (!editState.active) return;
-    if (isComposingName) return;
-
-    const inputName = String(nickEl.value || "").trim();
-    const original  = String(editState.nickname || "").trim();
-
-    if (inputName && inputName === original) {
-      editState.nameVerified = true;
-      textEl.disabled = false;
-      textEl.style.opacity = "1";
-      submitBtn.disabled = !textEl.value.trim();
-    } else {
-      editState.nameVerified = false;
-      textEl.disabled = true;
-      textEl.style.opacity = "0.6";
-      submitBtn.disabled = true;
-    }
-  }
-
-  function updateSubmitButtonState() {
-    const nickEl    = document.getElementById("nickname-input");
-    const textEl    = document.getElementById("text-input");
-    const submitBtn = document.getElementById("submit-btn");
-    if (!nickEl || !textEl || !submitBtn) return;
-
-    const nickname = (nickEl.value || "").trim();
-    const text     = (textEl.value || "").trim();
-
-    if (editState.active) {
-      submitBtn.disabled = !(editState.nameVerified && text.length > 0 && text.length <= 100);
-    } else {
-      const okName = validateNameLength(nickname);
-      const okText = text.length > 0 && text.length <= 100;
-      submitBtn.disabled = !(okName && okText);
-    }
-  }
-
-  // ===== 資料載入 & 表格渲染 (略) =====
-  async function loadComments(postActionRowId = null) {
-    const res = await fetch(API_URL + "?action=list", { cache: "no-cache" });
-    const data = await res.json();
-    commentsCache = data.posts || [];
-    renderCommentsTable();
-
-    if (autoSelectParams.id) {
-      checkUrlForAutoSelect(true);
-    } else if (postActionRowId) {
-      const row = findRowById(postActionRowId);
-      if (row) {
-        selectRowForReply(row, false);
-      }
-    } else {
-      startCarousel();
-    }
-  }
-
-  function renderCommentsTable() {
-    const tbody = document.getElementById("comments-tbody");
-    if (!tbody) return;
-
-    if (!commentsCache.length) {
-      tbody.innerHTML = `<tr><td colspan="3">目前尚無項目</td></tr>`;
-      return;
-    }
-
-    const rows = commentsCache.slice().reverse();
-
-    const html = rows.map((row) => {
+  const html = rows
+    .map((row) => {
       const nick = maskName(row.nickname);
       const full = String(row.text || "");
-      const displayLongText = escapeHtml(full);
+      const long = full.length > 30;
+      const shortText = long
+        ? escapeHtml(full.slice(0, 30)) + "..."
+        : escapeHtml(full);
 
       const type = row.type || "text";
+
       const hasYoutube = type === "youtube" && row.youtubeUrl;
-      const hasDrive   = type === "upload" && row.driveFileId;
-      const hasAudio   = type === "audio" && (row.hasAudio || row.driveAudioId);
-      const hasReply   = row.reply && String(row.reply).trim().length > 0;
+      const hasDrive = type === "upload" && row.driveFileId;
+      const hasAudio = type === "audio" && (row.hasAudio || row.driveAudioId);
 
+      // 媒體顯示符號
+      let mediaHtml = `<span style="opacity:.5">—</span>`;
       const icons = [];
-      if (hasAudio)  icons.push(`<span class="media-flag" title="錄音">🎵</span>`);
-      if (hasYoutube) icons.push(`<span class="media-flag" title="影片">▶️</span>`);
-      else if (hasDrive) icons.push(`<span class="media-flag" title="上傳">🖼️</span>`);
-      if (hasReply) icons.push(`<span class="media-flag" title="已回覆">💬</span>`);
 
-      const mediaHtml = icons.length
-        ? `<div class="media-icons">${icons.join("")}</div>`
-        : `<div class="media-icons"><span style="opacity:.5">—</span></div>`;
+      if (hasAudio) {
+        // 音樂符號 🎵（不要喇叭）
+        icons.push(`<span class="media-flag" title="錄音">🎵</span>`);
+      }
+
+      if (hasYoutube || hasDrive) {
+        icons.push(
+          `<button class="play-video-btn" data-id="${row.id}">
+             🎬 播放
+           </button>`
+        );
+      }
+
+      if (icons.length) {
+        mediaHtml = `<div class="media-icons">${icons.join("")}</div>`;
+      }
 
       const selected =
         String(row.id) === String(currentSelectedId) ? ` class="selected"` : "";
@@ -1638,826 +1229,1015 @@
       return `
         <tr data-id="${row.id}"${selected}>
           <td class="col-nick">${escapeHtml(nick)}</td>
-          <td class="col-text">${displayLongText}</td>
+          <td class="col-text" data-long="${long ? "1" : "0"}">
+            ${shortText}${long ? `<span class="expand-arrow">▼</span>` : ""}
+          </td>
           <td class="col-media">${mediaHtml}</td>
         </tr>
       `;
-    }).join("");
+    })
+    .join("");
 
-    tbody.innerHTML = html;
+  tbody.innerHTML = html;
+}
+
+// ====== [JS-4] 顯示影片、音訊 ======
+
+function clearVideo() {
+  const iframe = document.getElementById("video-iframe");
+  const ph = document.getElementById("video-placeholder");
+  if (iframe) iframe.src = "";
+  if (ph) ph.style.display = "flex";
+}
+
+function showVideoForRow(row) {
+  if (!row) return;
+  clearVideo();
+
+  let url = "";
+
+  if (row.type === "youtube" && row.youtubeUrl) {
+    url = buildYoutubeEmbedUrl(row.youtubeUrl, row.startSec, row.endSec);
+  } else if (row.type === "upload" && row.driveFileId) {
+    url = buildDriveEmbedUrl(row.driveFileId);
   }
 
-  // ===== 編輯 header 按鈕 (略) =====
-  function setupEditHeaderButton() {
-    const btn = document.getElementById("btn-edit");
-    if (!btn) return;
+  if (url) {
+    const iframe = document.getElementById("video-iframe");
+    const ph = document.getElementById("video-placeholder");
+    iframe.src = url;
+    ph.style.display = "none";
+  }
+}
 
-    btn.addEventListener("click", () => {
-      editState.waitForSelect = true;
-      editState.active = false;
-      isAddMode = false;
+// ====== [JS-5] 多層圓（預留） ======
+function highlightLayers(layerStr) {
+  const rings = document.querySelectorAll(".ring");
+  rings.forEach((r) => r.classList.remove("active"));
 
-      const hint = document.getElementById("edit-wait-hint");
-      if (hint) hint.classList.remove("hidden");
+  if (!layerStr) return;
+
+  const parts = String(layerStr)
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  rings.forEach((r) => {
+    const v = r.getAttribute("data-layer");
+    if (parts.includes(v)) r.classList.add("active");
+  });
+}
+
+// ====== [JS-6] 查找 row ======
+function findRowById(id) {
+  return commentsCache.find((r) => String(r.id) === String(id));
+}
+
+// ====== [JS-7] 回覆區固定前綴 ======
+const REPLY_PREFIX = "提琴聲學實驗室：";
+
+function ensureReplyPrefix() {
+  const box = document.getElementById("admin-reply");
+  if (!box) return;
+
+  let val = box.value || "";
+  if (!val) {
+    box.value = REPLY_PREFIX + "\n";
+    return;
+  }
+  if (!val.startsWith(REPLY_PREFIX)) {
+    val = val.replace(/^提琴聲學實驗室：\s*/g, "");
+    box.value = REPLY_PREFIX + "\n" + val;
+  }
+}
+
+function autoResizeReply() {
+  const box = document.getElementById("admin-reply");
+  if (!box) return;
+
+  let maxH = 260;
+  const fb = document.getElementById("fingerboard");
+  if (fb) {
+    const rect = fb.getBoundingClientRect();
+    if (rect.height > 0) maxH = rect.height;
+  }
+
+  box.style.height = "auto";
+  const scrollH = box.scrollHeight;
+
+  if (scrollH <= maxH) {
+    box.style.height = scrollH + "px";
+    box.style.overflowY = "hidden";
+    box.style.resize = "none";
+  } else {
+    box.style.height = maxH + "px";
+    box.style.overflowY = "auto";
+    box.style.resize = "vertical";
+  }
+}
+
+// ====== [JS-8] 選取項目（自動展開 + 自動播放 + 回覆連動 + From: 顏色同步） ======
+
+function resetReplyTargetButton() {
+  const btn = document.getElementById("reply-target-btn");
+  if (!btn) return;
+  btn.textContent = "From: —";
+  btn.disabled = true;
+  btn.removeAttribute("data-id");
+  btn.classList.remove("linked");
+}
+
+function selectRowForReply(row) {
+  if (!row) return;
+
+  // 若正在編輯 → 直接取消回到原始狀態（不跳 alert）
+  if (editState.active) {
+    resetFormToAddMode();
+  }
+
+  currentSelectedId = row.id;
+
+  // 選取列高亮
+  const tbody = document.getElementById("comments-tbody");
+  if (tbody) {
+    Array.from(tbody.querySelectorAll("tr")).forEach((tr) => {
+      tr.classList.toggle(
+        "selected",
+        tr.getAttribute("data-id") === String(row.id)
+      );
     });
   }
 
-  function startEditForRow(row) {
-    if (!row) return;
-
-    selectRowForReply(row, false);
-
-    const hint = document.getElementById("edit-wait-hint");
-    if (hint) hint.classList.add("hidden");
-
-    editState.active       = true;
-    editState.id           = row.id;
-    editState.nickname     = row.nickname;
-    editState.originalText = row.text || "";
-    editState.waitForSelect = false;
-    editState.nameVerified = false;
-
-    const form      = document.getElementById("community-form");
-    const btnNew    = document.getElementById("btn-new");
-    const nickEl    = document.getElementById("nickname-input");
-    const textEl    = document.getElementById("text-input");
-    const submitBtn = document.getElementById("submit-btn");
-
-    if (form) {
-      form.classList.remove("hidden");
-      form.style.display = "block";
-      form.classList.add("form-open-state");
-    }
-    isFormOpen = true;
-    isAddMode  = false;
-
-    if (btnNew) btnNew.textContent = "取消編輯";
-
-    if (submitBtn) {
-      submitBtn.textContent = "儲存修改";
-      submitBtn.disabled = true;
-    }
-
-    if (nickEl) {
-      nickEl.disabled = false;
-      nickEl.value = "";
-      nickEl.placeholder = "請輸入當初的 username（完全一致）";
-      nickEl.focus();
-    }
-
-    if (textEl) {
-      textEl.value = editState.originalText;
-      textEl.disabled = true;
-      textEl.style.opacity = "0.6";
-    }
-
-    setMediaMode(null);
-    clearRecordedMediaState();
+  // 更新 From: 標籤
+  const btn = document.getElementById("reply-target-btn");
+  if (btn) {
+    btn.textContent = "From: " + maskName(row.nickname);
+    btn.disabled = false;
+    btn.setAttribute("data-id", String(row.id));
+    // 顏色同步選取列
+    btn.classList.add("linked");
   }
 
-  // ===== 表格點擊 (略) =====
-  function setupTableClicks() {
-    const tbody = document.getElementById("comments-tbody");
-    if (!tbody) return;
-
-    tbody.addEventListener("click", (e) => {
-      const tr = e.target.closest("tr[data-id]");
-      if (!tr) return;
-
-      const id  = tr.getAttribute("data-id");
-      const row = findRowById(id);
-      if (!row) return;
-
-      if (editState.waitForSelect) {
-        startEditForRow(row);
-        return;
-      }
-
-      selectRowForReply(row, false);
-    });
-  }
-
-  // ===== 導覽按鈕（手機頂端 Back / 項目） (略) =====
-  function setupNavigationButtons() {
-    const mobileBackButton  = document.getElementById("mobile-back-button");
-    const mobileItemsButton = document.getElementById("mobile-items-button");
-
-    if (mobileBackButton) {
-      mobileBackButton.addEventListener("click", () => {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      });
+  // 管理員回覆區填入原本 reply
+  const box = document.getElementById("admin-reply");
+  if (box) {
+    const raw = row.reply || "";
+    if (!raw) {
+      box.value = REPLY_PREFIX + "\n";
+    } else if (raw.startsWith(REPLY_PREFIX)) {
+      box.value = raw;
+    } else {
+      box.value = REPLY_PREFIX + "\n" + raw;
     }
-
-    if (mobileItemsButton) {
-      mobileItemsButton.addEventListener("click", () => {
-        const el = document.getElementById("comments-section");
-        if (el) {
-          el.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-      });
-    }
-  }
-
-  // ===== From: 按鈕 (略) =====
-  function setupReplyTargetButton() {
-    const btn = document.getElementById("reply-target-btn");
-    if (!btn) return;
-
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-id");
-      if (!id) return;
-
-      const tbody = document.getElementById("comments-tbody");
-      if (!tbody) return;
-
-      const tr = tbody.querySelector(`tr[data-id="${id}"]`);
-      if (!tr) return;
-
-      tr.scrollIntoView({ behavior: "smooth", block: "center" });
-      tr.classList.add("row-flash");
-      setTimeout(() => tr.classList.remove("row-flash"), 800);
-    });
-  }
-
-  // ===== 回覆區初始化 (略) =====
-  function setupAdminReply() {
-    const box = document.getElementById("admin-reply");
-    if (!box) return;
-
     ensureReplyPrefix();
     autoResizeReply();
-
-    box.addEventListener("input", () => {
-      ensureReplyPrefix();
-      autoResizeReply();
-    });
-
-    box.addEventListener("click", () => {
-      ensureReplyPrefix();
-    });
-
-    box.addEventListener("blur", () => {
-      saveAdminReply();
-    });
   }
 
-  // ===== username 輸入防呆 (略) =====
-  function setupEditNameGuard() {
-    const nickEl = document.getElementById("nickname-input");
-    if (!nickEl) return;
-
-    nickEl.addEventListener("compositionstart", () => {
-      isComposingName = true;
-    });
-    nickEl.addEventListener("compositionend", () => {
-      isComposingName = false;
-      tryUnlockEditByName();
-      updateSubmitButtonState();
-    });
-
-    nickEl.addEventListener("input", () => {
-      tryUnlockEditByName();
-      updateSubmitButtonState();
-    });
-    nickEl.addEventListener("change", tryUnlockEditByName);
-    nickEl.addEventListener("blur",   tryUnlockEditByName);
-
-    nickEl.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter") {
-        ev.preventDefault();
-        tryUnlockEditByName();
+  // 展開文字（若 >30 字）
+  if (tbody) {
+    const tr = tbody.querySelector(`tr[data-id="${row.id}"]`);
+    if (tr) {
+      const cell = tr.querySelector("td.col-text");
+      if (cell && String(row.text || "").length > 30) {
+        cell.innerHTML =
+          escapeHtml(row.text) +
+          `<span class="expand-arrow" title="收合">▲</span>`;
+        cell.setAttribute("data-expanded", "1");
       }
-    });
+    }
   }
 
-  // ===== 項目輸入欄防 Enter (略) =====
-  function setupTextInputEnterGuard() {
-    const textEl = document.getElementById("text-input");
-    if (!textEl) return;
+  // 播放影片
+  showVideoForRow(row);
 
-    textEl.addEventListener("input", updateSubmitButtonState);
+  // 捲到影片頂部（防跳格版）
+  scrollToVideoTop();
+}
 
-    textEl.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter") {
-        ev.preventDefault();
-      }
+// ====== [JS-9] 儲存回覆 ======
+async function saveAdminReply() {
+  const box = document.getElementById("admin-reply");
+  if (!box || !currentSelectedId) return;
+
+  ensureReplyPrefix();
+  autoResizeReply();
+
+  const text = box.value.trim();
+
+  try {
+    const params = new URLSearchParams({
+      action: "reply",
+      id: String(currentSelectedId),
+      reply: text,
     });
+
+    const res = await fetch(API_URL + "?" + params.toString());
+    const data = await res.json();
+
+    if (!data || data.status !== "ok") {
+      throw new Error(data.error || "reply 失敗");
+    }
+
+    const r = findRowById(currentSelectedId);
+    if (r) r.reply = text;
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// ====== [JS-10] 媒體模式切換（YouTube / 影片 / 錄音 互斥） ======
+function clearRecordedMediaState() {
+  window.recordedAudioBlob = null;
+  window.recordedVideoBlob = null;
+  const aStatus = document.getElementById("audio-rec-status");
+  if (aStatus) aStatus.textContent = "錄音預備";
+}
+
+// ====== [JS-A] 左側表單：錄音面板控制（使用 MediaRecorder） ======
+function stopAudioRecordingInternal(cancelOnly) {
+  const statusEl = document.getElementById("audio-rec-status");
+  const previewEl = document.getElementById("audio-rec-preview");
+  const btnStart = document.getElementById("audio-rec-start");
+  const btnStop = document.getElementById("audio-rec-stop");
+  const btnCancel = document.getElementById("audio-rec-cancel");
+
+  // 停掉 recorder
+  if (audioRecRecorder && audioRecRecorder.state !== "inactive") {
+    try {
+      audioRecRecorder.stop();
+    } catch (e) {}
+  }
+  audioRecRecorder = null;
+
+  // 關掉麥克風 stream
+  if (audioRecStream) {
+    audioRecStream.getTracks().forEach((t) => t.stop());
+  }
+  audioRecStream = null;
+
+  audioRecActive = false;
+
+  if (cancelOnly) {
+    // 取消：清除這次錄音
+    audioRecChunks = [];
+    window.recordedAudioBlob = null;
+    if (previewEl) {
+      previewEl.src = "";
+      previewEl.removeAttribute("src");
+    }
+    if (statusEl) statusEl.textContent = "錄音預備";
+  } else {
+    if (statusEl) statusEl.textContent = "錄音完成，可按「發表」儲存。";
   }
 
-  // ===== 新增／編輯送出 (略) =====
-  async function handleSubmit(e) {
-    e.preventDefault();
+  if (btnStart) btnStart.disabled = false;
+  if (btnStop) btnStop.disabled = true;
+  if (btnCancel) btnCancel.disabled = false;
+}
 
-    const submitBtn = document.getElementById("submit-btn");
-    if (submitBtn && submitBtn.disabled) return;
+function setupAudioRecording() {
+  const btnStart = document.getElementById("audio-rec-start");
+  const btnStop = document.getElementById("audio-rec-stop");
+  const btnCancel = document.getElementById("audio-rec-cancel");
+  const statusEl = document.getElementById("audio-rec-status");
+  const previewEl = document.getElementById("audio-rec-preview");
 
-    const nickEl    = document.getElementById("nickname-input");
-    const textEl    = document.getElementById("text-input");
-    const ytEl      = document.getElementById("youtube-url-input");
-    const startEl   = document.getElementById("start-input");
-    const endEl     = document.getElementById("end-input");
-    const videoFile = document.getElementById("video-file-input");
-    const audioFile = document.getElementById("audio-file-input");
+  if (!btnStart || !btnStop || !btnCancel || !statusEl || !previewEl) {
+    return; // HTML 沒載到就直接跳過
+  }
 
-    const nickname  = (nickEl?.value || "").trim();
-    const text      = (textEl?.value || "").trim();
-    const youtubeUrl= (ytEl?.value || "").trim();
-    const startSec  = parseTimeToSec(startEl?.value);
-    const endSec    = parseTimeToSec(endEl?.value);
-    const vFile     = videoFile && videoFile.files[0];
-    const aFile     = audioFile && audioFile.files[0];
+  // 一開始：只開「開始錄音」，停止/取消狀態跟你原本設定為主
+  btnStart.disabled = false;
 
-    const isEditing = editState.active && editState.id;
-
-    if (!validateNameLength(nickname)) {
-      alert("username 請使用 5–12 個中英文或數字（不含空白與符號）。");
-      if (nickEl) nickEl.focus();
+  btnStart.addEventListener("click", async () => {
+    if (audioRecActive) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      statusEl.textContent = "此瀏覽器不支援麥克風錄音。";
       return;
-    }
-
-    if (!text) {
-      alert("請先輸入「項目」說明（100 字內）。");
-      if (textEl) textEl.focus();
-      return;
-    }
-    if (text.length > 100) {
-      alert("說明請控制在 100 字以內。");
-      if (textEl) textEl.focus();
-      return;
-    }
-
-    if (isEditing) {
-      if (!editState.nameVerified) {
-        alert("請先輸入當初填寫的 username 並確保完全一致以進行編輯驗證。");
-        if (nickEl) nickEl.focus();
-        return;
-      }
-    } else {
-      if (youtubeUrl && (vFile || aFile || window.recordedAudioBlob)) {
-        alert("影片/網頁連結不可同時搭配影片檔 / 錄音，請擇一種媒體來源。");
-        return;
-      }
-      if (aFile && window.recordedAudioBlob) {
-        alert("音檔上傳與錄音請擇一。");
-        return;
-      }
     }
 
     try {
-      if (isEditing) {
-        const params = new URLSearchParams({
-          action: "edit",
-          id: String(editState.id),
-          text
-        });
-        const res  = await fetch(API_URL + "?" + params.toString());
-        const data = await res.json();
+      btnStart.disabled = true;
+      btnStop.disabled = true;
+      btnCancel.disabled = true;
+      statusEl.textContent = "正在啟用麥克風…";
 
-        if (!data || data.status !== "ok") {
-          throw new Error(data && data.error ? data.error : "edit 失敗");
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioRecStream = stream;
+      audioRecChunks = [];
+      window.recordedAudioBlob = null;
+
+      const mimeType =
+        MediaRecorder.isTypeSupported &&
+        MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+          ? "audio/webm;codecs=opus"
+          : "audio/webm";
+
+      const recorder = new MediaRecorder(stream, { mimeType });
+      audioRecRecorder = recorder;
+      audioRecActive = true;
+
+      recorder.addEventListener("dataavailable", (ev) => {
+        if (ev.data && ev.data.size > 0) {
+          audioRecChunks.push(ev.data);
         }
-
-        const editedId = editState.id;
-        resetFormToAddMode();
-        await loadComments(editedId);
-        return;
-      }
-
-      // 新增模式
-      let type = "text";
-      const payload = {
-        action: "add",
-        nickname,
-        text,
-        startSec: (startSec === "" ? "" : String(startSec)),
-        endSec:   (endSec   === "" ? "" : String(endSec))
-      };
-
-      if (youtubeUrl) {
-        type = "youtube";
-        payload.type = type;
-        payload.youtubeUrl = youtubeUrl;
-      } else if (vFile) {
-        type = "upload";
-        payload.type = type;
-
-        const base64   = await readFileAsBase64(vFile);
-        const mimeType = vFile.type || "application/octet-stream";
-        const fileName = vFile.name || ("video_" + Date.now());
-        payload.videoBase64 = base64;
-        payload.mimeType    = mimeType;
-        payload.fileName    = fileName;
-      } else if (aFile || window.recordedAudioBlob) {
-        type = "audio";
-        payload.type = type;
-
-        let blobToUse = null;
-        let mimeType  = "audio/webm";
-        let fileName  = "audio_" + Date.now() + ".webm";
-        if (aFile) {
-          blobToUse = aFile;
-          mimeType  = aFile.type || mimeType;
-          fileName  = aFile.name || fileName;
-        } else if (window.recordedAudioBlob) {
-          blobToUse = window.recordedAudioBlob;
-          mimeType  = window.recordedAudioBlob.type || mimeType;
-        }
-
-        if (blobToUse) {
-          const base64 = await readFileAsBase64(blobToUse);
-          payload.audioBase64    = base64;
-          payload.audioMimeType  = mimeType;
-          payload.audioFileName  = fileName;
-        }
-      } else {
-        payload.type = "text";
-      }
-
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload),
       });
 
-      let data;
-      try {
-        data = await res.json();
-      } catch (err) {
-        throw new Error("無法解析伺服器回應（可能是權限或 CORS 問題）");
-      }
+      recorder.addEventListener("stop", () => {
+        // 若是「取消」導致的 stop，在 stopAudioRecordingInternal 裡已經把 cancelOnly=true 處理了
+        if (!audioRecChunks.length) return;
 
-      if (!data || data.status !== "ok" || !data.id) {
-        throw new Error(data && data.error ? data.error : "add 失敗");
-      }
+        const blob = new Blob(audioRecChunks, { type: mimeType });
+        window.recordedAudioBlob = blob;
 
-      const newRowId = data.id;
-      resetFormToAddMode();
-      await loadComments(newRowId);
+        const url = URL.createObjectURL(blob);
+        previewEl.src = url;
+        previewEl.play().catch(() => {});
 
+        statusEl.textContent = "錄音完成，可按「發表」儲存。";
+
+        btnStart.disabled = false;
+        btnStop.disabled = true;
+        btnCancel.disabled = false;
+
+        audioRecActive = false;
+      });
+
+      recorder.start();
+      statusEl.textContent = "錄音中… 再按「■」停止。";
+      btnStop.disabled = false;
+      btnCancel.disabled = false;
     } catch (err) {
       console.error(err);
-      alert((isEditing ? "儲存文字修改失敗：" : "送出留言失敗：") + err.message);
+      statusEl.textContent = "無法啟用麥克風（可能被拒絕或裝置不支援）。";
+      btnStart.disabled = false;
+      btnStop.disabled = true;
+      btnCancel.disabled = false;
     }
+  });
+
+  btnStop.addEventListener("click", () => {
+    if (!audioRecActive || !audioRecRecorder) return;
+    // 正常結束錄音：讓 recorder 的 onstop 把 blob 存到 recordedAudioBlob
+    audioRecRecorder.stop();
+    // stream 在 onstop 裡透過 stopAudioRecordingInternal 關掉
+    statusEl.textContent = "處理錄音中…";
+    btnStop.disabled = true;
+  });
+
+  btnCancel.addEventListener("click", () => {
+    // 取消：全部清掉，不存 blob
+    if (audioRecActive && audioRecRecorder) {
+      // 這裡我們直接 stop，再當作 cancelOnly 處理
+      audioRecRecorder.stop();
+    }
+    stopAudioRecordingInternal(true);
+  });
+}
+
+function setMediaMode(mode) {
+  window.currentMediaMode = mode || null;
+
+  const btnYoutube = document.getElementById("btn-media-youtube");
+  const btnUpload  = document.getElementById("btn-media-upload");
+  const btnAudio   = document.getElementById("btn-media-audio");
+
+  const videoFields    = document.getElementById("video-fields");
+  const audioFields    = document.getElementById("audio-fields");
+  const youtubeRow     = document.getElementById("youtube-row");
+  const videoUploadRow = document.getElementById("video-upload-row");
+
+  // 清除 active 樣式
+  [btnYoutube, btnUpload, btnAudio].forEach((b) => {
+    if (b) b.classList.remove("active");
+  });
+
+  if (videoFields) videoFields.classList.add("hidden");
+  if (audioFields) audioFields.classList.add("hidden");
+  if (youtubeRow) youtubeRow.style.display = "none";
+  if (videoUploadRow) videoUploadRow.style.display = "none";
+
+  if (!mode) return;
+
+  if (mode === "youtube") {
+    if (btnYoutube) btnYoutube.classList.add("active");
+    if (videoFields) videoFields.classList.remove("hidden");
+    if (youtubeRow) youtubeRow.style.display = "flex";
+  } else if (mode === "upload") {
+    if (btnUpload) btnUpload.classList.add("active");
+    if (videoFields) videoFields.classList.remove("hidden");
+    if (videoUploadRow) videoUploadRow.style.display = "flex";
+  } else if (mode === "audio") {
+    if (btnAudio) btnAudio.classList.add("active");
+    if (audioFields) audioFields.classList.remove("hidden");
   }
+}
 
-  function bindToolbarAndForm() {
-    const form       = document.getElementById("community-form");
-    const btnNew     = document.getElementById("btn-new");
-    const btnYoutube = document.getElementById("btn-media-youtube");
-    const btnUpload  = document.getElementById("btn-media-upload");
-    const btnAudio   = document.getElementById("btn-media-audio");
+// ====== [JS-11] 從「新增/編輯」復原成初始狀態 ======
+function resetFormToAddMode() {
+  const form       = document.getElementById("community-form");
+  const btnNew     = document.getElementById("btn-new");
+  const nickEl     = document.getElementById("nickname-input");
+  const textEl     = document.getElementById("text-input");
+  const ytEl       = document.getElementById("youtube-url-input");
+  const startEl    = document.getElementById("start-input");
+  const endEl      = document.getElementById("end-input");
+  const videoFile  = document.getElementById("video-file-input");
+  const videoLabel = document.getElementById("video-file-label");
+  const audioFile  = document.getElementById("audio-file-input");
+  const audioLabel = document.getElementById("audio-file-label");
 
-    if (!form) return;
+  if (nickEl) {
+    nickEl.value = "";
+    nickEl.placeholder = "Mr,s 09….";
+    nickEl.disabled = false;
+  }
+  if (textEl) {
+    textEl.value = "";
+    textEl.disabled = false;
+    textEl.style.opacity = "1";
+  }
+  if (ytEl) {
+    ytEl.value = "";
+  }
+  if (startEl) startEl.value = "";
+  if (endEl)   endEl.value   = "";
 
+  if (videoFile) {
+    videoFile.disabled = false;
+    videoFile.value = "";
+  }
+  if (videoLabel) videoLabel.textContent = "";
+
+  if (audioFile) {
+    audioFile.disabled = false;
+    audioFile.value = "";
+  }
+  if (audioLabel) audioLabel.textContent = "";
+
+  setMediaMode(null);
+  clearRecordedMediaState();
+
+  if (form) {
     form.classList.add("hidden");
     form.style.display = "none";
-    setMediaMode(null);
-    isFormOpen = false;
-    isAddMode  = false;
-
-    if (btnNew) {
-      btnNew.addEventListener("click", () => {
-        if (!isFormOpen) {
-          stopCarousel();
-
-          editState.active = false;
-          editState.waitForSelect = false;
-          isAddMode = true;
-
-          form.classList.remove("hidden");
-          form.style.display = "block";
-          form.classList.add("form-open-state");
-          btnNew.textContent = "取消新增";
-          isFormOpen = true;
-
-          const nickEl = document.getElementById("nickname-input");
-          const textEl = document.getElementById("text-input");
-          if (nickEl) {
-            nickEl.disabled = false;
-            nickEl.placeholder = "Mr,s 09….";
-            nickEl.value = "";
-          }
-          if (textEl) {
-            textEl.disabled = false;
-            textEl.style.opacity = "1";
-            textEl.value = "";
-          }
-
-          setMediaMode(null);
-          clearRecordedMediaState();
-          updateSubmitButtonState();
-        } else {
-          resetFormToAddMode();
-          if (!currentSelectedId) {
-            startCarousel();
-          }
-        }
-      });
-    }
-
-    function bindMediaButton(btn, modeName) {
-      if (!btn) return;
-      btn.addEventListener("click", () => {
-        if (editState.active) return;
-        if (btn.disabled) return;
-
-        if (window.currentMediaMode === modeName) {
-          setMediaMode(null);
-        } else {
-          setMediaMode(modeName);
-        }
-        clearRecordedMediaState();
-
-        const ytEl       = document.getElementById("youtube-url-input");
-        const startEl    = document.getElementById("start-input");
-        const endEl      = document.getElementById("end-input");
-        const videoFile  = document.getElementById("video-file-input");
-        const videoLabel = document.getElementById("video-file-label");
-        const audioFile  = document.getElementById("audio-file-input");
-        const audioLabel = document.getElementById("audio-file-label");
-
-        if (modeName === "youtube") {
-          if (videoFile)  videoFile.value = "";
-          if (videoLabel) videoLabel.textContent = "";
-          if (audioFile)  audioFile.value = "";
-          if (audioLabel) audioLabel.textContent = "";
-        } else if (modeName === "upload") {
-          if (ytEl)     ytEl.value = "";
-          if (startEl)  startEl.value = "";
-          if (endEl)    endEl.value = "";
-          if (audioFile)  audioFile.value = "";
-          if (audioLabel) audioLabel.textContent = "";
-        } else if (modeName === "audio") {
-          if (ytEl)     ytEl.value = "";
-          if (startEl)  startEl.value = "";
-          if (endEl)    endEl.value = "";
-          if (videoFile)  videoFile.value = "";
-          if (videoLabel) videoLabel.textContent = "";
-        }
-
-        updateSubmitButtonState();
-      });
-    }
-
-    bindMediaButton(btnYoutube, "youtube");
-    bindMediaButton(btnUpload,  "upload");
-    bindMediaButton(btnAudio,   "audio");
-
-    const videoFile  = document.getElementById("video-file-input");
-    const videoLabel = document.getElementById("video-file-label");
-    const audioFile  = document.getElementById("audio-file-input");
-    const audioLabel = document.getElementById("audio-file-label");
-
-    if (videoFile && videoLabel) {
-      videoFile.addEventListener("change", () => {
-        if (videoFile.files && videoFile.files[0]) {
-          videoLabel.textContent = "已選擇：" + videoFile.files[0].name;
-        } else {
-          videoLabel.textContent = "";
-        }
-        updateSubmitButtonState();
-      });
-    }
-
-    if (audioFile && audioLabel) {
-      audioFile.addEventListener("change", () => {
-        if (audioFile.files && audioFile.files[0]) {
-          audioLabel.textContent = "已選擇：" + audioFile.files[0].name;
-        } else {
-          audioLabel.textContent = "";
-        }
-        updateSubmitButtonState();
-      });
-    }
-
-    form.addEventListener("submit", handleSubmit);
+  }
+  if (btnNew) {
+    btnNew.textContent = "新增";
   }
 
-  // ===== 影片浮水印（打開聲音 / 播放） =====
-  function setupVideoWatermark() {
-    const watermark = document.getElementById("video-watermark");
-    if (!watermark) return;
+  isFormOpen = false;
 
-    const watermarkContent = watermark.querySelector(".video-watermark-content");
-    if (!watermarkContent) return;
+  editState.active = false;
+  editState.id = null;
+  editState.nickname = "";
+  editState.originalText = "";
+  editState.waitForSelect = false;
 
-    watermark.addEventListener("click", () => {
-      isVideoMuted = false;
-      watermark.style.display = "none";
+  resetReplyTargetButton();
+}
 
-      const currentId = currentSelectedId;
-      if (currentId) {
-        const row = findRowById(currentId);
-        if (row && row.type === "youtube" && ytPlayer) {
-          try {
-            ytPlayer.unMute();
-            ytPlayer.playVideo();
-          } catch (e) {}
-        } else if (row) {
-          // 非 YouTube，就重新顯示一次
-          showVideoForRow(row, false);
-        }
-      }
+// ====== [JS-12] 編輯流程：按「編輯」→ 跳出視窗要求先選項目 ======
+function setupEditHeaderButton() {
+  const btn = document.getElementById("btn-edit");
+  if (!btn) return;
 
-      handleUserInteraction();
-    });
+  btn.addEventListener("click", () => {
+    alert("請在表格選擇你要編輯的項目。");
+    // 進入「等待選擇項目」模式
+    editState.waitForSelect = true;
+  });
+}
+
+function startEditForRow(row) {
+  if (!row) return;
+
+  editState.active       = true;
+  editState.id           = row.id;
+  editState.nickname     = String(row.nickname || "").trim();
+  editState.originalText = row.text || "";
+
+  const form   = document.getElementById("community-form");
+  const btnNew = document.getElementById("btn-new");
+  const nickEl = document.getElementById("nickname-input");
+  const textEl = document.getElementById("text-input");
+
+  if (form) {
+    form.classList.remove("hidden");
+    form.style.display = "block";
+  }
+  if (btnNew) {
+    btnNew.textContent = "取消編輯";
+  }
+  isFormOpen = true;
+
+  // 清空 username → 讓用戶輸入原本姓名
+  if (nickEl) {
+    nickEl.disabled = false;
+    nickEl.value = "";
+    nickEl.placeholder = "請輸入原本 username 以進行編輯";
   }
 
-  // ===== 輪播控制 (略) =====
-  function startCarousel() {
-    stopCarousel();
+  // 說明欄先鎖住，只顯示原本的內容
+  if (textEl) {
+    textEl.value = editState.originalText;
+    textEl.disabled = true;
+    textEl.style.opacity = "0.6";
+  }
 
-    carouselItems = commentsCache
-      .slice()
-      .filter(row => {
-        const hasMedia =
-          (row.type === "youtube" && row.youtubeUrl) ||
-          (row.type === "upload"  && row.driveFileId) ||
-          (row.type === "audio"   && (row.hasAudio || row.driveAudioId));
-        const hasReply = row.reply && String(row.reply).trim().length > 0;
-        return hasMedia || hasReply;
-      })
-      .reverse();
+  // 編輯時不允許變動媒體
+  setMediaMode(null);
+}
 
-    if (carouselItems.length < 1) {
+// 名稱驗證通過 → 解鎖說明欄位
+function tryUnlockEditByName() {
+  if (!editState.active) return;
+  if (isComposingName) return;
+
+  const nickEl = document.getElementById("nickname-input");
+  const textEl = document.getElementById("text-input");
+  if (!nickEl || !textEl) return;
+
+  const typed  = String(nickEl.value || "").trim();
+  const target = String(editState.nickname || "").trim();
+  if (!typed || !target) return;
+
+  // 先做格式驗證（5–12、中英文/數字）
+  if (!validateNameLength(typed)) {
+    return;
+  }
+
+  // 必須「完全一樣」才解鎖（純數字也可以）
+  if (typed !== target) return;
+
+  // 通過：鎖住 username，解鎖項目欄
+  nickEl.disabled = true;
+
+  textEl.disabled = false;
+  textEl.style.opacity = "1";
+  textEl.focus();
+  const len = textEl.value.length;
+  try {
+    textEl.setSelectionRange(len, len);
+  } catch (e) {}
+  alert("名稱驗證通過，現在可以修改說明內容。");
+}
+
+// ====== [JS-13] 表格點擊：選取 / 進入編輯 ======
+function setupTableClicks() {
+  const tbody = document.getElementById("comments-tbody");
+  if (!tbody) return;
+
+  tbody.addEventListener("click", (e) => {
+    const playBtn = e.target.closest("button.play-video-btn");
+    if (playBtn) {
+      const id = playBtn.getAttribute("data-id");
+      const row = findRowById(id);
+      if (!row) return;
+      selectRowForReply(row);
       return;
     }
 
-    const initialRow = carouselItems[0];
-    if (initialRow) {
-      isVideoMuted = true;
-      setTimeout(() => {
-        selectRowForReply(initialRow, true);
-      }, 500);
-    }
+    const tr = e.target.closest("tr[data-id]");
+    if (!tr) return;
 
-    if (carouselItems.length > 1) {
-      carouselIndex = 0;
-      carouselInterval = setInterval(() => {
-        carouselIndex = (carouselIndex + 1) % carouselItems.length;
-        const nextRow = carouselItems[carouselIndex];
-        if (nextRow) {
-          isVideoMuted = true;
-          selectRowForReply(nextRow, true);
-        }
-      }, CAROUSEL_DURATION);
-    }
-  }
-
-  function stopCarousel() {
-    if (carouselInterval) {
-      clearInterval(carouselInterval);
-      carouselInterval = null;
-    }
-  }
-
-  function handleUserInteraction() {
-    if (carouselInterval) {
-      stopCarousel();
-    }
-    isVideoMuted = false;
-  }
-
-  function setupUserInteractionListeners() {
-    window.addEventListener('click', handleUserInteraction);
-    window.addEventListener('wheel', handleUserInteraction);
-    window.addEventListener('keydown', handleUserInteraction);
-    window.addEventListener('touchstart', handleUserInteraction);
-  }
-
-  // ===== URL 自動選取 / 編輯 (略) =====
-  function checkUrlForAutoSelect(isInitialLoad = false) {
-    const urlParams = new URLSearchParams(window.location.search);
-    const id   = urlParams.get('editId');
-    const nick = urlParams.get('editNick');
-
-    if (id) {
-      stopCarousel();
-
-      const row = findRowById(id);
-      if (row) {
-        selectRowForReply(row, false);
-        startEditFromUrl(id, nick || "");
-
-        if (isInitialLoad && window.history.replaceState) {
-          const cleanUrl = window.location.pathname;
-          window.history.replaceState({}, document.title, cleanUrl);
-        }
-        return true;
-      }
-    }
-    return false;
-  }
-
-  function startEditFromUrl(id, nickname) {
+    const id = tr.getAttribute("data-id");
     const row = findRowById(id);
     if (!row) return;
 
-    editState.active       = true;
-    editState.id           = id;
-    editState.nickname     = nickname.trim();
-    editState.originalText = row.text || '';
-    editState.nameVerified = false;
-    editState.waitForSelect = false;
-
-    const form      = document.getElementById("community-form");
-    const btnNew    = document.getElementById("btn-new");
-    const nickEl    = document.getElementById("nickname-input");
-    const textEl    = document.getElementById("text-input");
-    const submitBtn = document.getElementById("submit-btn");
-
-    if (form) {
-      form.classList.remove("hidden");
-      form.style.display = "block";
-      form.classList.add("form-open-state");
-    }
-    if (btnNew) btnNew.textContent = "取消編輯";
-    if (submitBtn) {
-      submitBtn.textContent = "儲存修改";
-      submitBtn.disabled = true;
-    }
-    isFormOpen = true;
-    isAddMode  = false;
-
-    if (nickEl) {
-      nickEl.disabled = false;
-      nickEl.value = '';
-      nickEl.placeholder = `請輸入原本 username：${(nickname || "").slice(0, 4)}...`;
-      nickEl.focus();
-    }
-
-    if (textEl) {
-      textEl.value = editState.originalText;
-      textEl.disabled = true;
-      textEl.style.opacity = "0.6";
-    }
-
-    setMediaMode(null);
-    updateSubmitButtonState();
-  }
-
-  // ===== DOMContentLoaded =====
-  document.addEventListener("DOMContentLoaded", () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const id   = urlParams.get('editId');
-    const nick = urlParams.get('editNick');
-    if (id) {
-      autoSelectParams.id   = id;
-      autoSelectParams.nick = nick;
-    }
-
-    window.currentMediaMode = null;
-
-    // 載入 YouTube IFrame API
-    const ytTag = document.createElement("script");
-    ytTag.src = "https://www.youtube.com/iframe_api";
-    document.head.appendChild(ytTag);
-
-    bindToolbarAndForm();
-    setupTableClicks();
-    setupNavigationButtons();
-    setupAdminReply();
-    setupEditHeaderButton();
-    setupReplyTargetButton();
-    setupEditNameGuard();
-    setupTextInputEnterGuard();
-    setupVideoWatermark();
-    clearVideo();
-    setupUserInteractionListeners();
-   setupAudioRecording();
-
-    loadComments().catch((err) => {
-      console.error(err);
-      alert("載入列表失敗：" + err.message);
-    });
-  });
-
-
- // ===== 錄音功能設定 =====
-  function setupAudioRecording() {
-    const startBtn  = document.getElementById("audio-rec-start");
-    const stopBtn   = document.getElementById("audio-rec-stop");
-    const cancelBtn = document.getElementById("audio-rec-cancel");
-    const statusEl  = document.getElementById("audio-rec-status");
-    const previewEl = document.getElementById("audio-rec-preview");
-    const audioFile = document.getElementById("audio-file-input");
-    const audioLabel = document.getElementById("audio-file-label");
-
-    if (!startBtn || !stopBtn || !cancelBtn || !statusEl || !previewEl) return;
-
-    // 瀏覽器不支援
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      statusEl.textContent = "此瀏覽器不支援錄音，請改用音檔上傳。";
-      startBtn.disabled = true;
-      stopBtn.disabled = true;
-      cancelBtn.disabled = true;
+    // 若編輯模式正等待選項目 → 直接進入編輯
+    if (editState.waitForSelect) {
+      editState.waitForSelect = false;
+      startEditForRow(row);
       return;
     }
 
-    let mediaRecorder = null;
-    let chunks = [];
-    let streamRef = null;
+    // 一般選取
+    selectRowForReply(row);
+  });
+}
 
-    function resetButtons() {
-      startBtn.disabled  = false;
-      stopBtn.disabled   = true;
-      cancelBtn.disabled = false;
+// ====== [JS-14] Back 鍵：回到影片頂端 ======
+function setupBackButton() {
+  const btn = document.getElementById("back-button");
+  if (!btn) return;
+
+  btn.addEventListener("click", () => {
+    scrollToVideoTop();
+  });
+}
+
+// ====== [JS-15] 管理員回覆區 ======
+function setupAdminReply() {
+  const box = document.getElementById("admin-reply");
+  if (!box) return;
+
+  ensureReplyPrefix();
+  autoResizeReply();
+
+  box.addEventListener("input", () => {
+    ensureReplyPrefix();
+    autoResizeReply();
+  });
+
+  box.addEventListener("blur", () => {
+    saveAdminReply();
+  });
+}
+
+// ====== [JS-16] From: 按鈕 → 回到該列並展開文字 ======
+function setupReplyTargetButton() {
+  const btn = document.getElementById("reply-target-btn");
+  if (!btn) return;
+
+  btn.addEventListener("click", () => {
+    const id = btn.getAttribute("data-id");
+    if (!id) return;
+
+    const tbody = document.getElementById("comments-tbody");
+    if (!tbody) return;
+
+    const tr = tbody.querySelector(`tr[data-id="${id}"]`);
+    if (!tr) return;
+
+    const row = findRowById(id);
+    if (!row) return;
+
+    tr.scrollIntoView({ behavior: "smooth", block: "center" });
+    tr.classList.add("row-flash");
+    setTimeout(() => tr.classList.remove("row-flash"), 800);
+
+    // 自動展開文字（若 >30 字）
+    const cell = tr.querySelector("td.col-text");
+    if (cell && String(row.text || "").length > 30) {
+      cell.innerHTML =
+        escapeHtml(row.text) +
+        `<span class="expand-arrow" title="收合">▲</span>`;
+      cell.setAttribute("data-expanded", "1");
+    }
+  });
+}
+
+// ====== [JS-17] username 注音保護 + Enter 防送出 ======
+let isComposingName = false;
+
+function setupEditNameGuard() {
+  const nickEl = document.getElementById("nickname-input");
+  if (!nickEl) return;
+
+  nickEl.addEventListener("compositionstart", () => {
+    isComposingName = true;
+  });
+  nickEl.addEventListener("compositionend", () => {
+    isComposingName = false;
+    tryUnlockEditByName();
+  });
+
+  nickEl.addEventListener("input",  tryUnlockEditByName);
+  nickEl.addEventListener("change", tryUnlockEditByName);
+  nickEl.addEventListener("blur",   tryUnlockEditByName);
+
+  // Enter 不送出，只嘗試解鎖
+  nickEl.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      tryUnlockEditByName();
+    }
+  });
+}
+
+// 項目欄位 Enter 完全禁止送出
+function setupTextInputEnterGuard() {
+  const textEl = document.getElementById("text-input");
+  if (!textEl) return;
+
+  textEl.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+    }
+  });
+}
+
+// ====== [JS-18] 工具列 / 表單 + 送出處理 ======
+async function handleSubmit(e) {
+  e.preventDefault();
+
+  const nickEl    = document.getElementById("nickname-input");
+  const textEl    = document.getElementById("text-input");
+  const ytEl      = document.getElementById("youtube-url-input");
+  const startEl   = document.getElementById("start-input");
+  const endEl     = document.getElementById("end-input");
+  const videoFile = document.getElementById("video-file-input");
+  const audioFile = document.getElementById("audio-file-input");
+
+  const nickname  = (nickEl?.value || "").trim();
+  const text      = (textEl?.value || "").trim();
+  const youtubeUrl= (ytEl?.value || "").trim();
+  const startSec  = parseTimeToSec(startEl?.value);
+  const endSec    = parseTimeToSec(endEl?.value);
+  const vFile     = videoFile && videoFile.files[0];
+  const aFile     = audioFile && audioFile.files[0];
+
+  const isEditing = editState.active && editState.id;
+
+  // username 驗證
+  if (!validateNameLength(nickname)) {
+    alert("username 請使用 5–12 個中英文或數字（不含空白與符號）。");
+    if (nickEl) nickEl.focus();
+    return;
+  }
+
+  if (isEditing) {
+    const target = String(editState.nickname || "").trim();
+    if (nickname !== target) {
+      alert("請輸入當初填寫的 username（需與原始紀錄完全一致）。");
+      if (nickEl) nickEl.focus();
+      return;
+    }
+  }
+
+  if (!text) {
+    alert("請先輸入「項目」說明（100 字內）。");
+    if (textEl) textEl.focus();
+    return;
+  }
+  if (text.length > 100) {
+    alert("說明請控制在 100 字以內。");
+    if (textEl) textEl.focus();
+    return;
+  }
+
+  // 媒體互斥：
+  // - YouTube 不可同時有影片檔 / 錄音
+  // - 影片上傳 vs 錄影（暫無錄影，忽略）
+  // - 音檔上傳 vs 錄音 擇一
+  if (youtubeUrl) {
+    if (vFile || aFile || window.recordedAudioBlob) {
+      alert("YouTube 連結不可同時搭配影片檔 / 錄音，請擇一種媒體來源。");
+      return;
+    }
+  }
+
+  if (aFile && window.recordedAudioBlob) {
+    alert("音檔上傳與錄音請擇一。");
+    return;
+  }
+
+  try {
+    // ===== 編輯模式：只改文字 =====
+    if (isEditing) {
+      const params = new URLSearchParams({
+        action: "edit",
+        id: String(editState.id),
+        text
+      });
+      const res  = await fetch(API_URL + "?" + params.toString());
+      const data = await res.json();
+
+      if (!data || data.status !== "ok") {
+        throw new Error(data && data.error ? data.error : "edit 失敗");
+      }
+
+      resetFormToAddMode();
+      await loadComments();
+      return;
     }
 
-    function stopStream() {
-      if (streamRef) {
-        streamRef.getTracks().forEach(t => t.stop());
-        streamRef = null;
+    // ===== 新增模式 =====
+    let type = "text";
+    const payload = {
+      action: "add",
+      nickname,
+      text,
+      startSec: (startSec === "" ? "" : String(startSec)),
+      endSec:   (endSec   === "" ? "" : String(endSec))
+    };
+
+    if (youtubeUrl) {
+      type = "youtube";
+      payload.type = type;
+      payload.youtubeUrl = youtubeUrl;
+    } else if (vFile) {
+      // 影片 / 圖片上傳 → 一律當成 upload
+      type = "upload";
+      payload.type = type;
+
+      const base64   = await readFileAsBase64(vFile);
+      const mimeType = vFile.type || "application/octet-stream";
+      const fileName = vFile.name || ("video_" + Date.now());
+
+      payload.videoBase64 = base64;
+      payload.mimeType = mimeType;
+      payload.fileName = fileName;
+    } else if (aFile || window.recordedAudioBlob) {
+      // 錄音（上傳音檔 or 直接錄音）
+      type = "audio";
+      payload.type = type;
+
+      let blobToUse = null;
+      let mimeType  = "audio/webm";
+      let fileName  = "audio_" + Date.now() + ".webm";
+
+      if (aFile) {
+        blobToUse = aFile;
+        mimeType  = aFile.type || mimeType;
+        fileName  = aFile.name || fileName;
+      } else if (window.recordedAudioBlob) {
+        blobToUse = window.recordedAudioBlob;
+        mimeType  = window.recordedAudioBlob.type || mimeType;
       }
+
+      if (blobToUse) {
+        const base64 = await readFileAsBase64(blobToUse);
+        payload.audioBase64    = base64;
+        payload.audioMimeType  = mimeType;
+        payload.audioFileName  = fileName;
+      }
+    } else {
+      payload.type = "text";
     }
 
-    // 開始錄音
-    startBtn.disabled  = false;
-    stopBtn.disabled   = true;
-    cancelBtn.disabled = false;
-    statusEl.textContent = "錄音預備";
-
-    startBtn.addEventListener("click", async () => {
-      try {
-        // 切到「錄音」模式
-        if (typeof setMediaMode === "function") {
-          setMediaMode("audio");
-        }
-
-        // 清掉原本選的音檔與錄音
-        window.recordedAudioBlob = null;
-        if (audioFile) {
-          audioFile.value = "";
-        }
-        if (audioLabel) {
-          audioLabel.textContent = "";
-        }
-        previewEl.src = "";
-
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        streamRef = stream;
-        chunks = [];
-        mediaRecorder = new MediaRecorder(stream);
-
-        mediaRecorder.ondataavailable = (e) => {
-          if (e.data && e.data.size > 0) {
-            chunks.push(e.data);
-          }
-        };
-
-        mediaRecorder.onstop = () => {
-          // 把錄到的資料變成 Blob
-          if (chunks.length) {
-            const blob = new Blob(chunks, { type: "audio/webm" });
-            window.recordedAudioBlob = blob;
-            const url = URL.createObjectURL(blob);
-            previewEl.src = url;
-            statusEl.textContent = "錄音完成，可按播放預覽。";
-          } else {
-            statusEl.textContent = "沒有錄到聲音，請再試一次。";
-          }
-          stopStream();
-          resetButtons();
-          updateSubmitButtonState();
-        };
-
-        mediaRecorder.start();
-        startBtn.disabled = true;
-        stopBtn.disabled = false;
-        cancelBtn.disabled = false;
-        statusEl.textContent = "錄音中… 再按 ■ 停止。";
-
-      } catch (err) {
-        console.error(err);
-        statusEl.textContent = "無法開始錄音：" + err.message;
-        stopStream();
-        resetButtons();
-      }
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
     });
 
-    // 停止錄音（保留結果）
-    stopBtn.addEventListener("click", () => {
-      if (mediaRecorder && mediaRecorder.state === "recording") {
-        mediaRecorder.stop();
-        statusEl.textContent = "處理錄音中…";
-      }
-    });
+    let data;
+    try {
+      data = await res.json();
+    } catch (err) {
+      throw new Error("無法解析伺服器回應（可能是權限或 CORS 問題）");
+    }
 
-    // 取消錄音（不保留）
-    cancelBtn.addEventListener("click", () => {
-      if (mediaRecorder && mediaRecorder.state === "recording") {
-        mediaRecorder.stop();
+    if (!data || data.status !== "ok") {
+      throw new Error(data && data.error ? data.error : "add 失敗");
+    }
+
+    resetFormToAddMode();
+    await loadComments();
+  } catch (err) {
+    console.error(err);
+    alert((isEditing ? "儲存文字修改失敗：" : "送出留言失敗：") + err.message);
+  }
+}
+
+function bindToolbarAndForm() {
+  const form          = document.getElementById("community-form");
+  const btnNew        = document.getElementById("btn-new");
+  const btnYoutube    = document.getElementById("btn-media-youtube");
+  const btnUpload     = document.getElementById("btn-media-upload");
+  const btnAudio      = document.getElementById("btn-media-audio");
+  const videoFile     = document.getElementById("video-file-input");
+  const videoLabel    = document.getElementById("video-file-label");
+  const audioFile     = document.getElementById("audio-file-input");
+  const audioLabel    = document.getElementById("audio-file-label");
+  const ytEl          = document.getElementById("youtube-url-input");
+  const startEl       = document.getElementById("start-input");
+  const endEl         = document.getElementById("end-input");
+
+  if (!form) return;
+
+  form.classList.add("hidden");
+  form.style.display = "none";
+  setMediaMode(null);
+  isFormOpen = false;
+
+  // 新增 / 取消
+  if (btnNew) {
+    btnNew.addEventListener("click", () => {
+      if (!isFormOpen) {
+        // 開啟「新增」模式
+        editState.active = false;
+        editState.id = null;
+        editState.nickname = "";
+        editState.originalText = "";
+        editState.waitForSelect = false;
+
+        form.classList.remove("hidden");
+        form.style.display = "block";
+        btnNew.textContent = "取消編輯";
+        isFormOpen = true;
+
+        setMediaMode(null);
+        clearRecordedMediaState();
+      } else {
+        resetFormToAddMode();
       }
-      chunks = [];
-      window.recordedAudioBlob = null;
-      previewEl.src = "";
-      statusEl.textContent = "已取消錄音。";
-      stopStream();
-      resetButtons();
-      updateSubmitButtonState();
     });
   }
+
+  // 三顆媒體按鈕：切換模式（點同一顆 → 關閉）
+  function bindMediaButton(btn, modeName) {
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      if (editState.active) return; // 編輯模式不允許改媒體
+      if (btn.disabled) return;
+
+      if (window.currentMediaMode === modeName) {
+        setMediaMode(null);
+      } else {
+        setMediaMode(modeName);
+      }
+      clearRecordedMediaState();
+
+      // 切換媒體時，把不相關的欄位清乾淨
+      if (modeName === "youtube") {
+        if (videoFile)  videoFile.value = "";
+        if (videoLabel) videoLabel.textContent = "";
+        if (audioFile)  audioFile.value = "";
+        if (audioLabel) audioLabel.textContent = "";
+      } else if (modeName === "upload") {
+        if (ytEl)     ytEl.value = "";
+        if (startEl)  startEl.value = "";
+        if (endEl)    endEl.value = "";
+        if (audioFile)  audioFile.value = "";
+        if (audioLabel) audioLabel.textContent = "";
+      } else if (modeName === "audio") {
+        if (ytEl)     ytEl.value = "";
+        if (startEl)  startEl.value = "";
+        if (endEl)    endEl.value = "";
+        if (videoFile)  videoFile.value = "";
+        if (videoLabel) videoLabel.textContent = "";
+      }
+    });
+  }
+
+  bindMediaButton(btnYoutube, "youtube");
+  bindMediaButton(btnUpload,  "upload");
+  bindMediaButton(btnAudio,   "audio");
+
+  // 檔案 change → 顯示檔名
+  if (videoFile && videoLabel) {
+    videoFile.addEventListener("change", () => {
+      if (videoFile.files && videoFile.files[0]) {
+        videoLabel.textContent = "已選擇：" + videoFile.files[0].name;
+      } else {
+        videoLabel.textContent = "";
+      }
+    });
+  }
+
+  if (audioFile && audioLabel) {
+    audioFile.addEventListener("change", () => {
+      if (audioFile.files && audioFile.files[0]) {
+        audioLabel.textContent = "已選擇：" + audioFile.files[0].name;
+      } else {
+        audioLabel.textContent = "";
+      }
+    });
+  }
+
+  form.addEventListener("submit", handleSubmit);
+}
+
+// ====== [JS-19] DOMContentLoaded：全部啟動 ======
+document.addEventListener("DOMContentLoaded", () => {
+  // 全域媒體狀態
+  window.currentMediaMode = null;
+
+  // 工具列 / 表單
+  bindToolbarAndForm();
+
+  // 表格點擊
+  setupTableClicks();
+
+  // Back 鍵
+  setupBackButton();
+
+  // 管理員回覆區
+  setupAdminReply();
+
+  // 頂部「編輯」按鈕
+  setupEditHeaderButton();
+
+  // From: 按鈕
+  setupReplyTargetButton();
+
+ // 左側錄音面板
+  setupAudioRecording();
+
+
+  // username 注音組字保護 + Enter 防送出
+  setupEditNameGuard();
+
+  // 項目欄位 Enter 防誤送出
+  setupTextInputEnterGuard();
+
+  // 一開始清空影片
+  clearVideo();
+
+  // 載入留言列表
+  loadComments().catch((err) => {
+    console.error(err);
+    alert("載入列表失敗：" + err.message);
+  });
+});
 </script>
+
 
 </body>
 </html>
+
+
+
