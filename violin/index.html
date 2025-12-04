@@ -1263,124 +1263,97 @@
     createYoutubePlayer();
   }
 
-  // ===== 影片顯示 =====
 
- // ===== 影片顯示（簡化版：只用 iframe，不用 YouTube API） =====
-  function clearVideo() {
-    const iframe      = document.getElementById("video-iframe");
-    const ph          = document.getElementById("video-placeholder");
-    const muteToggle  = document.getElementById("mute-toggle");
-    const watermark   = document.getElementById("video-watermark");
 
-    // 不再管 YouTube Player，只把 iframe 關掉
-    if (iframe) {
-      iframe.src = "";
-      iframe.style.display = "none";
-    }
+// ===== 影片顯示（單純 iframe, 不用 no-cookie, 嘗試有聲自動播放） =====
+function clearVideo() {
+  const iframe    = document.getElementById("video-iframe");
+  const ph        = document.getElementById("video-placeholder");
 
-    if (ph) {
-      ph.style.display = "flex";
-      ph.textContent   = "請先選擇左側項目。";
-    }
-
-    // 這兩個目前先不使用，但順手一起隱藏
-    if (muteToggle)  muteToggle.classList.add("hidden");
-    if (watermark)   watermark.style.display = "none";
-
-    // 也順便把多層圓效果清掉
-    highlightLayers("");
+  if (iframe) {
+    iframe.src = "";
+    iframe.style.display = "none";
   }
 
-  function showVideoForRow(row, isCarousel = false) {
-    if (!row) return;
-    clearVideo();
+  if (ph) {
+    ph.style.display = "flex";
+    ph.textContent   = "請先選擇左側項目。";
+  }
 
-    const iframe = document.getElementById("video-iframe");
-    const ph     = document.getElementById("video-placeholder");
+  // 保留多層圈圈的清除
+  highlightLayers("");
+}
 
-    // ===== 1. 純音訊（沒有畫面，只顯示提示文字） =====
-    if (row.type === "audio" && (row.hasAudio || row.driveAudioId)) {
-      if (ph) {
-        ph.style.display = "flex";
-        ph.textContent   = `音訊項目：${row.text || ""}`;
-      }
+function showVideoForRow(row, isCarousel = false) {
+  if (!row) return;
+
+  const iframe = document.getElementById("video-iframe");
+  const ph     = document.getElementById("video-placeholder");
+  if (!iframe || !ph) return;
+
+  // 先清空舊狀態
+  iframe.src           = "";
+  iframe.style.display = "none";
+  ph.style.display     = "flex";
+  ph.textContent       = "請先選擇左側項目。";
+
+  // ===== 1. 純音訊：只顯示文字 =====
+  if (row.type === "audio" && (row.hasAudio || row.driveAudioId)) {
+    ph.textContent = `音訊項目：${row.text || ""}`;
+    return;
+  }
+
+  let url = "";
+
+  // ===== 2. YouTube：用正常 youtube.com/embed，帶 autoplay =====
+  if (row.type === "youtube" && row.youtubeUrl && isYoutubeUrl(row.youtubeUrl)) {
+    const videoId = extractYoutubeId(row.youtubeUrl);
+    if (!videoId) {
+      ph.textContent = "無法解析 YouTube 影片連結。";
       return;
     }
 
-    // ===== 2. YouTube 影片（直接用 embed 連結，帶 autoplay） =====
-    if (row.type === "youtube" && row.youtubeUrl && isYoutubeUrl(row.youtubeUrl)) {
-      const videoId = extractYoutubeId(row.youtubeUrl);
-      if (!videoId) {
-        if (ph) {
-          ph.style.display = "flex";
-          ph.textContent   = "無法解析 YouTube 影片連結。";
-        }
-        return;
-      }
+    const params = new URLSearchParams({
+      autoplay: "1",   // 嘗試自動播放
+      rel: "0",
+      playsinline: "1"
+      // 不再用 no-cookie，也不做 Windows / iOS 判斷
+    });
 
-      const startSec = row.startSec ?? "";
-      const endSec   = row.endSec   ?? "";
+    const s = row.startSec;
+    const e = row.endSec;
+    const sNum = Number(s);
+    const eNum = Number(e);
 
-      // 基本 embed網址（已經不再用 youtube-nocookie）
-      let src = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1`;
+    if (s !== "" && !isNaN(sNum)) params.set("start", String(sNum));
+    if (e !== "" && !isNaN(eNum)) params.set("end",   String(eNum));
 
-      const extra = [];
-      const sNum = Number(startSec);
-      const eNum = Number(endSec);
-
-      // 有設定起始/結束秒數才加參數
-      if (startSec !== "" && !isNaN(sNum)) extra.push("start=" + sNum);
-      if (endSec   !== "" && !isNaN(eNum)) extra.push("end="   + eNum);
-
-      if (extra.length) {
-        src += "&" + extra.join("&");
-      }
-
-      if (iframe) {
-        iframe.src          = src;
-        iframe.style.display = "block";
-      }
-      if (ph) ph.style.display = "none";
-
-      // 這裡沒有再做靜音處理，直接嘗試帶聲音自動播放
-      // （若瀏覽器政策不允許有聲自動播放，會自動改成需要手動按一下）
-      return;
-    }
-
-    // ===== 3. 其他上傳 / 一般連結（Drive 或非 YouTube 網址） =====
-    let url = "";
-
-    // Google Drive 上傳的影片
-    if (row.type === "upload" && row.driveFileId) {
-      url = buildDriveEmbedUrl(row.driveFileId);
-    }
-    // 其他情況，如果有網址，就直接當一般連結處理
-    else if (row.youtubeUrl) {
-      url = row.youtubeUrl;
-    }
-
-    if (url) {
-      // 嘗試加上 autoplay 參數（不是每個網站都會理會，但加上不會壞）
-      if (!/[?]/.test(url)) {
-        url += "?autoplay=1";
-      } else if (!/[?&]autoplay=1/.test(url)) {
-        url += "&autoplay=1";
-      }
-
-      if (iframe) {
-        iframe.src           = url;
-        iframe.style.display = "block";
-      }
-      if (ph) ph.style.display = "none";
-    } else {
-      // 完全沒有可播的媒體 → 顯示文字提示
-      if (ph) {
-        ph.style.display = "flex";
-        ph.textContent   = `選取項目：${row.text || ""}（無可播放媒體）`;
-      }
-    }
+    url = `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
   }
 
+  // ===== 3. 上傳影片（Drive）或一般連結 =====
+  else if (row.type === "upload" && row.driveFileId) {
+    // 你原來就有的 helper
+    url = buildDriveEmbedUrl(row.driveFileId);
+  } else if (row.youtubeUrl) {
+    // 其他非 YouTube / 一般網址
+    url = row.youtubeUrl;
+  }
+
+  // ===== 4. 設定 iframe 或顯示提示 =====
+  if (url) {
+    // 確保有 autoplay=1（不是每個站都會理，但加了不會壞）
+    if (!/[\?&]autoplay=1/.test(url)) {
+      url += (url.includes("?") ? "&" : "?") + "autoplay=1";
+    }
+
+    iframe.src           = url;
+    iframe.style.display = "block";
+    ph.style.display     = "none";
+  } else {
+    ph.textContent = `選取項目：${row.text || ""}（無可播放媒體）`;
+  }
+}
 
   // ===== 回覆標的按鈕 (略) =====
   function resetReplyTargetButton() {
