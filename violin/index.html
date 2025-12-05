@@ -1085,11 +1085,11 @@ function buildYoutubeEmbedUrl(url, startSec, endSec) {
   const id = extractYoutubeId(url);
   if (!id) return "";
 
-/*
+
   // 使用隱私加強的 youtube-nocookie 網域
   const base = "https://www.youtube-nocookie.com/embed/" + id;
   const params = [];
-*/
+
   
   // 所有裝置都嘗試自動播放
   params.push("autoplay=1"); 
