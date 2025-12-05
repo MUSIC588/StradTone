@@ -1085,11 +1085,11 @@ function buildYoutubeEmbedUrl(url, startSec, endSec) {
   const id = extractYoutubeId(url);
   if (!id) return "";
 
-
+/*
   // 使用隱私加強的 youtube-nocookie 網域
   const base = "https://www.youtube-nocookie.com/embed/" + id;
   const params = [];
-
+*/
   
   // 所有裝置都嘗試自動播放
   params.push("autoplay=1"); 
@@ -1109,7 +1109,7 @@ function buildYoutubeEmbedUrl(url, startSec, endSec) {
   // 3. Playsinline (playsinline=1)：允許在 iOS 設備上網頁內播放
   params.push("rel=0", "modestbranding=1", "playsinline=1");
 
-/*
+
   // 告訴 YouTube 這個內嵌的來源
   try {
     if (window.location && window.location.origin) {
@@ -1118,7 +1118,7 @@ function buildYoutubeEmbedUrl(url, startSec, endSec) {
   } catch (e) {
     // 忽略例外
   }
-*/
+
 
 
   // 設定開始與結束時間
