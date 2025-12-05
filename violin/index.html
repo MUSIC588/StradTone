@@ -1070,56 +1070,25 @@ function extractYoutubeId(url) {
   return "";
 }
 
-
-//影片 youtube 設定
-/*
-// 判斷是否為 iOS（iPhone / iPad）
-function isIOS() {
-  return /iP(ad|hone|od)/.test(navigator.userAgent);
-}
-*/
-
-
 // YouTube embed
 function buildYoutubeEmbedUrl(url, startSec, endSec) {
   const id = extractYoutubeId(url);
   if (!id) return "";
 
-/*
+
   // 使用隱私加強的 youtube-nocookie 網域
   const base = "https://www.youtube-nocookie.com/embed/" + id;
   const params = [];
-*/
+
   
   // 所有裝置都嘗試自動播放
   params.push("autoplay=1"); 
-
-/*
-  // 根據設備類型設置靜音參數
-  if (isIOS()) {
-    // 判斷為 iOS 時，必須設定靜音 (mute=1)，才能規避限制並增加自動播放成功率
-    // 同時，這也是規避 iOS Webview 153 錯誤的最佳實務
-    params.push("mute=1");
-  } 
-*/
 
   // --- 防跳轉與基本參數 (所有裝置通用) ---
   // 1. 防跳轉 (rel=0)：播放結束不顯示相關影片
   // 2. 減少標誌 (modestbranding=1)：盡可能隱藏 YouTube 標誌，減少點擊跳轉點
   // 3. Playsinline (playsinline=1)：允許在 iOS 設備上網頁內播放
   params.push("rel=0", "modestbranding=1", "playsinline=1");
-
-
-  // 告訴 YouTube 這個內嵌的來源
-  try {
-    if (window.location && window.location.origin) {
-      params.push("origin=" + encodeURIComponent(window.location.origin));
-    }
-  } catch (e) {
-    // 忽略例外
-  }
-
-
 
   // 設定開始與結束時間
   if (startSec !== "" && !isNaN(startSec)) {
