@@ -100,16 +100,18 @@
     }
     .toolbar button:hover { background: #4a5056; }
 
-    form#community-form {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-bottom: 8px;
-      padding: 6px 8px;
-      border-radius: 6px;
-      border: 1px solid #444;
-      background: #202427;
-    }
+/* 新增 / 編輯時加強背景顏色區別 */
+form#community-form.mode-add {
+  background: #263241;      /* 藍綠一點，代表新增 */
+  border-color: #5a7aa5;
+}
+
+form#community-form.mode-edit {
+  background: #3a2830;      /* 帶紅一點，代表編輯 */
+  border-color: #c97b86;
+}
+
+
     form#community-form label {
       font-size: 13px;
       display: block;
@@ -261,6 +263,28 @@
       min-width: 420px;
       table-layout: fixed; /* 固定欄寬，避免展開往左右擴充 */
     }
+
+/* 每列項目前面的「筆」編輯鈕（只有在編輯選取模式才會顯示） */
+.row-edit-btn {
+  display: none;                /* 平常隱藏 */
+  margin-right: 4px;
+  padding: 1px 4px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid #aaa;
+  background: linear-gradient(180deg, #ffffff, #d5d5d5);
+  color: #333;
+  font-size: 11px;
+  cursor: pointer;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.4); /* 稍微立體一點 */
+}
+
+/* 進入「選擇要編輯的項目」模式時才顯示筆 */
+#comments-table.edit-select-mode .row-edit-btn {
+  display: inline-block;
+}
+
     table#comments-table thead {
       position: sticky;
       top: 0;
@@ -1141,6 +1165,14 @@ async function loadComments() {
   const data = await res.json();
   commentsCache = data.posts || [];
   renderCommentsTable();
+
+  // 若先前有選中的項目，重新載入後自動連動那一筆（影片 / 高亮 / 回覆區）
+  if (currentSelectedId != null) {
+    const row = findRowById(currentSelectedId);
+    if (row) {
+      selectRowForReply(row);
+    }
+  }
 }
 
 // ====== [JS-3] 渲染表格 ======
@@ -1148,6 +1180,15 @@ async function loadComments() {
 function renderCommentsTable() {
   const tbody = document.getElementById("comments-tbody");
   if (!tbody) return;
+
+  const table = document.getElementById("comments-table");
+  if (table) {
+    if (editState.waitForSelect) {
+      table.classList.add("edit-select-mode");
+    } else {
+      table.classList.remove("edit-select-mode");
+    }
+  }
 
   if (!commentsCache.length) {
     tbody.innerHTML = `<tr><td colspan="3">目前尚無項目</td></tr>`;
@@ -1195,10 +1236,23 @@ function renderCommentsTable() {
       const selected =
         String(row.id) === String(currentSelectedId) ? ` class="selected"` : "";
 
+      // 每筆項目前面多一顆「筆」按鈕（只有在 edit-select-mode 時會顯示）
+      const editBtnHtml = `
+        <button
+          type="button"
+          class="row-edit-btn"
+          data-id="${row.id}"
+          title="編輯"
+        >
+          ✎
+        </button>
+      `;
+
       return `
         <tr data-id="${row.id}"${selected}>
           <td class="col-nick">${escapeHtml(nick)}</td>
           <td class="col-text" data-long="${long ? "1" : "0"}">
+            ${editBtnHtml}
             ${shortText}${long ? `<span class="expand-arrow">▼</span>` : ""}
           </td>
           <td class="col-media">${mediaHtml}</td>
@@ -1209,6 +1263,7 @@ function renderCommentsTable() {
 
   tbody.innerHTML = html;
 }
+
 
 // ====== [JS-4] 顯示影片、音訊 ======
 
@@ -1305,22 +1360,14 @@ function autoResizeReply() {
   }
 }
 
-// ====== [JS-8] 選取項目（自動展開 + 自動播放 + 回覆連動 + From: 顏色同步） ======
 
-function resetReplyTargetButton() {
-  const btn = document.getElementById("reply-target-btn");
-  if (!btn) return;
-  btn.textContent = "From: —";
-  btn.disabled = true;
-  btn.removeAttribute("data-id");
-  btn.classList.remove("linked");
-}
+// ====== [JS-8] 選取項目（自動展開 + 自動播放 + 回覆連動 + From: 顏色同步） ======
 
 function selectRowForReply(row) {
   if (!row) return;
 
-  // 若正在編輯 → 直接取消回到原始狀態（不跳 alert）
-  if (editState.active) {
+  // 只要表單有開（不論是新增或編輯），先收回到初始狀態
+  if (isFormOpen) {
     resetFormToAddMode();
   }
 
@@ -1602,6 +1649,7 @@ function setMediaMode(mode) {
   }
 }
 
+
 // ====== [JS-11] 從「新增/編輯」復原成初始狀態 ======
 function resetFormToAddMode() {
   const form       = document.getElementById("community-form");
@@ -1648,6 +1696,7 @@ function resetFormToAddMode() {
   clearRecordedMediaState();
 
   if (form) {
+    form.classList.remove("mode-add", "mode-edit");
     form.classList.add("hidden");
     form.style.display = "none";
   }
@@ -1663,28 +1712,55 @@ function resetFormToAddMode() {
   editState.originalText = "";
   editState.waitForSelect = false;
 
+  // 關閉「筆」編輯模式
+  const table = document.getElementById("comments-table");
+  if (table) {
+    table.classList.remove("edit-select-mode");
+  }
+
   resetReplyTargetButton();
 }
 
-// ====== [JS-12] 編輯流程：按「編輯」→ 跳出視窗要求先選項目 ======
+// ====== [JS-12] 編輯流程：按「編輯」→ 進入「選擇要編輯哪一筆」模式 ======
 function setupEditHeaderButton() {
   const btn = document.getElementById("btn-edit");
   if (!btn) return;
 
   btn.addEventListener("click", () => {
-    alert("請在表格選擇你要編輯的項目。");
-    // 進入「等待選擇項目」模式
-    editState.waitForSelect = true;
+    // 先收起目前任何新增/編輯表單
+    if (isFormOpen) {
+      resetFormToAddMode();
+    }
+
+    // 切換「等待選擇要編輯的項目」模式
+    editState.waitForSelect = !editState.waitForSelect;
+
+    const table = document.getElementById("comments-table");
+    if (table) {
+      table.classList.toggle("edit-select-mode", editState.waitForSelect);
+    }
+
+    // ★ 不再跳出 alert 視窗，改用每列前面的「筆」按鈕提醒使用者正在選擇要編輯的項目
   });
 }
 
 function startEditForRow(row) {
   if (!row) return;
 
-  editState.active       = true;
-  editState.id           = row.id;
-  editState.nickname     = String(row.nickname || "").trim();
-  editState.originalText = row.text || "";
+  // 若原本有開著的新增/編輯表單，先收合
+  if (isFormOpen) {
+    resetFormToAddMode();
+  }
+
+  editState.active        = true;
+  editState.id            = row.id;
+  editState.nickname      = String(row.nickname || "").trim();
+  editState.originalText  = row.text || "";
+  editState.waitForSelect = false;
+
+  // 直接把「這一筆」變成全系統的中心：
+  // 右側 From:、高亮列、影片、回覆區全部跟著換到這一筆
+  selectRowForReply(row);
 
   const form   = document.getElementById("community-form");
   const btnNew = document.getElementById("btn-new");
@@ -1694,62 +1770,36 @@ function startEditForRow(row) {
   if (form) {
     form.classList.remove("hidden");
     form.style.display = "block";
+    form.classList.remove("mode-add");
+    form.classList.add("mode-edit");
   }
   if (btnNew) {
     btnNew.textContent = "取消編輯";
   }
   isFormOpen = true;
 
-  // 清空 username → 讓用戶輸入原本姓名
+  // 清空 username → 要求用戶輸入當初填的 username 來解鎖編輯
   if (nickEl) {
     nickEl.disabled = false;
     nickEl.value = "";
     nickEl.placeholder = "請輸入原本 username 以進行編輯";
   }
 
-  // 說明欄先鎖住，只顯示原本的內容
+  // 說明欄一開始鎖住，只顯示原本內容，等名稱驗證通過再解鎖
   if (textEl) {
     textEl.value = editState.originalText;
     textEl.disabled = true;
     textEl.style.opacity = "0.6";
   }
 
-  // 編輯時不允許變動媒體
+  // 編輯時不允許改媒體
   setMediaMode(null);
-}
 
-// 名稱驗證通過 → 解鎖說明欄位
-function tryUnlockEditByName() {
-  if (!editState.active) return;
-  if (isComposingName) return;
-
-  const nickEl = document.getElementById("nickname-input");
-  const textEl = document.getElementById("text-input");
-  if (!nickEl || !textEl) return;
-
-  const typed  = String(nickEl.value || "").trim();
-  const target = String(editState.nickname || "").trim();
-  if (!typed || !target) return;
-
-  // 先做格式驗證（5–12、中英文/數字）
-  if (!validateNameLength(typed)) {
-    return;
+  // 離開「選擇要編輯哪一筆」模式（隱藏每列前面的筆按鈕）
+  const table = document.getElementById("comments-table");
+  if (table) {
+    table.classList.remove("edit-select-mode");
   }
-
-  // 必須「完全一樣」才解鎖（純數字也可以）
-  if (typed !== target) return;
-
-  // 通過：鎖住 username，解鎖項目欄
-  nickEl.disabled = true;
-
-  textEl.disabled = false;
-  textEl.style.opacity = "1";
-  textEl.focus();
-  const len = textEl.value.length;
-  try {
-    textEl.setSelectionRange(len, len);
-  } catch (e) {}
-  alert("名稱驗證通過，現在可以修改說明內容。");
 }
 
 // ====== [JS-13] 表格點擊：選取 / 進入編輯 ======
@@ -1758,6 +1808,7 @@ function setupTableClicks() {
   if (!tbody) return;
 
   tbody.addEventListener("click", (e) => {
+    // 1) 播放影片鈕
     const playBtn = e.target.closest("button.play-video-btn");
     if (playBtn) {
       const id = playBtn.getAttribute("data-id");
@@ -1767,6 +1818,27 @@ function setupTableClicks() {
       return;
     }
 
+    // 2) 筆狀編輯鈕
+    const editBtn = e.target.closest("button.row-edit-btn");
+    if (editBtn) {
+      const idAttr =
+        editBtn.getAttribute("data-id") ||
+        (editBtn.closest("tr[data-id]") &&
+          editBtn.closest("tr[data-id]").getAttribute("data-id"));
+      const row = findRowById(idAttr);
+      if (!row) return;
+
+      editState.waitForSelect = false;
+      const table = document.getElementById("comments-table");
+      if (table) {
+        table.classList.remove("edit-select-mode");
+      }
+
+      startEditForRow(row);
+      return;
+    }
+
+    // 3) 點到整列（但不是筆 / 播放鍵）
     const tr = e.target.closest("tr[data-id]");
     if (!tr) return;
 
@@ -1774,10 +1846,15 @@ function setupTableClicks() {
     const row = findRowById(id);
     if (!row) return;
 
-    // 若編輯模式正等待選項目 → 直接進入編輯
     if (editState.waitForSelect) {
+      // 使用者按了「編輯」後，卻沒有點筆，而是直接點列：
+      // 視為「取消編輯模式」，並直接把那一列當一般點選
       editState.waitForSelect = false;
-      startEditForRow(row);
+      const table = document.getElementById("comments-table");
+      if (table) {
+        table.classList.remove("edit-select-mode");
+      }
+      selectRowForReply(row);
       return;
     }
 
@@ -2026,7 +2103,7 @@ async function handleSubmit(e) {
       payload.type = "text";
     }
 
-    const res = await fetch(API_URL, {
+   const res = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(payload),
@@ -2041,6 +2118,11 @@ async function handleSubmit(e) {
 
     if (!data || data.status !== "ok") {
       throw new Error(data && data.error ? data.error : "add 失敗");
+    }
+
+    // 嘗試記住剛新增的那一筆 id（端點如果有回傳就用）
+    if (data.id || data.newId) {
+      currentSelectedId = data.id || data.newId;
     }
 
     resetFormToAddMode();
@@ -2073,7 +2155,7 @@ function bindToolbarAndForm() {
   isFormOpen = false;
 
   // 新增 / 取消
-  if (btnNew) {
+ if (btnNew) {
     btnNew.addEventListener("click", () => {
       if (!isFormOpen) {
         // 開啟「新增」模式
@@ -2085,12 +2167,15 @@ function bindToolbarAndForm() {
 
         form.classList.remove("hidden");
         form.style.display = "block";
-        btnNew.textContent = "取消編輯";
+        form.classList.remove("mode-edit");
+        form.classList.add("mode-add");
+        btnNew.textContent = "取消新增";
         isFormOpen = true;
 
         setMediaMode(null);
         clearRecordedMediaState();
       } else {
+        // 無論目前是新增還是編輯，都視為「取消」，收回表單
         resetFormToAddMode();
       }
     });
