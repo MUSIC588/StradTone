@@ -1111,8 +1111,10 @@ function buildYoutubeEmbedUrl(url, startSec, endSec) {
   const base = "https://www.youtube-nocookie.com/embed/" + id;
   const params = [];
 
+/*
   // 所有裝置都嘗試自動播放
   params.push("autoplay=1");
+*/
 
   // 防跳轉與基本參數
   params.push("rel=0", "modestbranding=1" /*, "playsinline=1"*/);
