@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>StradTone</title>
+
+  <style>
+    /* ======== 基礎設定 ======== */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Microsoft JhengHei", sans-serif;
+      line-height: 1.7;
+      background: #fafafa;
+      color: #222;
+    }
+
+    /* ======== Grid Container ======== */
+    .section {
+      width: 100%;
+      max-width: 1200px;
+      margin: auto;
+      padding: 40px 20px;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+    }
+
+    /* ======== Grid Columns（12 格系統） ======== */
+    [class^="col-"] {
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    .col-1 { flex: 0 0 8.33%; }
+    .col-2 { flex: 0 0 16.66%; }
+    .col-3 { flex: 0 0 25%; }
+    .col-4 { flex: 0 0 33.33%; }
+    .col-5 { flex: 0 0 41.66%; }
+    .col-6 { flex: 0 0 50%; }
+    .col-7 { flex: 0 0 58.33%; }
+    .col-8 { flex: 0 0 66.66%; }
+    .col-9 { flex: 0 0 75%; }
+    .col-10 { flex: 0 0 83.33%; }
+    .col-11 { flex: 0 0 91.66%; }
+    .col-12 { flex: 0 0 100%; }
+
+    /* ======== 格子（Cell） ======== */
+    .cell {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      transition: 0.2s;
+    }
+
+    .cell:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    /* ======== Mobile RWD ======== */
+    @media(max-width: 768px) {
+      .col-1, .col-2, .col-3, .col-4, .col-5, .col-6,
+      .col-7, .col-8, .col-9, .col-10, .col-11, .col-12 {
+        flex: 0 0 100%;
+      }
+    }
+
+    /* ======== 自訂顏色 ======== */
+    .bg-amber { background: #f4e4c1; }
+    .bg-grey { background: #f1f1f1; }
+    .text-light { color: #666; }
+
+    /* ======== 圖片設定 ======== */
+    img.responsive {
+      width: 100%;
+      border-radius: 6px;
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <!-- ======== 範例 Section ======== -->
+  <div class="section">
+    <div class="row">
+      <div class="col-12">
+        <div class="cell bg-amber">
+          <h1>StradTone Flexible Grid System</h1>
+          <p>你可以任意調整格子，上下左右合併，自由放圖片、文字、影片，這是你的基礎模版。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 左右兩欄 -->
+    <div class="row">
+      <div class="col-6">
+        <div class="cell">
+          <h2>左欄內容自由放</h2>
+          <p>文字、圖片、影片都可以塞。</p>
+        </div>
+      </div>
+
+      <div class="col-6">
+        <div class="cell">
+          <img class="responsive" src="https://placekitten.com/600/400">
+        </div>
+      </div>
+    </div>
+
+    <!-- 三欄 -->
+    <div class="row">
+      <div class="col-4"><div class="cell">三等分 #1</div></div>
+      <div class="col-4"><div class="cell">三等分 #2</div></div>
+      <div class="col-4"><div class="cell">三等分 #3</div></div>
+    </div>
+
+    <!-- 你想要合併的 -->
+    <div class="row">
+      <div class="col-8"><div class="cell">這邊放大區塊 8 格</div></div>
+      <div class="col-4"><div class="cell">右邊 4 格</div></div>
+    </div>
+
+  </div>
+
+</body>
+</html>
