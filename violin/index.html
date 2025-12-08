@@ -199,6 +199,37 @@ form#community-form input[type="text"]:disabled {
   cursor: pointer;
   opacity: 0.9;
 }
+
+/* 編輯模式下的媒體按鈕（鎖住但仍看得見） */
+.media-select-btn.edit-locked {
+  opacity: 0.4;
+  background: #2e3236;
+  border-color: #555;
+  cursor: not-allowed;
+}
+
+/* 回覆區的「儲存 / 取消」按鈕列 */
+.reply-actions {
+  margin-top: 4px;
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.reply-action-btn {
+  padding: 2px 10px;
+  border-radius: 12px;
+  border: 1px solid #bbb;
+  background: #f5f5f5;
+  color: #222629;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.reply-action-btn:hover {
+  background: #e0e0e0;
+}
+
 .media-select-btn.active {
   border-color: #d1a343;
   background: #e0b85f;
@@ -934,6 +965,22 @@ table#comments-table tbody tr:nth-child(even) {
                   id="admin-reply"
                   placeholder="提琴聲學實驗室："
                 ></textarea>
+<div class="reply-actions">
+  <button
+    type="button"
+    id="reply-save-btn"
+    class="reply-action-btn hidden"
+  >
+    儲存
+  </button>
+  <button
+    type="button"
+    id="reply-cancel-btn"
+    class="reply-action-btn hidden"
+  >
+    取消
+  </button>
+</div>
               </div>
 
               <div class="fingerboard-row">
@@ -1031,6 +1078,14 @@ let audioRecRecorder = null;
 let audioRecChunks = [];
 let audioRecActive = false;
 
+// 管理員回覆狀態
+const REPLY_PREFIX = "提琴聲學實驗室：";
+let currentReplyOriginal = "";
+let replyDirty = false;
+
+// 送出防連點
+let isSubmitting = false;
+
 // ===== [JS-1] 小工具 =====
 
 // 統一處理名稱字串（去掉零寬字元、前後空白）
@@ -1093,6 +1148,21 @@ function escapeHtml(str) {
   });
 }
 
+// 回覆內容：去掉 prefix & 零寬
+function extractReplyBody(replyRaw) {
+  if (!replyRaw) return "";
+  let s = String(replyRaw).replace(/\u200B/g, "").trim();
+  if (s.startsWith(REPLY_PREFIX)) {
+    s = s.slice(REPLY_PREFIX.length).trimStart();
+  }
+  return s;
+}
+
+function hasRealReply(replyRaw) {
+  const body = extractReplyBody(replyRaw);
+  return body.length > 0;
+}
+
 // YouTube ID
 function extractYoutubeId(url) {
   if (!url) return "";
@@ -1111,15 +1181,10 @@ function buildYoutubeEmbedUrl(url, startSec, endSec) {
   const base = "https://www.youtube-nocookie.com/embed/" + id;
   const params = [];
 
-/*
-  // 所有裝置都嘗試自動播放
+  // 自動播放 + 基本參數
   params.push("autoplay=1");
-*/
+  params.push("rel=0", "modestbranding=1", "playsinline=1");
 
-  // 防跳轉與基本參數
-  params.push("rel=0", "modestbranding=1" /*, "playsinline=1"*/);
-
-  // 設定開始與結束時間
   if (startSec !== "" && !isNaN(startSec)) {
     params.push("start=" + startSec);
   }
@@ -1185,20 +1250,20 @@ function renderCommentsTable() {
   const html = rows
     .map((row) => {
       const nick = maskName(row.nickname);
-      const full = String(row.text || "");
-      const long = full.length > 30;
-      const shortText = long
-        ? escapeHtml(full.slice(0, 30)) + "…"
-        : escapeHtml(full);
+      const fullRaw = String(row.text || "").replace(/\u200B/g, "");
+      const long = fullRaw.length > 30;
+      const fullEsc = escapeHtml(fullRaw);
+      const shortEsc = long
+        ? escapeHtml(fullRaw.slice(0, 30)) + "…"
+        : fullEsc;
 
       const type = row.type || "text";
 
+      // 音訊只要 type === "audio" 就算有錄音
       const hasYoutube = type === "youtube" && row.youtubeUrl;
       const hasDrive = type === "upload" && row.driveFileId;
-      const hasAudio =
-        type === "audio" && (row.hasAudio || row.driveAudioId);
+      const hasAudio = type === "audio";
 
-      // 媒體顯示符號（只顯示種類，不提供播放按鈕）
       let mediaHtml = `<span style="opacity:.5">—</span>`;
       const icons = [];
 
@@ -1214,7 +1279,7 @@ function renderCommentsTable() {
         );
       }
 
-      if (row.reply && String(row.reply).trim()) {
+      if (hasRealReply(row.reply)) {
         icons.push(
           `<span class="media-flag" title="已有回覆">💬</span>`
         );
@@ -1235,8 +1300,11 @@ function renderCommentsTable() {
       return `
         <tr data-id="${row.id}"${selected}>
           <td class="col-nick">${escapeHtml(nick)}</td>
-          <td class="col-text" data-long="${long ? "1" : "0"}">
-            ${editBtnHtml}${shortText}${
+          <td class="col-text"
+              data-long="${long ? "1" : "0"}"
+              data-full="${fullEsc}"
+              data-short="${shortEsc}">
+            ${editBtnHtml}${shortEsc}${
         long
           ? `<span class="expand-arrow" title="展開">▼</span>`
           : ""
@@ -1251,13 +1319,16 @@ function renderCommentsTable() {
   tbody.innerHTML = html;
 }
 
-// ===== [JS-4] 顯示影片、音訊 ======
+// ===== [JS-4] 顯示影片 / 音訊 ======
 
 function clearVideo() {
   const iframe = document.getElementById("video-iframe");
   const ph = document.getElementById("video-placeholder");
   if (iframe) iframe.src = "";
-  if (ph) ph.style.display = "flex";
+  if (ph) {
+    ph.style.display = "flex";
+    ph.innerHTML = "";
+  }
 }
 
 function showVideoForRow(row) {
@@ -1265,18 +1336,29 @@ function showVideoForRow(row) {
   clearVideo();
 
   let url = "";
+  const type = row.type || "text";
 
-  if (row.type === "youtube" && row.youtubeUrl) {
+  if (type === "youtube" && row.youtubeUrl) {
     url = buildYoutubeEmbedUrl(row.youtubeUrl, row.startSec, row.endSec);
-  } else if (row.type === "upload" && row.driveFileId) {
+  } else if (type === "upload" && row.driveFileId) {
     url = buildDriveEmbedUrl(row.driveFileId);
+  } else if (type === "audio" && (row.driveAudioId || row.audioDriveId)) {
+    // 音訊也用 Drive 預覽在同一個 iframe 播放
+    const fid = row.driveAudioId || row.audioDriveId;
+    url = buildDriveEmbedUrl(fid);
   }
 
   if (url) {
     const iframe = document.getElementById("video-iframe");
     const ph = document.getElementById("video-placeholder");
-    iframe.src = url;
-    ph.style.display = "none";
+    if (iframe) iframe.src = url;
+    if (ph) ph.style.display = "none";
+  } else {
+    const ph = document.getElementById("video-placeholder");
+    if (ph) {
+      ph.style.display = "flex";
+      ph.textContent = "此項目沒有可播放的媒體。";
+    }
   }
 }
 
@@ -1303,49 +1385,22 @@ function findRowById(id) {
   return commentsCache.find((r) => String(r.id) === String(id));
 }
 
-// ===== [JS-7] 管理員回覆區前綴 & 自動高度 ======
-const REPLY_PREFIX = "提琴聲學實驗室：";
+// ===== [JS-7] 管理員回覆區：prefix + 自動高度 ======
 
 function ensureReplyPrefix() {
   const box = document.getElementById("admin-reply");
   if (!box) return;
-  const prefix = REPLY_PREFIX;
-  let val = box.value || "";
-  const oldStart = box.selectionStart || 0;
 
-  if (!val) {
-    box.value = prefix + "\n";
-    try {
-      box.setSelectionRange(box.value.length, box.value.length);
-    } catch (e) {}
-    return;
-  }
+  const raw = box.value || "";
+  const body = extractReplyBody(raw);
+  box.value = REPLY_PREFIX + (body ? "\n" + body : "\n");
 
-  // 若不是以 prefix 開頭，移除所有舊的 prefix 再補一個在最前面
-  if (!val.startsWith(prefix)) {
-    const withoutPrefix = val
-      .replace(new RegExp(prefix, "g"), "")
-      .replace(/^\s+/, "");
-    box.value = prefix + "\n" + withoutPrefix;
-    const pos = box.value.length;
-    try {
-      box.setSelectionRange(pos, pos);
-    } catch (e) {}
-    return;
-  }
-
-  // 確保 prefix 後面緊接一個換行
-  let rest = val.slice(prefix.length);
-  if (!rest.startsWith("\n")) {
-    rest = "\n" + rest.replace(/^\s+/, "");
-    box.value = prefix + rest;
-  }
-
-  const minPos = prefix.length + 1;
-  let newPos = oldStart;
-  if (newPos < minPos) newPos = minPos;
+  // 游標至少在 prefix 之後
+  const minPos = REPLY_PREFIX.length + 1;
+  let pos = box.selectionStart || box.value.length;
+  if (pos < minPos) pos = minPos;
   try {
-    box.setSelectionRange(newPos, newPos);
+    box.setSelectionRange(pos, pos);
   } catch (e) {}
 }
 
@@ -1370,6 +1425,19 @@ function autoResizeReply() {
     box.style.height = maxH + "px";
     box.style.overflowY = "auto";
     box.style.resize = "vertical";
+  }
+}
+
+function setReplyButtonsVisible(visible) {
+  const saveBtn = document.getElementById("reply-save-btn");
+  const cancelBtn = document.getElementById("reply-cancel-btn");
+  if (!saveBtn || !cancelBtn) return;
+  if (visible) {
+    saveBtn.classList.remove("hidden");
+    cancelBtn.classList.remove("hidden");
+  } else {
+    saveBtn.classList.add("hidden");
+    cancelBtn.classList.add("hidden");
   }
 }
 
@@ -1421,15 +1489,13 @@ function selectRowForReply(row, fromEditStart) {
   const box = document.getElementById("admin-reply");
   if (box) {
     const raw = row.reply || "";
-    if (!raw) {
-      box.value = REPLY_PREFIX + "\n";
-    } else if (raw.startsWith(REPLY_PREFIX)) {
-      box.value = raw;
-    } else {
-      box.value = REPLY_PREFIX + "\n" + raw;
-    }
+    currentReplyOriginal = raw || "";
+    const body = extractReplyBody(raw);
+    box.value = REPLY_PREFIX + (body ? "\n" + body : "\n");
     ensureReplyPrefix();
     autoResizeReply();
+    replyDirty = false;
+    setReplyButtonsVisible(false);
   }
 
   // 展開文字（若 >30 字）
@@ -1437,21 +1503,27 @@ function selectRowForReply(row, fromEditStart) {
     const tr = tbody.querySelector(`tr[data-id="${row.id}"]`);
     if (tr) {
       const cell = tr.querySelector("td.col-text");
-      if (cell && String(row.text || "").length > 30) {
+      const fullEsc =
+        (cell && cell.getAttribute("data-full")) ||
+        escapeHtml(String(row.text || "").replace(/\u200B/g, ""));
+      if (
+        cell &&
+        String(row.text || "").replace(/\u200B/g, "").length > 30
+      ) {
         cell.innerHTML =
-          escapeHtml(row.text) +
+          fullEsc +
           '<span class="expand-arrow" title="收合">▲</span>';
         cell.setAttribute("data-expanded", "1");
       }
     }
   }
 
-  // 播放影片
+  // 播放影片 / 音訊
   showVideoForRow(row);
   scrollToVideoTop();
 }
 
-// ===== [JS-9] 儲存回覆 ======
+// ===== [JS-9] 儲存回覆（按下「儲存」才會送出） ======
 async function saveAdminReply() {
   const box = document.getElementById("admin-reply");
   if (!box || !currentSelectedId) return;
@@ -1474,9 +1546,9 @@ async function saveAdminReply() {
       throw new Error(data.error || "reply 失敗");
     }
 
-    // 更新快取中的 reply
-    const r = findRowById(currentSelectedId);
-    if (r) r.reply = text;
+    currentReplyOriginal = text;
+    replyDirty = false;
+    setReplyButtonsVisible(false);
 
     await loadComments();
     const row = findRowById(currentSelectedId);
@@ -1485,6 +1557,7 @@ async function saveAdminReply() {
     }
   } catch (err) {
     console.error(err);
+    alert("儲存回覆失敗：" + err.message);
   }
 }
 
@@ -1494,6 +1567,14 @@ function clearRecordedMediaState() {
   window.recordedVideoBlob = null;
   const aStatus = document.getElementById("audio-rec-status");
   if (aStatus) aStatus.textContent = "錄音預備";
+  const previewEl = document.getElementById("audio-rec-preview");
+  if (previewEl) {
+    try {
+      previewEl.pause();
+    } catch (e) {}
+    previewEl.removeAttribute("src");
+  }
+  audioRecChunks = [];
 }
 
 // ===== [JS-A] 左側表單：錄音面板控制（MediaRecorder） ======
@@ -1525,7 +1606,7 @@ function stopAudioRecordingInternal(cancelOnly) {
     audioRecChunks = [];
     window.recordedAudioBlob = null;
     if (previewEl) {
-      previewEl.src = "";
+      previewEl.pause();
       previewEl.removeAttribute("src");
     }
     if (statusEl) statusEl.textContent = "錄音預備";
@@ -1712,6 +1793,17 @@ function resetFormToAddMode() {
   setMediaMode(null);
   clearRecordedMediaState();
 
+  // 解除媒體按鈕的編輯鎖
+  const btnYoutube = document.getElementById("btn-media-youtube");
+  const btnUpload = document.getElementById("btn-media-upload");
+  const btnAudio = document.getElementById("btn-media-audio");
+  [btnYoutube, btnUpload, btnAudio].forEach((b) => {
+    if (b) {
+      b.classList.remove("edit-locked");
+      b.disabled = false;
+    }
+  });
+
   if (form) {
     form.classList.add("hidden");
     form.style.display = "none";
@@ -1767,6 +1859,17 @@ function startEditForRow(row) {
   }
 
   setMediaMode(null);
+
+  // 編輯時媒體按鈕鎖住 & 變暗
+  const btnYoutube = document.getElementById("btn-media-youtube");
+  const btnUpload = document.getElementById("btn-media-upload");
+  const btnAudio = document.getElementById("btn-media-audio");
+  [btnYoutube, btnUpload, btnAudio].forEach((b) => {
+    if (b) {
+      b.classList.add("edit-locked");
+      b.disabled = true;
+    }
+  });
 }
 
 // ===== [JS-12-1] 表頭「編輯」按鈕 ======
@@ -1782,12 +1885,36 @@ function setupEditHeaderButton() {
   });
 }
 
-// ===== [JS-13] 表格點擊：選取 / 進入編輯 ======
+// ===== [JS-13] 表格點擊：展開/收合 + 選取 / 進入編輯 ======
 function setupTableClicks() {
   const tbody = document.getElementById("comments-tbody");
   if (!tbody) return;
 
   tbody.addEventListener("click", (e) => {
+    // 先處理展開 / 收合箭頭
+    const arrow = e.target.closest(".expand-arrow");
+    if (arrow) {
+      const cell = arrow.closest("td.col-text");
+      if (!cell) return;
+      const full = cell.getAttribute("data-full") || "";
+      const shortText = cell.getAttribute("data-short") || "";
+      const expanded = cell.getAttribute("data-expanded") === "1";
+
+      if (expanded) {
+        cell.innerHTML =
+          shortText +
+          '<span class="expand-arrow" title="展開">▼</span>';
+        cell.setAttribute("data-expanded", "0");
+      } else {
+        cell.innerHTML =
+          full +
+          '<span class="expand-arrow" title="收合">▲</span>';
+        cell.setAttribute("data-expanded", "1");
+      }
+      e.stopPropagation();
+      return;
+    }
+
     const tr = e.target.closest("tr[data-id]");
     if (!tr) return;
 
@@ -1839,6 +1966,11 @@ function setupAdminReply() {
   box.addEventListener("input", () => {
     ensureReplyPrefix();
     autoResizeReply();
+
+    const nowBody = extractReplyBody(box.value || "");
+    const origBody = extractReplyBody(currentReplyOriginal || "");
+    replyDirty = nowBody !== origBody;
+    setReplyButtonsVisible(replyDirty);
   });
 
   // 鎖住前綴：在 prefix 之前不允許 Backspace / 向左移
@@ -1856,8 +1988,31 @@ function setupAdminReply() {
     }
   });
 
+  // blur 只整理，不自動儲存
   box.addEventListener("blur", () => {
-    saveAdminReply();
+    ensureReplyPrefix();
+    autoResizeReply();
+  });
+}
+
+function setupReplyActionButtons() {
+  const saveBtn = document.getElementById("reply-save-btn");
+  const cancelBtn = document.getElementById("reply-cancel-btn");
+  const box = document.getElementById("admin-reply");
+  if (!saveBtn || !cancelBtn || !box) return;
+
+  saveBtn.addEventListener("click", async () => {
+    if (!replyDirty) return;
+    await saveAdminReply();
+  });
+
+  cancelBtn.addEventListener("click", () => {
+    const body = extractReplyBody(currentReplyOriginal || "");
+    box.value = REPLY_PREFIX + (body ? "\n" + body : "\n");
+    ensureReplyPrefix();
+    autoResizeReply();
+    replyDirty = false;
+    setReplyButtonsVisible(false);
   });
 }
 
@@ -1884,9 +2039,12 @@ function setupReplyTargetButton() {
     setTimeout(() => tr.classList.remove("row-flash"), 800);
 
     const cell = tr.querySelector("td.col-text");
-    if (cell && String(row.text || "").length > 30) {
+    if (cell && String(row.text || "").replace(/\u200B/g, "").length > 30) {
+      const fullEsc =
+        cell.getAttribute("data-full") ||
+        escapeHtml(String(row.text || "").replace(/\u200B/g, ""));
       cell.innerHTML =
-        escapeHtml(row.text) +
+        fullEsc +
         '<span class="expand-arrow" title="收合">▲</span>';
       cell.setAttribute("data-expanded", "1");
     }
@@ -1909,11 +2067,9 @@ function tryUnlockEditByName() {
   const target = normalizeName(editState.nickname);
   if (!typed || !target) return;
 
-  // 格式驗證
   if (!validateNameLength(typed)) return;
   if (typed !== target) return;
 
-  // 通過：鎖住 username，解鎖項目欄
   nickEl.disabled = true;
   textEl.disabled = false;
   textEl.style.opacity = "1";
@@ -1963,6 +2119,11 @@ function setupTextInputEnterGuard() {
 async function handleSubmit(e) {
   e.preventDefault();
 
+  if (isSubmitting) return;
+  isSubmitting = true;
+  const submitBtn = document.getElementById("submit-btn");
+  if (submitBtn) submitBtn.disabled = true;
+
   const nickEl = document.getElementById("nickname-input");
   const textEl = document.getElementById("text-input");
   const ytEl = document.getElementById("youtube-url-input");
@@ -1982,55 +2143,60 @@ async function handleSubmit(e) {
 
   const isEditing = editState.active && editState.id;
 
-  // username 驗證
-  if (!validateNameLength(nickname)) {
-    alert("username 請使用 5–12 個中英文或數字（不含空白與符號）。");
-    if (nickEl) nickEl.focus();
-    return;
-  }
-
-  if (isEditing) {
-    const target = normalizeName(editState.nickname);
-    if (nickname !== target) {
-      alert("請輸入當初填寫的 username（需與原始紀錄完全一致）。");
+  try {
+    // username 驗證
+    if (!validateNameLength(nickname)) {
+      alert("username 請使用 5–12 個中英文或數字（不含空白與符號）。");
       if (nickEl) nickEl.focus();
       return;
     }
-  }
 
-  if (!text) {
-    alert("請先輸入「項目」說明（100 字內）。");
-    if (textEl) textEl.focus();
-    return;
-  }
+    if (isEditing) {
+      const target = normalizeName(editState.nickname);
+      if (nickname !== target) {
+        alert("請輸入當初填寫的 username（需與原始紀錄完全一致）。");
+        if (nickEl) nickEl.focus();
+        return;
+      }
+    }
 
-  if (text.length > 100) {
-    alert("說明請控制在 100 字以內。");
-    if (textEl) textEl.focus();
-    return;
-  }
-
-  // 媒體互斥
-  if (youtubeUrl) {
-    if (vFile || aFile || window.recordedAudioBlob) {
-      alert("YouTube 連結不可同時搭配影片檔 / 錄音，請擇一種媒體來源。");
+    if (!text) {
+      alert("請先輸入「項目」說明（100 字內）。");
+      if (textEl) textEl.focus();
       return;
     }
-  }
 
-  if (aFile && window.recordedAudioBlob) {
-    alert("音檔上傳與錄音請擇一。");
-    return;
-  }
+    if (text.length > 100) {
+      alert("說明請控制在 100 字以內。");
+      if (textEl) textEl.focus();
+      return;
+    }
 
-  try {
+    // 媒體互斥
+    if (youtubeUrl) {
+      if (vFile || aFile || window.recordedAudioBlob) {
+        alert("YouTube 連結不可同時搭配影片檔 / 錄音，請擇一種媒體來源。");
+        return;
+      }
+    }
+
+    if (aFile && window.recordedAudioBlob) {
+      alert("音檔上傳與錄音請擇一。");
+      return;
+    }
+
     // ===== 編輯模式：只改文字 =====
     if (isEditing) {
+      let textToSend = text;
+      if (/^[0-9]+$/.test(textToSend)) {
+        textToSend = "\u200B" + textToSend;
+      }
+
       const editingId = editState.id;
       const params = new URLSearchParams({
         action: "edit",
         id: String(editingId),
-        text,
+        text: textToSend,
       });
 
       const res = await fetch(API_URL + "?" + params.toString());
@@ -2053,16 +2219,20 @@ async function handleSubmit(e) {
     // ===== 新增模式 =====
     let type = "text";
 
-    // nickname 若是純數字，前面加上零寬字元，避免後端當成數值
     let nicknameToSend = nickname;
     if (/^[0-9]+$/.test(nickname)) {
       nicknameToSend = "\u200B" + nickname;
     }
 
+    let textToSend = text;
+    if (/^[0-9]+$/.test(textToSend)) {
+      textToSend = "\u200B" + textToSend;
+    }
+
     const payload = {
       action: "add",
       nickname: nicknameToSend,
-      text,
+      text: textToSend,
       startSec: startSec === "" ? "" : String(startSec),
       endSec: endSec === "" ? "" : String(endSec),
     };
@@ -2129,7 +2299,6 @@ async function handleSubmit(e) {
     resetFormToAddMode();
     await loadComments();
 
-    // 新增完成後，選取最新那一筆項目
     if (commentsCache.length) {
       const newest = commentsCache[commentsCache.length - 1];
       if (newest) {
@@ -2141,6 +2310,10 @@ async function handleSubmit(e) {
     alert(
       (isEditing ? "儲存文字修改失敗：" : "送出留言失敗：") + err.message
     );
+  } finally {
+    isSubmitting = false;
+    const submitBtn2 = document.getElementById("submit-btn");
+    if (submitBtn2) submitBtn2.disabled = false;
   }
 }
 
@@ -2260,6 +2433,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupTableClicks();
   setupBackButton();
   setupAdminReply();
+  setupReplyActionButtons();
   setupEditHeaderButton();
   setupReplyTargetButton();
   setupAudioRecording();
