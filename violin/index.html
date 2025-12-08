@@ -206,6 +206,33 @@ form#community-form input[type="text"]:disabled {
   font-weight: 600;
 }
 
+.media-select-btn:disabled {
+  opacity: 0.35;
+  filter: grayscale(0.4);
+  cursor: default;
+}
+#btn-media-youtube {
+  background: #c00000;
+  border-color: #ff5050;
+  color: #111111;
+  font-weight: 600;
+}
+#btn-media-youtube:hover:not(:disabled) {
+  background: #e00000;
+}
+#btn-media-youtube.active {
+  background: #ff0000;
+  border-color: #ff8080;
+  color: #000000;
+}
+#btn-media-youtube:disabled {
+  background: #4a2a2a;
+  border-color: #774444;
+  color: #888;
+}
+
+
+
 /* 表單內：錄影/錄音控制列（目前只給錄音用） */
 .media-record-toolbar {
   display: flex;
@@ -226,10 +253,25 @@ form#community-form input[type="text"]:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 }
 .media-record-btn[disabled] {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: default;
+}
+
+/* 錄音中：白點變紅、外觀稍亮並閃爍 */
+.media-record-btn.recording {
+  color: #ff4b4b;
+  border-color: #ff8080;
+  background: #4a3a3a;
+  animation: recordBlink 0.8s ease-in-out infinite;
+}
+
+@keyframes recordBlink {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.3; }
+  100% { opacity: 1; }
 }
 /* 右上影音區的 audio 播放器（有錄音時使用） */
 #audio-player {
@@ -830,21 +872,34 @@ table#comments-table tbody tr:nth-child(even) {
             </div>
 
             <!-- 上傳影片 / 圖片檔案（只在「影片」模式顯示） -->
-            <div class="form-row-inline" id="video-upload-row" style="margin-top:4px;">
-              <input type="file" id="video-file-input" accept="video/*,image/*" />
-              <span id="video-file-label" class="sub-hint"></span>
-            </div>
+<div class="form-row-inline" id="video-upload-row" style="margin-top:4px;">
+  <!-- 不限制檔案種類，交給系統預設選單 -->
+  <input type="file" id="video-file-input" />
+  <span id="video-file-label" class="sub-hint"></span>
+</div>
+<!-- 新增：一般影片 / 網頁連結（不限 YouTube） -->
+<div class="form-row-inline" id="video-link-row" style="margin-top:4px;">
+  <input
+    type="text"
+    id="video-link-input"
+    placeholder="https://... 影片或網頁網址（選填）"
+  />
+</div>
+
+
           </div>
 
           <!-- 錄音欄位 -->
           <div id="audio-fields" class="hidden">
             <!-- 錄音控制列 -->
-            <div class="media-record-toolbar" id="audio-record-toolbar">
-              <button type="button" class="media-record-btn" id="audio-rec-start">●</button>
-              <button type="button" class="media-record-btn" id="audio-rec-stop" disabled>■</button>
-              <button type="button" class="media-record-btn" id="audio-rec-cancel" disabled>✕</button>
-              <span class="media-record-status" id="audio-rec-status">錄音預備</span>
-            </div>
+<div class="media-record-toolbar" id="audio-record-toolbar">
+  <button type="button" class="media-record-btn" id="audio-rec-start">●</button>
+  <button type="button" class="media-record-btn" id="audio-rec-pause" disabled>⏸</button>
+  <button type="button" class="media-record-btn" id="audio-rec-stop" disabled>■</button>
+  <button type="button" class="media-record-btn" id="audio-rec-cancel" disabled>✕</button>
+  <span class="media-record-status" id="audio-rec-status">錄音預備</span>
+</div>
+
 
             <!-- 上傳現有音檔 -->
             <div class="form-row-inline" id="audio-upload-row" style="margin-top:4px;">
@@ -1061,6 +1116,8 @@ let replyDirty = false;
 
 // 新增 / 編輯欄是否展開
 let isFormOpen = false;
+// 表單模式：'add' / 'edit'（只用來決定按鈕字樣）
+let formMode = "add";
 
 // 送出防連點
 let isSubmitting = false;
@@ -1083,6 +1140,19 @@ let audioRecStream = null;
 let audioRecRecorder = null;
 let audioRecChunks = [];
 let audioRecActive = false;
+let audioRecPaused = false;
+let audioRecTimerId = null;
+let audioRecStartTime = 0;
+let audioRecAccumulated = 0;
+let audioRecCancelling = false;
+
+// 項目輪播（自動播放）用
+let carouselActive = false;
+let carouselTimerId = null;
+let carouselUserStopped = false;
+let carouselIds = [];
+let carouselIndex = 0;
+const CAROUSEL_INTERVAL_MS = 15000; // 每 15 秒換下一筆
 
 // ===== [JS-1] 小工具 =====
 
@@ -1160,17 +1230,12 @@ function extractYoutubeId(url) {
 function buildYoutubeEmbedUrl(url, startSec, endSec) {
   const id = extractYoutubeId(url);
   if (!id) return "";
-  // 使用隱私加強的 youtube-nocookie 網域
   const base = "https://www.youtube-nocookie.com/embed/" + id;
   const params = [];
 
-  // 所有裝置都嘗試自動播放
   params.push("autoplay=1");
-
-  // 防跳轉與基本參數
   params.push("rel=0", "modestbranding=1", "playsinline=1");
 
-  // 設定開始與結束時間
   if (startSec !== "" && !isNaN(startSec)) {
     params.push("start=" + startSec);
   }
@@ -1186,20 +1251,17 @@ function buildDriveEmbedUrl(fid) {
   return fid ? "https://drive.google.com/file/d/" + fid + "/preview" : "";
 }
 
-// Google Drive 直連（音訊） - 讓 <audio> 播
+// Google Drive 直連（音訊）
 function buildDriveDownloadUrl(fid) {
   return fid ? "https://drive.google.com/uc?export=download&id=" + fid : "";
 }
 
-// 卷軸往回（影片上方，桌機 + 手機共用）
+// 卷軸回到頁面頂端（讓手機不會跳到回覆欄）
 function scrollToVideoTop() {
-  const el = document.querySelector(".video-frame-wrap");
-  if (el) {
-    el.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  }
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth",
+  });
 }
 
 // Base64
@@ -1235,6 +1297,23 @@ function stopAllPlayback() {
   }
 }
 
+// 錄音時間格式化（mm:ss）
+function formatDuration(sec) {
+  const s = Math.max(0, sec | 0);
+  const m = (s / 60) | 0;
+  const r = s % 60;
+  const mm = m < 10 ? "0" + m : "" + m;
+  const ss = r < 10 ? "0" + r : "" + r;
+  return mm + ":" + ss;
+}
+
+function clearAudioRecTimer() {
+  if (audioRecTimerId) {
+    clearInterval(audioRecTimerId);
+    audioRecTimerId = null;
+  }
+}
+
 // ===== [JS-2] 載入與表格列表 ======
 
 async function loadComments() {
@@ -1242,6 +1321,7 @@ async function loadComments() {
   const data = await res.json();
   commentsCache = data.posts || [];
   renderCommentsTable();
+  startCarouselIfPossible();
 }
 
 // ===== [JS-3] 渲染表格 ======
@@ -1270,11 +1350,10 @@ function renderCommentsTable() {
 
       const hasYoutube = type === "youtube" && row.youtubeUrl;
       const hasDrive = type === "upload" && row.driveFileId;
-      // 只要是 audio 類型，一律視為有錄音，或後端顯示 hasAudio / driveAudioId
+      const hasExternal = type === "upload" && (row.externalUrl || row.linkUrl);
       const hasAudio =
         type === "audio" || row.hasAudio || row.driveAudioId;
 
-      // 媒體顯示符號
       let mediaHtml = `<span style="opacity:.5">—</span>`;
       const icons = [];
 
@@ -1284,13 +1363,12 @@ function renderCommentsTable() {
         );
       }
 
-      if (hasYoutube || hasDrive) {
+      if (hasYoutube || hasDrive || hasExternal) {
         icons.push(
-          `<span class="media-flag" title="影片">🎬</span>`
+          `<span class="media-flag" title="影片 / 網頁">🎬</span>`
         );
       }
 
-      // 判斷是否真的有「回覆內容」（不是只有前綴）
       const replyRaw = String(row.reply || "").trim();
       let hasRealReply = false;
       if (replyRaw) {
@@ -1347,7 +1425,6 @@ function showVideoForRow(row) {
   const ph = document.getElementById("video-placeholder");
   if (!iframe || !audio || !ph) return;
 
-  // 先全部清空
   stopAllPlayback();
   iframe.style.display = "none";
   audio.style.display = "none";
@@ -1366,19 +1443,30 @@ function showVideoForRow(row) {
     return;
   }
 
-  if (row.type === "upload" && row.driveFileId) {
-    url = buildDriveEmbedUrl(row.driveFileId);
-    if (url) {
-      iframe.src = url;
-      iframe.style.display = "block";
-      ph.style.display = "none";
+  if (row.type === "upload") {
+    // 先看是否有一般網址（非 Drive）
+    if (row.externalUrl || row.linkUrl) {
+      url = row.externalUrl || row.linkUrl;
+      if (url) {
+        iframe.src = url;
+        iframe.style.display = "block";
+        ph.style.display = "none";
+        return;
+      }
     }
-    return;
+
+    if (row.driveFileId) {
+      url = buildDriveEmbedUrl(row.driveFileId);
+      if (url) {
+        iframe.src = url;
+        iframe.style.display = "block";
+        ph.style.display = "none";
+      }
+      return;
+    }
   }
 
-  // audio 類型 → 用 audio-player 播放
   if (row.type === "audio") {
-    // 優先用 driveAudioId，其次可擴充其他欄位
     if (row.driveAudioId) {
       url = buildDriveDownloadUrl(row.driveAudioId);
     } else if (row.audioUrl) {
@@ -1415,6 +1503,65 @@ function highlightLayers(layerStr) {
   });
 }
 
+// ===== [JS-5.5] 輪播候選計算 & 控制 ======
+function computeCarouselCandidates() {
+  return commentsCache.filter((row) => {
+    const type = row.type || "text";
+    if (type === "youtube" && row.youtubeUrl) return true;
+    if (type === "upload" && (row.driveFileId || row.externalUrl || row.linkUrl)) return true;
+    return false;
+  });
+}
+
+function runCarouselStep() {
+  if (!carouselActive) return;
+
+  const candidates = computeCarouselCandidates();
+  if (!candidates.length) {
+    stopCarousel();
+    return;
+  }
+
+  if (!carouselIds.length) {
+    carouselIds = candidates.map((r) => r.id);
+    carouselIndex = 0;
+  }
+  if (carouselIndex >= carouselIds.length) {
+    carouselIndex = 0;
+  }
+
+  const id = carouselIds[carouselIndex++];
+  const row = findRowById(id) || candidates[0];
+  if (row) {
+    selectRowForReply(row, false);
+  }
+
+  if (!carouselActive) return;
+  carouselTimerId = setTimeout(runCarouselStep, CAROUSEL_INTERVAL_MS);
+}
+
+function startCarouselIfPossible() {
+  if (carouselUserStopped || carouselActive) return;
+  const candidates = computeCarouselCandidates();
+  if (!candidates.length) return;
+
+  carouselIds = candidates.map((r) => r.id);
+  carouselIndex = 0;
+  carouselActive = true;
+  runCarouselStep();
+}
+
+function stopCarousel(fromUser) {
+  if (carouselTimerId) {
+    clearTimeout(carouselTimerId);
+    carouselTimerId = null;
+  }
+  carouselActive = false;
+  if (fromUser === "user") {
+    carouselUserStopped = true;
+  }
+}
+
 // ===== [JS-6] 查找 row ======
 function findRowById(id) {
   return commentsCache.find((r) => String(r.id) === String(id));
@@ -1437,7 +1584,6 @@ function ensureReplyPrefix() {
     return;
   }
 
-  // 若不是以 prefix 開頭，移除所有舊的 prefix 再補一個在最前面
   if (!val.startsWith(prefix)) {
     const withoutPrefix = val
       .replace(new RegExp(prefix, "g"), "")
@@ -1445,7 +1591,6 @@ function ensureReplyPrefix() {
     box.value = prefix + "\n" + withoutPrefix;
   }
 
-  // 確保 prefix 後面緊接一個換行
   let rest = box.value.slice(prefix.length);
   if (!rest.startsWith("\n")) {
     rest = "\n" + rest.replace(/^\s+/, "");
@@ -1509,7 +1654,11 @@ function resetReplyTargetButton() {
 function selectRowForReply(row, fromEditStart) {
   if (!row) return;
 
-  // 不是「開始編輯」流程觸發時，點別的列要把表單收回
+  // 切換項目前先把錄音（麥克風）關掉
+  if (typeof stopAudioRecordingInternal === "function") {
+    stopAudioRecordingInternal(true);
+  }
+
   if (!fromEditStart) {
     if (editState.active) {
       resetFormToAddMode();
@@ -1520,10 +1669,8 @@ function selectRowForReply(row, fromEditStart) {
 
   currentSelectedId = row.id;
 
-  // 重新渲染表格（收合其它列的展開 / 筆圖案）
   renderCommentsTable();
 
-  // 選取列高亮 + 展開文字
   const tbody = document.getElementById("comments-tbody");
   if (tbody) {
     Array.from(tbody.querySelectorAll("tr[data-id]")).forEach((tr) => {
@@ -1545,7 +1692,6 @@ function selectRowForReply(row, fromEditStart) {
     }
   }
 
-  // 更新 From: 標籤
   const btn = document.getElementById("reply-target-btn");
   if (btn) {
     btn.textContent = "From: " + maskName(row.nickname);
@@ -1554,7 +1700,6 @@ function selectRowForReply(row, fromEditStart) {
     btn.classList.add("linked");
   }
 
-  // 管理員回覆區填入原本 reply
   const box = document.getElementById("admin-reply");
   if (box) {
     const raw = row.reply || "";
@@ -1572,7 +1717,6 @@ function selectRowForReply(row, fromEditStart) {
     hideReplyActions();
   }
 
-  // 播放影片 / 錄音
   showVideoForRow(row);
   scrollToVideoTop();
 }
@@ -1587,7 +1731,6 @@ async function saveAdminReply() {
 
   const full = String(box.value || "").trim();
 
-  // 判斷是否有真正的內容（不是只有前綴）
   let toSend = "";
   if (full) {
     let afterPrefix = full;
@@ -1613,7 +1756,6 @@ async function saveAdminReply() {
       throw new Error(data.error || "reply 失敗");
     }
 
-    // 更新快取中的 reply
     const r = findRowById(currentSelectedId);
     if (r) r.reply = toSend;
 
@@ -1622,7 +1764,12 @@ async function saveAdminReply() {
     if (row) {
       selectRowForReply(row);
     }
+
     hideReplyActions();
+    try {
+      box.blur(); // 儲存後收起鍵盤，回到「只看播放」的感覺
+    } catch (e) {}
+    scrollToVideoTop();
   } catch (err) {
     console.error(err);
     alert("儲存回覆失敗：" + err.message);
@@ -1653,18 +1800,21 @@ function cancelAdminReply() {
 
 // ===== [JS-10] 媒體模式切換（YouTube / 影片 / 錄音 互斥） ======
 function clearRecordedMediaState() {
-  window.recordedAudioBlob = null;
-  window.recordedVideoBlob = null;
-  const aStatus = document.getElementById("audio-rec-status");
-  const previewEl = document.getElementById("audio-rec-preview");
-  if (aStatus) aStatus.textContent = "錄音預備";
-
-  if (previewEl) {
-    try {
-      previewEl.pause();
-    } catch (e) {}
-    previewEl.removeAttribute("src");
-    previewEl.load();
+  if (typeof stopAudioRecordingInternal === "function") {
+    stopAudioRecordingInternal(true);
+  } else {
+    window.recordedAudioBlob = null;
+    window.recordedVideoBlob = null;
+    const aStatus = document.getElementById("audio-rec-status");
+    const previewEl = document.getElementById("audio-rec-preview");
+    if (aStatus) aStatus.textContent = "錄音預備";
+    if (previewEl) {
+      try {
+        previewEl.pause();
+      } catch (e) {}
+      previewEl.removeAttribute("src");
+      previewEl.load();
+    }
   }
 }
 
@@ -1674,26 +1824,30 @@ function stopAudioRecordingInternal(cancelOnly) {
   const previewEl = document.getElementById("audio-rec-preview");
   const btnStart = document.getElementById("audio-rec-start");
   const btnStop = document.getElementById("audio-rec-stop");
+  const btnPause = document.getElementById("audio-rec-pause");
   const btnCancel = document.getElementById("audio-rec-cancel");
 
-  // 停掉 recorder
+  clearAudioRecTimer();
+  audioRecActive = false;
+  audioRecPaused = false;
+  audioRecAccumulated = 0;
+
   if (audioRecRecorder && audioRecRecorder.state !== "inactive") {
+    if (cancelOnly) {
+      audioRecCancelling = true;
+    }
     try {
       audioRecRecorder.stop();
     } catch (e) {}
   }
   audioRecRecorder = null;
 
-  // 關掉麥克風 stream
   if (audioRecStream) {
     audioRecStream.getTracks().forEach((t) => t.stop());
   }
   audioRecStream = null;
 
-  audioRecActive = false;
-
   if (cancelOnly) {
-    // 取消：清除這次錄音
     audioRecChunks = [];
     window.recordedAudioBlob = null;
     if (previewEl) {
@@ -1701,27 +1855,39 @@ function stopAudioRecordingInternal(cancelOnly) {
       previewEl.load();
     }
     if (statusEl) statusEl.textContent = "錄音預備";
-  } else {
-    if (statusEl) statusEl.textContent = "錄音完成，可按「發表」儲存。";
   }
 
   if (btnStart) btnStart.disabled = false;
   if (btnStop) btnStop.disabled = true;
   if (btnCancel) btnCancel.disabled = false;
+  if (btnPause) {
+    btnPause.disabled = true;
+    btnPause.classList.remove("recording");
+    btnPause.textContent = "⏸";
+  }
+
+  const btnStart2 = document.getElementById("audio-rec-start");
+  if (btnStart2) {
+    btnStart2.classList.remove("recording");
+  }
 }
 
 function setupAudioRecording() {
   const btnStart = document.getElementById("audio-rec-start");
   const btnStop = document.getElementById("audio-rec-stop");
+  const btnPause = document.getElementById("audio-rec-pause");
   const btnCancel = document.getElementById("audio-rec-cancel");
   const statusEl = document.getElementById("audio-rec-status");
   const previewEl = document.getElementById("audio-rec-preview");
 
-  if (!btnStart || !btnStop || !btnCancel || !statusEl || !previewEl) {
+  if (!btnStart || !btnStop || !btnCancel || !statusEl || !previewEl || !btnPause) {
     return;
   }
 
   btnStart.disabled = false;
+  btnStop.disabled = true;
+  btnPause.disabled = true;
+  btnCancel.disabled = true;
 
   btnStart.addEventListener("click", async () => {
     if (audioRecActive) return;
@@ -1731,8 +1897,11 @@ function setupAudioRecording() {
     }
 
     try {
+      stopAudioRecordingInternal(true);
+
       btnStart.disabled = true;
       btnStop.disabled = true;
+      btnPause.disabled = true;
       btnCancel.disabled = true;
       statusEl.textContent = "正在啟用麥克風…";
 
@@ -1750,6 +1919,9 @@ function setupAudioRecording() {
       const recorder = new MediaRecorder(stream, { mimeType });
       audioRecRecorder = recorder;
       audioRecActive = true;
+      audioRecPaused = false;
+      audioRecAccumulated = 0;
+      audioRecCancelling = false;
 
       recorder.addEventListener("dataavailable", (ev) => {
         if (ev.data && ev.data.size > 0) {
@@ -1758,6 +1930,33 @@ function setupAudioRecording() {
       });
 
       recorder.addEventListener("stop", () => {
+        clearAudioRecTimer();
+        audioRecActive = false;
+
+        if (audioRecStream) {
+          audioRecStream.getTracks().forEach((t) => t.stop());
+        }
+        audioRecStream = null;
+
+        if (audioRecCancelling) {
+          audioRecCancelling = false;
+          audioRecChunks = [];
+          window.recordedAudioBlob = null;
+          if (previewEl) {
+            previewEl.removeAttribute("src");
+            previewEl.load();
+          }
+          if (statusEl) statusEl.textContent = "錄音已取消。";
+          btnStart.disabled = false;
+          btnStop.disabled = true;
+          btnPause.disabled = true;
+          btnPause.classList.remove("recording");
+          btnPause.textContent = "⏸";
+          btnCancel.disabled = false;
+          btnStart.classList.remove("recording");
+          return;
+        }
+
         if (!audioRecChunks.length) return;
 
         const blob = new Blob(audioRecChunks, { type: mimeType });
@@ -1771,36 +1970,95 @@ function setupAudioRecording() {
 
         btnStart.disabled = false;
         btnStop.disabled = true;
+        btnPause.disabled = true;
+        btnPause.classList.remove("recording");
+        btnPause.textContent = "⏸";
         btnCancel.disabled = false;
 
-        audioRecActive = false;
+        btnStart.classList.remove("recording");
       });
 
-      recorder.start();
-      statusEl.textContent = "錄音中… 再按「■」停止。";
+      audioRecStartTime = Date.now();
+      clearAudioRecTimer();
+      statusEl.textContent = "錄音中… 00:00";
+      audioRecTimerId = setInterval(() => {
+        if (!audioRecActive || audioRecPaused) return;
+        const elapsedSec =
+          audioRecAccumulated + (Date.now() - audioRecStartTime) / 1000;
+        statusEl.textContent = "錄音中… " + formatDuration(elapsedSec);
+      }, 500);
+
+      btnStart.classList.add("recording");
       btnStop.disabled = false;
+      btnPause.disabled = false;
       btnCancel.disabled = false;
+
+      recorder.start();
     } catch (err) {
       console.error(err);
       statusEl.textContent = "無法啟用麥克風（可能被拒絕或裝置不支援）。";
       btnStart.disabled = false;
       btnStop.disabled = true;
+      btnPause.disabled = true;
       btnCancel.disabled = false;
+      btnStart.classList.remove("recording");
     }
   });
 
   btnStop.addEventListener("click", () => {
     if (!audioRecActive || !audioRecRecorder) return;
-    audioRecRecorder.stop();
+    audioRecPaused = false;
+    audioRecAccumulated = 0;
+    clearAudioRecTimer();
     statusEl.textContent = "處理錄音中…";
     btnStop.disabled = true;
+    if (btnPause) {
+      btnPause.disabled = true;
+      btnPause.classList.remove("recording");
+      btnPause.textContent = "⏸";
+    }
+    audioRecRecorder.stop();
+  });
+
+  btnPause.addEventListener("click", () => {
+    if (!audioRecRecorder || !audioRecActive) return;
+
+    if (typeof audioRecRecorder.pause !== "function" ||
+        typeof audioRecRecorder.resume !== "function") {
+      statusEl.textContent = "此瀏覽器不支援暫停功能。";
+      btnPause.disabled = true;
+      return;
+    }
+
+    if (!audioRecPaused) {
+      audioRecPaused = true;
+      audioRecAccumulated += (Date.now() - audioRecStartTime) / 1000;
+      clearAudioRecTimer();
+      audioRecRecorder.pause();
+      statusEl.textContent = "錄音已暫停 " + formatDuration(audioRecAccumulated);
+      btnPause.textContent = "▶︎";
+    } else {
+      audioRecPaused = false;
+      audioRecStartTime = Date.now();
+      audioRecRecorder.resume();
+      statusEl.textContent = "錄音中… " + formatDuration(audioRecAccumulated);
+      clearAudioRecTimer();
+      audioRecTimerId = setInterval(() => {
+        if (!audioRecActive || audioRecPaused) return;
+        const elapsedSec =
+          audioRecAccumulated + (Date.now() - audioRecStartTime) / 1000;
+        statusEl.textContent = "錄音中… " + formatDuration(elapsedSec);
+      }, 500);
+      btnPause.textContent = "⏸";
+    }
   });
 
   btnCancel.addEventListener("click", () => {
     if (audioRecActive && audioRecRecorder) {
-      audioRecRecorder.stop();
+      stopAudioRecordingInternal(true);
+    } else {
+      stopAudioRecordingInternal(true);
     }
-    stopAudioRecordingInternal(true);
   });
 }
 
@@ -1815,6 +2073,7 @@ function setMediaMode(mode) {
   const audioFields = document.getElementById("audio-fields");
   const youtubeRow = document.getElementById("youtube-row");
   const videoUploadRow = document.getElementById("video-upload-row");
+  const videoLinkRow = document.getElementById("video-link-row");
 
   [btnYoutube, btnUpload, btnAudio].forEach((b) => {
     if (b) b.classList.remove("active");
@@ -1824,6 +2083,7 @@ function setMediaMode(mode) {
   if (audioFields) audioFields.classList.add("hidden");
   if (youtubeRow) youtubeRow.style.display = "none";
   if (videoUploadRow) videoUploadRow.style.display = "none";
+  if (videoLinkRow) videoLinkRow.style.display = "none";
 
   if (!mode) return;
 
@@ -1835,6 +2095,7 @@ function setMediaMode(mode) {
     if (btnUpload) btnUpload.classList.add("active");
     if (videoFields) videoFields.classList.remove("hidden");
     if (videoUploadRow) videoUploadRow.style.display = "flex";
+    if (videoLinkRow) videoLinkRow.style.display = "flex";
   } else if (mode === "audio") {
     if (btnAudio) btnAudio.classList.add("active");
     if (audioFields) audioFields.classList.remove("hidden");
@@ -1854,6 +2115,7 @@ function resetFormToAddMode() {
   const videoLabel = document.getElementById("video-file-label");
   const audioFile = document.getElementById("audio-file-input");
   const audioLabel = document.getElementById("audio-file-label");
+  const videoLinkEl = document.getElementById("video-link-input");
   const submitBtn = document.getElementById("submit-btn");
 
   if (nickEl) {
@@ -1869,6 +2131,7 @@ function resetFormToAddMode() {
   if (ytEl) ytEl.value = "";
   if (startEl) startEl.value = "";
   if (endEl) endEl.value = "";
+  if (videoLinkEl) videoLinkEl.value = "";
 
   if (videoFile) {
     videoFile.disabled = false;
@@ -1882,7 +2145,6 @@ function resetFormToAddMode() {
   }
   if (audioLabel) audioLabel.textContent = "";
 
-  // 媒體按鈕恢復可點
   const btnYoutube = document.getElementById("btn-media-youtube");
   const btnUpload = document.getElementById("btn-media-upload");
   const btnAudio = document.getElementById("btn-media-audio");
@@ -1903,11 +2165,11 @@ function resetFormToAddMode() {
 
   if (submitBtn) {
     submitBtn.disabled = false;
-    submitBtn.textContent = "發表";
+    submitBtn.textContent = "發表"; // 不再顯示「處理中」
   }
   isSubmitting = false;
-
   isFormOpen = false;
+  formMode = "add";
 
   editState.active = false;
   editState.id = null;
@@ -1921,6 +2183,8 @@ function resetFormToAddMode() {
 // ===== [JS-12] 編輯流程：按「編輯」→ 選列 → 輸入原 username ======
 function startEditForRow(row) {
   if (!row) return;
+
+  stopCarousel("user");
 
   editState.active = true;
   editState.id = row.id;
@@ -1940,6 +2204,7 @@ function startEditForRow(row) {
     btnNew.textContent = "取消編輯";
   }
   isFormOpen = true;
+  formMode = "edit";
 
   if (nickEl) {
     nickEl.disabled = false;
@@ -1953,7 +2218,6 @@ function startEditForRow(row) {
     textEl.style.opacity = "0.6";
   }
 
-  // 編輯模式下不允許更換媒體來源：按鈕變淡 & disabled
   const btnYoutube = document.getElementById("btn-media-youtube");
   const btnUpload = document.getElementById("btn-media-upload");
   const btnAudio = document.getElementById("btn-media-audio");
@@ -1992,11 +2256,9 @@ function setupTableClicks() {
 
     const editBtn = e.target.closest("button.row-edit-btn");
 
-    // 展開箭頭點擊 → 收合
     if (e.target.classList.contains("expand-arrow")) {
       const cell = e.target.closest("td.col-text");
       if (cell && cell.getAttribute("data-expanded") === "1") {
-        // 重新渲染，維持 currentSelectedId，不再強制展開
         renderCommentsTable();
         const tbody2 = document.getElementById("comments-tbody");
         if (tbody2) {
@@ -2024,11 +2286,18 @@ function setupTableClicks() {
   });
 }
 
-// ===== [JS-14] Back 鍵：回到影片頂端 ======
+// ===== [JS-14] Back 鍵：回到初始畫面 ======
 function setupBackButton() {
   const btn = document.getElementById("back-button");
   if (!btn) return;
   btn.addEventListener("click", () => {
+    stopCarousel("user");
+    resetFormToAddMode();
+    currentSelectedId = null;
+    renderCommentsTable();
+    resetReplyTargetButton();
+    cancelAdminReply();
+    stopAllPlayback();
     scrollToVideoTop();
   });
 }
@@ -2063,7 +2332,6 @@ function setupAdminReply() {
     }
   });
 
-  // 鎖住前綴：在 prefix 之前不允許 Backspace / Delete / 其他輸入
   box.addEventListener("keydown", (ev) => {
     const prefixLen = REPLY_PREFIX.length;
     const pos = box.selectionStart || 0;
@@ -2080,7 +2348,6 @@ function setupAdminReply() {
         "ArrowUp",
         "Tab",
       ];
-      // 有 Ctrl / Meta 視同特殊操作（不強攔）
       if (ev.ctrlKey || ev.metaKey || allowKeys.includes(ev.key)) {
         return;
       }
@@ -2094,7 +2361,6 @@ function setupAdminReply() {
     }
   });
 
-  // 儲存 / 取消按鈕
   const btnSave = document.getElementById("reply-save-btn");
   const btnCancel = document.getElementById("reply-cancel-btn");
   if (btnSave) {
@@ -2105,6 +2371,9 @@ function setupAdminReply() {
   if (btnCancel) {
     btnCancel.addEventListener("click", () => {
       cancelAdminReply();
+      try {
+        box.blur();
+      } catch (e) {}
     });
   }
 }
@@ -2157,11 +2426,9 @@ function tryUnlockEditByName() {
   const target = normalizeName(editState.nickname);
   if (!typed || !target) return;
 
-  // 格式驗證
   if (!validateNameLength(typed)) return;
   if (typed !== target) return;
 
-  // 通過：鎖住 username，解鎖項目欄
   nickEl.disabled = true;
   textEl.disabled = false;
   textEl.style.opacity = "1";
@@ -2216,8 +2483,10 @@ async function handleSubmit(e) {
   const submitBtn = document.getElementById("submit-btn");
   if (submitBtn) {
     submitBtn.disabled = true;
-    submitBtn.textContent = "處理中…";
+    // 不再顯示「處理中…」，維持「發表」
   }
+
+  stopCarousel("user");
 
   const nickEl = document.getElementById("nickname-input");
   const textEl = document.getElementById("text-input");
@@ -2226,6 +2495,7 @@ async function handleSubmit(e) {
   const endEl = document.getElementById("end-input");
   const videoFile = document.getElementById("video-file-input");
   const audioFile = document.getElementById("audio-file-input");
+  const videoLinkEl = document.getElementById("video-link-input");
 
   const nicknameInput = nickEl ? nickEl.value : "";
   const nickname = normalizeName(nicknameInput);
@@ -2235,11 +2505,11 @@ async function handleSubmit(e) {
   const endSec = parseTimeToSec(endEl?.value);
   const vFile = videoFile && videoFile.files[0];
   const aFile = audioFile && audioFile.files[0];
+  const videoLink = (videoLinkEl?.value || "").trim();
 
   const isEditing = editState.active && editState.id;
 
   try {
-    // username 驗證
     if (!validateNameLength(nickname)) {
       alert("username 請使用 5–12 個中英文或數字（不含空白與符號）。");
       if (nickEl) nickEl.focus();
@@ -2269,10 +2539,15 @@ async function handleSubmit(e) {
 
     // 媒體互斥
     if (youtubeUrl) {
-      if (vFile || aFile || window.recordedAudioBlob) {
-        alert("YouTube 連結不可同時搭配影片檔 / 錄音，請擇一種媒體來源。");
+      if (vFile || aFile || window.recordedAudioBlob || videoLink) {
+        alert("YouTube 連結不可同時搭配影片檔 / 錄音 / 一般網址，請擇一種媒體來源。");
         return;
       }
+    }
+
+    if (videoLink && (vFile || aFile || window.recordedAudioBlob)) {
+      alert("一般網址與檔案 / 錄音請擇一。");
+      return;
     }
 
     if (aFile && window.recordedAudioBlob) {
@@ -2284,7 +2559,6 @@ async function handleSubmit(e) {
     if (isEditing) {
       const editingId = editState.id;
 
-      // 項目內容若是純數字，避免後端當成數字（零開頭消失）：加零寬字
       let textToSend = text;
       if (/^[0-9]+$/.test(text)) {
         textToSend = "\u200B" + text;
@@ -2316,13 +2590,11 @@ async function handleSubmit(e) {
     // ===== 新增模式 =====
     let type = "text";
 
-    // nickname 若是純數字，前面加上零寬字元，避免後端當成數值
     let nicknameToSend = nickname;
     if (/^[0-9]+$/.test(nickname)) {
       nicknameToSend = "\u200B" + nickname;
     }
 
-    // 項目內容若是純數字，避免零開頭被吃掉
     let textToSend = text;
     if (/^[0-9]+$/.test(text)) {
       textToSend = "\u200B" + text;
@@ -2340,6 +2612,10 @@ async function handleSubmit(e) {
       type = "youtube";
       payload.type = type;
       payload.youtubeUrl = youtubeUrl;
+    } else if (videoLink) {
+      type = "upload";
+      payload.type = type;
+      payload.externalUrl = videoLink;
     } else if (vFile) {
       type = "upload";
       payload.type = type;
@@ -2398,7 +2674,6 @@ async function handleSubmit(e) {
     resetFormToAddMode();
     await loadComments();
 
-    // 新增完成後，選取最新那一筆項目
     if (commentsCache.length) {
       const newest = commentsCache[commentsCache.length - 1];
       if (newest) {
@@ -2434,6 +2709,7 @@ function bindToolbarAndForm() {
   const ytEl = document.getElementById("youtube-url-input");
   const startEl = document.getElementById("start-input");
   const endEl = document.getElementById("end-input");
+  const videoLinkEl = document.getElementById("video-link-input");
 
   if (!form) return;
 
@@ -2442,9 +2718,10 @@ function bindToolbarAndForm() {
   setMediaMode(null);
   isFormOpen = false;
 
-  // 新增 / 取消
   if (btnNew) {
     btnNew.addEventListener("click", () => {
+      stopCarousel("user");
+
       if (!isFormOpen) {
         editState.active = false;
         editState.id = null;
@@ -2454,8 +2731,9 @@ function bindToolbarAndForm() {
 
         form.classList.remove("hidden");
         form.style.display = "block";
-        btnNew.textContent = "取消編輯";
+        btnNew.textContent = "取消新增";
         isFormOpen = true;
+        formMode = "add";
 
         setMediaMode(null);
         clearRecordedMediaState();
@@ -2465,7 +2743,6 @@ function bindToolbarAndForm() {
     });
   }
 
-  // 三顆媒體按鈕
   function bindMediaButton(btn, modeName) {
     if (!btn) return;
     btn.addEventListener("click", () => {
@@ -2484,6 +2761,7 @@ function bindToolbarAndForm() {
         if (videoLabel) videoLabel.textContent = "";
         if (audioFile) audioFile.value = "";
         if (audioLabel) audioLabel.textContent = "";
+        if (videoLinkEl) videoLinkEl.value = "";
       } else if (modeName === "upload") {
         if (ytEl) ytEl.value = "";
         if (startEl) startEl.value = "";
@@ -2496,6 +2774,7 @@ function bindToolbarAndForm() {
         if (endEl) endEl.value = "";
         if (videoFile) videoFile.value = "";
         if (videoLabel) videoLabel.textContent = "";
+        if (videoLinkEl) videoLinkEl.value = "";
       }
     });
   }
@@ -2504,7 +2783,6 @@ function bindToolbarAndForm() {
   bindMediaButton(btnUpload, "upload");
   bindMediaButton(btnAudio, "audio");
 
-  // 檔案 change → 顯示檔名
   if (videoFile && videoLabel) {
     videoFile.addEventListener("change", () => {
       if (videoFile.files && videoFile.files[0]) {
@@ -2544,13 +2822,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   clearVideo();
 
+  // 使用者任何點擊都會停止輪播（但不影響現正顯示的那一筆）
+  document.addEventListener("pointerdown", () => {
+    stopCarousel("user");
+  });
+
   loadComments().catch((err) => {
     console.error(err);
     alert("載入列表失敗：" + err.message);
   });
 });
 </script>
-
 </body>
 </html>
 
