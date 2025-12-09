@@ -7,21 +7,7 @@ let currentSelectedId = null;
 
 // 管理員回覆前綴 & 狀態
 const REPLY_PREFIX = "提琴聲學實驗室：";
-let currentReplyOriginalRaw = "";
-let replyDirty = false;
-
-// 新增 / 編輯欄是否展開
-let isFormOpen = false;
-// 表單模式：'add' / 'edit'（只用來決定按鈕字樣）
-let formMode = "add";
-
-// 送出防連點
-let isSubmitting = false;
-
-// 編輯狀態：按下「編輯」後才會啟動
-let editState = {
-  active: false,
-  id: null,
+let cur
   nickname: "",
   originalText: "",
   waitForSelect: false,
