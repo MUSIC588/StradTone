@@ -1,7 +1,59 @@
-
+<!DOCTYPE html>
 <html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StradTone Violin</title>
 
+  <!-- 外部樣式表 -->
+  <link rel="stylesheet" href="violin.css" />
+</head>
 
+<body>
+  <div class="page">
+    <header>
+      <h1>StradTone Violin</h1>
+      <h2>提琴聲學實驗室</h2>
+    </header>
+
+    <main class="layout">
+      <!-- 左：留言 / 發表 / 錄音 / 影片 -->
+      <section class="panel panel-left" id="comments-section">
+        <p class="hint">
+          小提琴
+        </p>
+
+        <div class="toolbar">
+          <button type="button" id="btn-new">新增</button>
+        </div>
+
+        <!-- 起始收起來 -->
+        <form id="community-form" class="hidden">
+          <label>
+            username（5–12 字必填,修改編輯用）：
+            <input
+              type="text"
+              id="nickname-input"
+              maxlength="12"
+              placeholder="Mr,s 09…."
+            />
+          </label>
+          <label>
+            項目（100 字內）：
+            <input
+              type="text"
+              id="text-input"
+              maxlength="100"
+              placeholder="..."
+            />
+          </label>
+
+          <!-- 三顆媒體按鈕：只能選一種媒體 -->
+          <div class="form-row-inline media-select-row">
+            <button
+              type="button"
+              class="media-select-btn"
+              id="btn-media-youtube"
               data-media="youtube"
             >
               YouTube
@@ -273,3 +325,4 @@
   <!-- 外部腳本：你的 violin.js -->
   <script src="violin.js"></script>
 </body>
+</html>
