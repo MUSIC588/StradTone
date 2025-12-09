@@ -1,5 +1,4 @@
 
- <style>
     * { box-sizing: border-box; }
 
     body {
@@ -774,5 +773,5 @@ table#comments-table tbody tr:nth-child(even) {
         flex: 1 1 40%;
       }
     }
-  </style>
+
 
