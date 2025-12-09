@@ -10,7 +10,7 @@ const REPLY_PREFIX = "提琴聲學實驗室：";
 let currentReplyOriginalRaw = "";
 let replyDirty = false;
 
-// 新增 / 編輯欄是否展開
+// 新增 /編輯欄是否展開
 let isFormOpen = false;
 // 表單模式：'add' / 'edit'（只用來決定按鈕字樣）
 let formMode = "add";
