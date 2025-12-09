@@ -1,4 +1,3 @@
-<script>
 // ===== [JS-0] 全域狀態 =====
 const API_URL =
   "https://script.google.com/macros/s/AKfycbxn5aDCimtZmvgK4uEGr5fIyNItY2wZgQyO2LVEZkggFkO0VZ_YdDMyspGpzpkYy5W6-A/exec";
@@ -1729,6 +1728,5 @@ document.addEventListener("DOMContentLoaded", () => {
     alert("載入列表失敗：" + err.message);
   });
 });
-</script>
 
 
