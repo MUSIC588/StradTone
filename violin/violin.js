@@ -59,54 +59,6 @@ function markUserInteracted(reason) {
 }
 
 
-// ===== [JS-0.6] Busy 鎖定（處理中時禁止其他操作，避免狂按/亂點） =====
-let busyLockCount = 0;
-
-function setBusy(isBusy) {
-  busyLockCount += isBusy ? 1 : -1;
-  if (busyLockCount < 0) busyLockCount = 0;
-
-  const on = busyLockCount > 0;
-  document.body.classList.toggle("is-busy", on);
-
-  // 需求(7)：處理中時，連輸入游標都不要出現
-  const replyBox = document.getElementById("admin-reply");
-  const form = document.getElementById("community-form");
-
-  // 讓已經 focus 的元件直接失焦（避免 iOS 鍵盤彈出）
-  if (on) {
-    try {
-      const ae = document.activeElement;
-      if (ae && typeof ae.blur === "function") ae.blur();
-    } catch (e) {}
-  }
-
-  // 禁用回覆 textarea
-  if (replyBox) replyBox.disabled = on;
-
-  // 禁用表單內所有 input / button / textarea / file
-  if (form) {
-    const els = form.querySelectorAll("input, button, textarea, select");
-    els.forEach((el) => {
-      // 送出按鈕你本來就有 isSubmitting 控制；這裡是全域鎖定用
-      el.disabled = on || el.disabled;
-    });
-  }
-
-  // 禁用回覆區按鈕（儲存/取消）
-  const replySave = document.getElementById("reply-save-btn");
-  const replyCancel = document.getElementById("reply-cancel-btn");
-  if (replySave) replySave.disabled = on || replySave.disabled;
-  if (replyCancel) replyCancel.disabled = on || replyCancel.disabled;
-
-  // 禁用 Back / 新增 / 表頭編輯
-  const backBtn = document.getElementById("back-button");
-  const newBtn = document.getElementById("btn-new");
-  const editHeaderBtn = document.getElementById("btn-edit");
-  if (backBtn) backBtn.disabled = on || backBtn.disabled;
-  if (newBtn) newBtn.disabled = on || newBtn.disabled;
-  if (editHeaderBtn) editHeaderBtn.disabled = on || editHeaderBtn.disabled;
-}
 // ===== [JS-1] 小工具 =====
 
 // 統一處理名稱字串（去掉零寬字元、前後空白）
@@ -415,66 +367,72 @@ function setupMediaFrameInteractionGuards() {
   const ph = document.getElementById("video-placeholder");
   const recPreview = document.getElementById("audio-rec-preview");
 
+  // ✅ 加大捕捉範圍：右側整個視覺區也算「碰到影音區」
+  const visualPanel = document.getElementById("visual-panel");
+  const topRow = document.querySelector(".top-row");
+
   const hit = (reason) => {
-    // 只有真的互動才會 markUserInteracted
     markUserInteracted(reason || "media-frame");
   };
 
-  // 1) 影音框「外圍」：用 capture 盡量搶到事件（避免被子層吃掉）
-  if (wrap) {
+  const bindHit = (el, tag) => {
+    if (!el) return;
+
+    // 先用「更保險」的事件組合
+    // touchstart / pointerdown 用 capture，盡量在子層吃掉前先抓到
     ["pointerdown", "touchstart", "mousedown"].forEach((evName) => {
-      wrap.addEventListener(
+      el.addEventListener(
         evName,
-        () => hit("media-wrap-" + evName),
-        { capture: true, passive: true }
+        () => hit((tag || "media") + "-" + evName),
+        evName === "mousedown"
+          ? { capture: true } // mousedown 不用 passive，避免某些環境怪行為
+          : { capture: true, passive: true }
       );
     });
-  }
 
-  // 2) placeholder：點一下也算互動
-  if (ph) {
-    ["pointerdown", "touchstart", "mousedown", "click"].forEach((evName) => {
-      ph.addEventListener(
-        evName,
-        () => hit("media-placeholder-" + evName),
-        { capture: true, passive: true }
-      );
-    });
-  }
+    // click 一定要綁（有些裝置根本不給 pointer/touch）
+    el.addEventListener(
+      "click",
+      () => hit((tag || "media") + "-click"),
+      true
+    );
+  };
 
-  // 3) audio player：按 play/pause/seek 都算互動（這裡不 passive）
+  // 1) 影音框外圍
+  bindHit(wrap, "media-wrap");
+
+  // 2) placeholder
+  bindHit(ph, "media-placeholder");
+
+  // 3) audio player：播放/拖曳都算互動
   if (audio) {
     ["play", "pause", "seeking", "seeked", "volumechange"].forEach((evName) => {
       audio.addEventListener(evName, () => hit("audio-" + evName), true);
     });
-    // 有些瀏覽器只會給 click / pointerdown
-    ["pointerdown", "touchstart", "mousedown", "click"].forEach((evName) => {
-      audio.addEventListener(evName, () => hit("audio-" + evName), true);
-    });
+    bindHit(audio, "audio");
   }
 
-  // 4) 錄音預覽播放器（左側表單內那個）
+  // 4) 錄音預覽播放器（表單內）
   if (recPreview) {
     ["play", "pause", "seeking", "seeked", "volumechange"].forEach((evName) => {
-      recPreview.addEventListener(evName, () => hit("rec-preview-" + evName), true);
-    });
-    ["pointerdown", "touchstart", "mousedown", "click"].forEach((evName) => {
-      recPreview.addEventListener(evName, () => hit("rec-preview-" + evName), true);
-    });
-  }
-
-  // 5) iframe 本身：跨網域抓不到裡面播放鍵，但「focus」有時可抓到
-  // （不是每台都會觸發，當作補強）
-  if (iframe) {
-    iframe.addEventListener("focus", () => hit("iframe-focus"), true);
-    ["pointerdown", "touchstart", "mousedown"].forEach((evName) => {
-      iframe.addEventListener(
+      recPreview.addEventListener(
         evName,
-        () => hit("iframe-" + evName),
-        { capture: true, passive: true }
+        () => hit("rec-preview-" + evName),
+        true
       );
     });
+    bindHit(recPreview, "rec-preview");
   }
+
+  // 5) iframe 本身：跨網域抓不到裡面播放鍵，但當作補強
+  if (iframe) {
+    iframe.addEventListener("focus", () => hit("iframe-focus"), true);
+    bindHit(iframe, "iframe");
+  }
+
+  // 6) ✅ 再補一層大網（最能救 iOS/某些瀏覽器吞事件）
+  bindHit(topRow, "top-row");
+  bindHit(visualPanel, "visual-panel");
 }
 
 // 初始化一次（多次呼叫不會壞，但沒必要重複綁）
@@ -486,6 +444,7 @@ function ensureMediaGuards() {
 }
 
 function showVideoForRow(row) {
+  // ✅ 不要等到第一次播放才綁，這行保留沒壞，但也會在 DOMContentLoaded 先綁（我下一段會叫）
   ensureMediaGuards();
 
   const iframe = document.getElementById("video-iframe");
@@ -551,7 +510,6 @@ function showVideoForRow(row) {
   }
 }
 
-// ===== [JS-5] 多層圓（預留） ======
 
 // ===== [JS-5] 多層圓（預留） ======
 function highlightLayers(layerStr) {
@@ -1605,14 +1563,32 @@ function setupTextInputEnterGuard() {
   });
 }
 
-// ===== [JS-18] 工具列 / 表單 + 送出處理 ======
-
 // [JS-18-0] 忙碌鎖定：配合 CSS 的 body.is-busy（會讓整站暫時不能點）
+// ✅ 補強：支援巢狀 busy（計數）、busy 時強制 blur（避免 iOS 鍵盤/游標亂跳）
+// ✅ 同時把回覆框先 disabled（避免鍵盤仍可輸入）
+let busyLockCount = 0;
+
 function setBusy(flag) {
+  busyLockCount += flag ? 1 : -1;
+  if (busyLockCount < 0) busyLockCount = 0;
+
+  const on = busyLockCount > 0;
+
   try {
-    if (flag) document.body.classList.add("is-busy");
-    else document.body.classList.remove("is-busy");
+    document.body.classList.toggle("is-busy", on);
   } catch (e) {}
+
+  // busy 時讓已 focus 的元件直接失焦（避免 iOS 鍵盤彈出/游標閃）
+  if (on) {
+    try {
+      const ae = document.activeElement;
+      if (ae && typeof ae.blur === "function") ae.blur();
+    } catch (e) {}
+  }
+
+  // 回覆框 busy 時鎖住（busy 結束還原）
+  const replyBox = document.getElementById("admin-reply");
+  if (replyBox) replyBox.disabled = on;
 }
 
 async function handleSubmit(e) {
