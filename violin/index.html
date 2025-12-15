@@ -5,19 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>StradTone Violin</title>
 
-  <!-- 外部樣式表 -->
   <link rel="stylesheet" href="violin.css" />
 </head>
 
-<body>
+<body data-processing="false"> 
   <div class="page">
-    <header>
+    
+    <header class="site-header" id="site-header">
       <h1>StradTone Violin</h1>
       <h2>提琴聲學實驗室</h2>
     </header>
 
     <main class="layout">
-      <!-- 左：留言 / 發表 / 錄音 / 影片 -->
       <section class="panel panel-left" id="comments-section">
         <p class="hint">
           小提琴
@@ -27,7 +26,6 @@
           <button type="button" id="btn-new">新增</button>
         </div>
 
-        <!-- 起始收起來 -->
         <form id="community-form" class="hidden">
           <label>
             username（5–12 字必填,修改編輯用）：
@@ -48,7 +46,6 @@
             />
           </label>
 
-          <!-- 三顆媒體按鈕：只能選一種媒體 -->
           <div class="form-row-inline media-select-row">
             <button
               type="button"
@@ -76,9 +73,7 @@
             </button>
           </div>
 
-          <!-- 影片欄位（包含 YouTube / 上傳） -->
           <div id="video-fields" class="hidden">
-            <!-- YouTube 區塊（只在「YouTube」模式顯示） -->
             <div class="form-row-inline" id="youtube-row" style="margin-top:4px;">
               <input
                 type="text"
@@ -97,13 +92,10 @@
               />
             </div>
 
-            <!-- 上傳影片 / 圖片檔案（只在「影片」模式顯示） -->
             <div class="form-row-inline" id="video-upload-row" style="margin-top:4px;">
-              <!-- 不限制檔案種類，交給系統預設選單 -->
               <input type="file" id="video-file-input" />
-              <span id="video-file-label" class="sub-hint"></span>
+              <span id="video-file-label" class="sub-hint media-hint"></span> 
             </div>
-            <!-- 新增：一般影片 / 網頁連結（不限 YouTube） -->
             <div class="form-row-inline" id="video-link-row" style="margin-top:4px;">
               <input
                 type="text"
@@ -113,9 +105,7 @@
             </div>
           </div>
 
-          <!-- 錄音欄位 -->
           <div id="audio-fields" class="hidden">
-            <!-- 錄音控制列 -->
             <div class="media-record-toolbar" id="audio-record-toolbar">
               <button type="button" class="media-record-btn" id="audio-rec-start">●</button>
               <button type="button" class="media-record-btn" id="audio-rec-pause" disabled>⏸</button>
@@ -124,13 +114,11 @@
               <span class="media-record-status" id="audio-rec-status">錄音預備</span>
             </div>
 
-            <!-- 上傳現有音檔 -->
             <div class="form-row-inline" id="audio-upload-row" style="margin-top:4px;">
               <input type="file" id="audio-file-input" accept="audio/*" />
-              <span id="audio-file-label" class="sub-hint"></span>
+              <span id="audio-file-label" class="sub-hint media-hint"></span>
             </div>
 
-            <!-- 錄音預覽 -->
             <div class="form-row-inline" id="audio-preview-row" style="margin-top:4px;">
               <audio id="audio-rec-preview" class="rec-preview" controls></audio>
             </div>
@@ -160,16 +148,13 @@
               </tr>
             </thead>
             <tbody id="comments-tbody">
-              <!-- JS 動態插入 -->
-            </tbody>
+              </tbody>
           </table>
         </div>
 
-        <!-- Back 按鈕移到左邊表格底下 -->
         <button id="back-button" type="button">Back</button>
       </section>
 
-      <!-- 右：影片 + 多層圓 + 回覆 + 指板 -->
       <section class="panel panel-right" id="visual-panel">
         <div class="visual-wrapper">
           <div class="visual-header">
@@ -179,9 +164,7 @@
           </div>
 
           <div class="visual-body">
-            <!-- 上層：影片 + 多層圓（桌機）；手機時會調整排版 -->
             <div class="top-row">
-              <!-- 左：影片格 -->
               <div class="video-frame-wrap">
                 <iframe
                   id="video-iframe"
@@ -191,7 +174,6 @@
                   allowfullscreen
                 ></iframe>
 
-                <!-- 錄音播放用 -->
                 <audio id="audio-player" controls></audio>
 
                 <div class="video-placeholder" id="video-placeholder">
@@ -199,7 +181,6 @@
                 </div>
               </div>
 
-              <!-- 右：多層圓 -->
               <div class="circle-area">
                 <div class="circle-stack" id="circle-stack">
                   <div class="ring ring-main ring-1" data-layer="1"></div>
@@ -230,7 +211,6 @@
               </div>
             </div>
 
-            <!-- 中層：回覆區 + 點點位置圖 -->
             <div class="bottom-row">
               <div class="reply-area">
                 <div class="reply-target" id="reply-target">
@@ -244,8 +224,7 @@
                   </button>
                 </div>
                 <p class="reply-note">
-                  <!-- 給管理員看的說明，已在 CSS 隱藏 -->
-                </p>
+                  </p>
                 <textarea
                   id="admin-reply"
                   placeholder="提琴聲學實驗室："
@@ -264,7 +243,6 @@
                   <div class="fb-string fb-s3"></div>
                   <div class="fb-string fb-s4"></div>
 
-                  <!-- 示意點 -->
                   <div
                     class="fingerboard-note"
                     style="left:24%; top:8%;"
@@ -322,7 +300,7 @@
     </main>
   </div>
 
-  <!-- 外部腳本：你的 violin.js -->
   <script src="violin.js"></script>
 </body>
 </html>
+
