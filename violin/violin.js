@@ -395,48 +395,115 @@ function renderCommentsTable() {
   tbody.innerHTML = html;
 }
 
-// ===== [JS-4] 顯示影片、音訊（安全切換版） ======
+// ===== [JS-4] 顯示影片、音訊 ======
 
 function clearVideo() {
   stopAllPlayback();
 }
 
 /**
- * 在切換項目前，溫和暫停目前播放（保留時間點）
- * - audio / audio preview：pause()
- * - iframe：不動 src（避免 iOS 重新載入卡死）
+ * ✅ 補強：使用者只要「真的去碰影音區」(包含 iframe 外框、placeholder、audio 控制列)
+ * 就視為互動 → markUserInteracted() → stopCarousel("user")
+ *
+ * 注意：跨網域 iframe(YouTube/Drive/外部頁) 裡面的播放鍵點擊抓不到，
+ * 所以我們改抓「影音框外圍」的事件（使用者要按 play 前必定先碰到那一塊）。
  */
-function pauseCurrentPlaybackSafely() {
-  try {
-    pausePlaybackKeepTime();
-  } catch (e) {}
+function setupMediaFrameInteractionGuards() {
+  const wrap = document.querySelector(".video-frame-wrap");
+  const iframe = document.getElementById("video-iframe");
+  const audio = document.getElementById("audio-player");
+  const ph = document.getElementById("video-placeholder");
+  const recPreview = document.getElementById("audio-rec-preview");
+
+  const hit = (reason) => {
+    // 只有真的互動才會 markUserInteracted
+    markUserInteracted(reason || "media-frame");
+  };
+
+  // 1) 影音框「外圍」：用 capture 盡量搶到事件（避免被子層吃掉）
+  if (wrap) {
+    ["pointerdown", "touchstart", "mousedown"].forEach((evName) => {
+      wrap.addEventListener(
+        evName,
+        () => hit("media-wrap-" + evName),
+        { capture: true, passive: true }
+      );
+    });
+  }
+
+  // 2) placeholder：點一下也算互動
+  if (ph) {
+    ["pointerdown", "touchstart", "mousedown", "click"].forEach((evName) => {
+      ph.addEventListener(
+        evName,
+        () => hit("media-placeholder-" + evName),
+        { capture: true, passive: true }
+      );
+    });
+  }
+
+  // 3) audio player：按 play/pause/seek 都算互動（這裡不 passive）
+  if (audio) {
+    ["play", "pause", "seeking", "seeked", "volumechange"].forEach((evName) => {
+      audio.addEventListener(evName, () => hit("audio-" + evName), true);
+    });
+    // 有些瀏覽器只會給 click / pointerdown
+    ["pointerdown", "touchstart", "mousedown", "click"].forEach((evName) => {
+      audio.addEventListener(evName, () => hit("audio-" + evName), true);
+    });
+  }
+
+  // 4) 錄音預覽播放器（左側表單內那個）
+  if (recPreview) {
+    ["play", "pause", "seeking", "seeked", "volumechange"].forEach((evName) => {
+      recPreview.addEventListener(evName, () => hit("rec-preview-" + evName), true);
+    });
+    ["pointerdown", "touchstart", "mousedown", "click"].forEach((evName) => {
+      recPreview.addEventListener(evName, () => hit("rec-preview-" + evName), true);
+    });
+  }
+
+  // 5) iframe 本身：跨網域抓不到裡面播放鍵，但「focus」有時可抓到
+  // （不是每台都會觸發，當作補強）
+  if (iframe) {
+    iframe.addEventListener("focus", () => hit("iframe-focus"), true);
+    ["pointerdown", "touchstart", "mousedown"].forEach((evName) => {
+      iframe.addEventListener(
+        evName,
+        () => hit("iframe-" + evName),
+        { capture: true, passive: true }
+      );
+    });
+  }
+}
+
+// 初始化一次（多次呼叫不會壞，但沒必要重複綁）
+let _mediaGuardsInited = false;
+function ensureMediaGuards() {
+  if (_mediaGuardsInited) return;
+  _mediaGuardsInited = true;
+  setupMediaFrameInteractionGuards();
 }
 
 function showVideoForRow(row) {
+  ensureMediaGuards();
+
   const iframe = document.getElementById("video-iframe");
   const audio = document.getElementById("audio-player");
   const ph = document.getElementById("video-placeholder");
   if (!iframe || !audio || !ph) return;
 
-  // ✅ JS-4.x：切換前先安全暫停（避免疊音 / 卡死）
-  pauseCurrentPlaybackSafely();
-
-  // 視覺先清乾淨
+  stopAllPlayback();
   iframe.style.display = "none";
   audio.style.display = "none";
-  ph.style.display = "flex";
 
   if (!row) return;
 
   let url = "";
 
-  // ===== YouTube =====
   if (row.type === "youtube" && row.youtubeUrl) {
     url = buildYoutubeEmbedUrl(row.youtubeUrl, row.startSec, row.endSec);
     if (url) {
-      // iframe 換 src 前再停一次，保險
-      pauseCurrentPlaybackSafely();
-
       iframe.src = url;
       iframe.style.display = "block";
       ph.style.display = "none";
@@ -444,13 +511,10 @@ function showVideoForRow(row) {
     return;
   }
 
-  // ===== 上傳影片 / 外部連結 =====
   if (row.type === "upload") {
     if (row.externalUrl || row.linkUrl) {
       url = row.externalUrl || row.linkUrl;
       if (url) {
-        pauseCurrentPlaybackSafely();
-
         iframe.src = url;
         iframe.style.display = "block";
         ph.style.display = "none";
@@ -461,8 +525,6 @@ function showVideoForRow(row) {
     if (row.driveFileId) {
       url = buildDriveEmbedUrl(row.driveFileId);
       if (url) {
-        pauseCurrentPlaybackSafely();
-
         iframe.src = url;
         iframe.style.display = "block";
         ph.style.display = "none";
@@ -471,7 +533,6 @@ function showVideoForRow(row) {
     }
   }
 
-  // ===== 錄音 =====
   if (row.type === "audio") {
     if (row.driveAudioId) {
       url = buildDriveDownloadUrl(row.driveAudioId);
@@ -483,13 +544,14 @@ function showVideoForRow(row) {
       audio.src = url;
       audio.style.display = "block";
       ph.style.display = "none";
-
       try {
         audio.play().catch(() => {});
       } catch (e) {}
     }
   }
 }
+
+// ===== [JS-5] 多層圓（預留） ======
 
 // ===== [JS-5] 多層圓（預留） ======
 function highlightLayers(layerStr) {
