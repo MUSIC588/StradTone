@@ -5,29 +5,123 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, "Microsoft JhengHei", sans-serif;
   background: #222629;
   color: #f5f5f5;
-  -webkit-tap-highlight-color: transparent; /* iOS 點擊不閃藍 */
 }
 
-/* 整個頁面的容器：桌機置中、固定寬度，避免縮放時整塊亂飄 */
+/* =====================================================
+ * 固定 Header / Footer（子頁矮版）
+ * ===================================================== */
+.site-header{
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #151a1e;
+  border-bottom: 1px solid #2e353b;
+}
+.site-header-inner{
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 8px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.site-title{ font-size: 16px; font-weight: 700; line-height: 1.1; }
+.site-subtitle{ font-size: 12px; opacity: .78; margin-top: 2px; }
+.header-btn{
+  padding: 4px 10px;
+  border-radius: 14px;
+  border: 1px solid #777;
+  background: #3a3f44;
+  color: #f5f5f5;
+  font-size: 12px;
+  cursor: pointer;
+}
+.header-btn:hover{ background:#4a5056; }
+
+.site-footer{
+  position: sticky;
+  bottom: 0;
+  z-index: 40;
+  background: #151a1e;
+  border-top: 1px solid #2e353b;
+}
+.site-footer-inner{
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 6px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.footer-text{ font-size:12px; opacity:.8; }
+.footer-btn{
+  padding: 4px 10px;
+  border-radius: 14px;
+  border: 1px solid #777;
+  background: #3a3f44;
+  color: #f5f5f5;
+  font-size: 12px;
+  cursor: pointer;
+}
+.footer-btn:hover{ background:#4a5056; }
+
+/* =====================================================
+ * Busy Overlay（處理中時鎖全站）
+ * ===================================================== */
+.busy-overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+.busy-box{
+  width: min(320px, 86vw);
+  padding: 14px 14px;
+  border-radius: 10px;
+  background: #141b20;
+  border: 1px solid #d1a343;
+  box-shadow: 0 0 18px rgba(0,0,0,.7);
+  display:flex;
+  gap: 10px;
+  align-items:center;
+}
+.busy-spinner{
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.25);
+  border-top-color: rgba(255,255,255,.9);
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin{ to { transform: rotate(360deg); } }
+.busy-text{ font-size: 13px; opacity: .95; }
+.hidden { display: none !important; }
+
+/* Busy 狀態下：整站禁止互動（包含游標/鍵盤） */
+body.is-busy{
+  overflow: hidden;
+}
+body.is-busy .page{
+  pointer-events: none;
+}
+body.is-busy input,
+body.is-busy textarea{
+  caret-color: transparent;
+}
+
+/* =====================================================
+ * 整個頁面的容器
+ * ===================================================== */
 .page {
   min-height: 100vh;
   padding: 12px;
   max-width: 1100px;
   margin: 0 auto;
 }
-
-header {
-  margin-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-header h1 { font-size: 20px; margin: 0; }
-header h2 { font-size: 14px; margin: 0; opacity: 0.8; }
-header small { font-size: 12px; opacity: 0.7; }
 
 main.layout {
   display: flex;
@@ -47,17 +141,13 @@ main.layout {
 .panel-left  { flex: 0 0 40%; max-width: 40%; display: flex; flex-direction: column; }
 .panel-right { flex: 0 0 60%; max-width: 60%; display: flex; flex-direction: column; }
 
-h2 { font-size: 16px; margin: 0 0 4px; }
-
 /* 「給站主看的說明」文字 → 改成跟背景一樣色，等於隱藏 */
 .hint,
 .reply-note {
   font-size: 12px;
   line-height: 1.4;
-  color: #222629;  /* 和 body 背景一樣 */
+  color: #222629;
 }
-
-.hidden { display: none !important; }
 
 /* placeholder 顏色再淡一點 */
 input::placeholder,
@@ -69,34 +159,6 @@ input::-webkit-input-placeholder,
 textarea::-webkit-input-placeholder {
   color: #999;
   opacity: 0.7;
-}
-
-/* ===== [CSS-0.7] Busy 鎖定：處理中禁止互動（單一版本，避免互相打架） ===== */
-body.is-busy {
-  cursor: wait;
-  overflow: hidden;
-}
-
-/* 整頁避免點擊穿透 */
-body.is-busy .page,
-body.is-busy .page * {
-  pointer-events: none !important;
-  user-select: none;
-}
-
-/* 顯示「處理中…」遮罩 */
-body.is-busy::before {
-  content: "處理中…";
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  letter-spacing: 0.08em;
-  background: rgba(0, 0, 0, 0.45);
-  color: #ffffff;
 }
 
 /* =====================================================
@@ -146,39 +208,27 @@ form#community-form input[type="text"] {
   background: #1f2326;
   color: #f5f5f5;
   font-size: 13px;
-  outline: none;
 }
 
-/* [11] 編輯 / 發表時可輸入 → 白底（更暗一點） */
+/* 可輸入 → 白底 */
 form#community-form input[type="text"]:not(:disabled) {
-  background: #efefef;
+  background: #ffffff;
   color: #111;
-  caret-color: #111;
 }
 
-/* [11] 防止點到 username 文字出現藍底選取（允許輸入，但不顯示選取藍底） */
-form#community-form input[type="text"]::selection { background: transparent; }
-form#community-form input[type="text"]::-moz-selection { background: transparent; }
-
-/* 鎖定狀態（等名稱驗證）→ 深底 */
+/* 一般 disabled → 深底 */
 form#community-form input[type="text"]:disabled {
   background: #1f2326;
   color: #999;
-  -webkit-text-fill-color: #999;
 }
 
-/* 如果 JS 在忙碌時把 input/textarea disabled，讓 caret 不要閃 */
-input:disabled, textarea:disabled { caret-color: transparent; }
-
-#record-btn {
-  padding: 4px 10px;
-  border-radius: 16px;
-  border: 1px solid #777;
-  background: #3a3f44;
-  color: #f5f5f5;
-  font-size: 12px;
-  cursor: not-allowed;
-  opacity: 0.6;
+/* ✅(11) 編輯驗證完成後的 username：白底但更暗 + 不可選取藍底 */
+#nickname-input.verified-locked{
+  background: #d8d8d8 !important;
+  color: #101010 !important;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .form-row-inline {
@@ -189,11 +239,7 @@ input:disabled, textarea:disabled { caret-color: transparent; }
 }
 
 #video-file-input { font-size: 11px; }
-
-#video-file-label {
-  font-size: 11px;
-  opacity: 0.8;
-}
+#video-file-label { font-size: 11px; opacity: 0.8; }
 
 #submit-btn {
   padding: 4px 14px;
@@ -206,10 +252,7 @@ input:disabled, textarea:disabled { caret-color: transparent; }
 }
 #submit-btn:hover { background: #e0b85f; }
 
-.sub-hint {
-  font-size: 11px;
-  opacity: 0.8;
-}
+.sub-hint { font-size: 11px; opacity: 0.8; }
 
 /* 三顆媒體選擇按鈕 */
 .media-select-row {
@@ -225,42 +268,41 @@ input:disabled, textarea:disabled { caret-color: transparent; }
   color: #f5f5f5;
   font-size: 12px;
   cursor: pointer;
-  opacity: 0.9;
+  opacity: 0.92;
 }
 
-/* 選中（橘黃） */
+/* ✅(9) YouTube 平常不要紅（避免你說的「選別顆但 YouTube 仍紅」） */
+#btn-media-youtube{
+  background: #3a3f44;
+  border-color: #777;
+  color: #f5f5f5;
+  font-weight: 600;
+}
+
+/* Active 才紅（且紅加一點黃、更像你要的） */
+#btn-media-youtube.active{
+  background: #ff2b2b;      /* 紅帶一點黃感（偏亮） */
+  border-color: #ffd28a;     /* 黃暖邊 */
+  color: #111111;
+  font-weight: 800;
+}
+#btn-media-youtube.active:hover:not(:disabled){
+  background: #ff3a3a;
+}
+
 .media-select-btn.active {
   border-color: #d1a343;
   background: #e0b85f;
   color: #1d1d1d;
-  font-weight: 600;
+  font-weight: 700;
 }
 
-/* 編輯時被 disabled：淡一點 */
+/* ✅(6) 編輯時隱蔽那兩個鈕：disabled 更淡一階 */
 .media-select-btn:disabled {
   opacity: 0.22;
+  color: #6f767c;
   filter: grayscale(0.55);
   cursor: default;
-}
-
-/* YouTube 按鈕：平常黑灰，active 才紅 */
-#btn-media-youtube {
-  background: #3a3f44;
-  border-color: #777;
-  color: #f5f5f5;
-  font-weight: 650;
-}
-#btn-media-youtube:hover:not(:disabled) { background: #4a5056; }
-#btn-media-youtube.active {
-  background: #d84a2a;
-  border-color: #ffb27a;
-  color: #140700;
-  font-weight: 750;
-}
-#btn-media-youtube:disabled {
-  background: #2f3438;
-  border-color: #555;
-  color: #777;
 }
 
 /* 表單內：錄音控制列 */
@@ -290,29 +332,26 @@ input:disabled, textarea:disabled { caret-color: transparent; }
   cursor: default;
 }
 
-/* 錄音中：紅點閃 */
+/* 錄音中：紅色 + 閃爍 */
 .media-record-btn.recording {
   color: #ff4b4b;
   border-color: #ff8080;
   background: #4a3a3a;
   animation: recordBlink 0.8s ease-in-out infinite;
 }
-
-/* 暫停中：紅、不閃 */
-.media-record-btn.paused {
-  color: #ff4b4b;
-  border-color: #ff8080;
-  background: #3a2a2a;
-  animation: none;
-}
-
 @keyframes recordBlink {
   0%   { opacity: 1; }
   50%  { opacity: 0.3; }
   100% { opacity: 1; }
 }
 
-/* 右上影音區的 audio 播放器 */
+/* ✅(5) 暫停：紅但不閃（start 紅點保持、pause 鍵也維持 ⏸） */
+.media-record-btn.paused {
+  animation: none !important;
+  opacity: 1 !important;
+}
+
+/* 右上影音區 audio 播放器 */
 #audio-player {
   position: absolute;
   left: 0;
@@ -323,12 +362,8 @@ input:disabled, textarea:disabled { caret-color: transparent; }
   display: none;
 }
 
-.media-record-status {
-  font-size: 11px;
-  opacity: 0.8;
-}
+.media-record-status { font-size: 11px; opacity: 0.8; }
 
-/* 錄音預覽 */
 .rec-preview {
   width: 100%;
   max-height: 140px;
@@ -374,7 +409,9 @@ table#comments-table th {
   font-weight: 600;
   font-size: 12px;
 }
-table#comments-table tbody tr:nth-child(even) { background: #252a2e; }
+table#comments-table tbody tr:nth-child(even) {
+  background: #252a2e;
+}
 
 .col-nick  { width: 80px; white-space: nowrap; }
 .col-text  { width: 50%; position: relative; }
@@ -387,10 +424,8 @@ table#comments-table tbody tr:nth-child(even) { background: #252a2e; }
   flex-wrap: wrap;
   font-size: 13px;
 }
-
 .media-flag { font-size: 16px; }
 
-/* 每列前面的筆按鈕 */
 .row-edit-btn {
   display: inline-flex;
   align-items: center;
@@ -408,7 +443,6 @@ table#comments-table tbody tr:nth-child(even) { background: #252a2e; }
 }
 .row-edit-btn:hover { background: #4a5056; }
 
-/* 表頭的「編輯」小鈕 */
 .edit-header-btn {
   margin-left: 6px;
   padding: 1px 6px;
@@ -437,14 +471,12 @@ table#comments-table tbody tr:nth-child(even) { background: #252a2e; }
   background: #4f7a3b !important;
 }
 
-/* 選到的列閃一下 */
 .row-flash { animation: rowFlash 0.8s ease-out; }
 @keyframes rowFlash {
   0%   { background-color: #7fbf4f; }
   100% { background-color: inherit; }
 }
 
-/* 左側 Back 按鈕 */
 #back-button {
   margin-top: 6px;
   align-self: flex-start;
@@ -475,8 +507,6 @@ table#comments-table tbody tr:nth-child(even) { background: #252a2e; }
   gap: 8px;
 }
 .current-point { font-size: 12px; opacity: 0.9; }
-
-/* 右上角資訊暫時不顯示 */
 .current-point { display: none; }
 
 .visual-body {
@@ -503,12 +533,6 @@ table#comments-table tbody tr:nth-child(even) { background: #252a2e; }
   position: relative;
   min-height: 150px;
 }
-
-/* 讓使用者知道「點這裡是互動區」 */
-.video-frame-wrap { cursor: pointer; }
-.video-frame-wrap iframe { cursor: pointer; }
-#audio-player { cursor: pointer; }
-
 .video-frame-wrap iframe {
   width: 100%;
   height: 100%;
@@ -524,6 +548,25 @@ table#comments-table tbody tr:nth-child(even) { background: #252a2e; }
   color: #999;
   text-align: center;
   padding: 8px;
+}
+
+/* ✅(2) 影片互動遮罩：點它會先停止輪播，再放行給 iframe / 影片互動 */
+.video-interaction-shield{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding: 10px;
+  background: rgba(0,0,0,.35);
+  border: none;
+  color: rgba(255,255,255,.92);
+  font-size: 12px;
+  cursor: pointer;
+}
+.video-interaction-shield:hover{
+  background: rgba(0,0,0,.45);
 }
 
 /* =====================================================
@@ -555,8 +598,14 @@ table#comments-table tbody tr:nth-child(even) { background: #252a2e; }
   transition: border-color 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
 }
 
-.ring-main { border: 3px solid var(--ring-main-color); opacity: 0.8; }
-.ring-boundary { border: 1.2px solid var(--ring-boundary-color); opacity: 0.7; }
+.ring-main {
+  border: 3px solid var(--ring-main-color);
+  opacity: 0.8;
+}
+.ring-boundary {
+  border: 1.2px solid var(--ring-boundary-color);
+  opacity: 0.7;
+}
 .ring-b45 {
   border: 1px solid transparent;
   box-shadow: 0 0 16px var(--ring-outer-fog);
@@ -598,7 +647,6 @@ table#comments-table tbody tr:nth-child(even) { background: #252a2e; }
   align-items: stretch;
 }
 
-/* 回覆區寬度 */
 .reply-area { flex: 1 1 60%; }
 
 .reply-target {
@@ -638,15 +686,11 @@ table#comments-table tbody tr:nth-child(even) { background: #252a2e; }
   font-size: 12px;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-  user-select: none;
-  -webkit-user-select: none;
 }
 .reply-target-btn:disabled {
   opacity: 0.6;
   cursor: default;
 }
-
-/* 被項目連動時 */
 .reply-target-btn.linked {
   background: #4f7a3b;
   border-color: #4f7a3b;
@@ -664,16 +708,11 @@ table#comments-table tbody tr:nth-child(even) { background: #252a2e; }
   resize: none;
   overflow: hidden;
   line-height: 1.4;
-  outline: none;
 }
 
-/* disabled 外觀 */
-#admin-reply:disabled {
-  background: #171b1e;
-  border-color: #3c3f42;
-  color: #7d7d7d;
-  -webkit-text-fill-color: #7d7d7d;
-  cursor: default;
+/* ✅(7) Busy 時：回覆區/輸入區不應該出現閃爍游標 */
+body.is-busy #admin-reply{
+  caret-color: transparent;
 }
 
 .fingerboard-row {
@@ -729,7 +768,6 @@ table#comments-table tbody tr:nth-child(even) { background: #252a2e; }
 
   main.layout { flex-direction: column; }
 
-  /* 手機版：順序改成 右在上，左在下 */
   #visual-panel { order: 1; }
   #comments-section { order: 2; }
 
@@ -742,7 +780,6 @@ table#comments-table tbody tr:nth-child(even) { background: #252a2e; }
 
   .panel-right .visual-body { min-height: 420px; }
 
-  /* 手機版：上層改成上下 */
   .top-row {
     flex-direction: column;
     min-height: 0;
@@ -759,16 +796,11 @@ table#comments-table tbody tr:nth-child(even) { background: #252a2e; }
     margin-top: 6px;
   }
 
-  .circle-stack {
-    width: 160px;
-    height: 160px;
-  }
+  .circle-stack { width: 160px; height: 160px; }
 
   .fingerboard { height: 220px; }
 
-  /* 手機版：回覆區 + 指板 左右並排 */
   .bottom-row { flex-direction: row; }
-
   .reply-area { flex: 1 1 60%; }
   .fingerboard-row { flex: 1 1 40%; }
 }
