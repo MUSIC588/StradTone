@@ -1808,6 +1808,121 @@ async function handleSubmit(e) {
   }
 }
 
+// ===== [JS-PATCH-A] bindToolbarAndForm：工具列/表單事件綁定（缺它整站會停） =====
+function bindToolbarAndForm() {
+  const btnNew = document.getElementById("btn-new");
+  const form = document.getElementById("community-form");
+
+  const btnYoutube = document.getElementById("btn-media-youtube");
+  const btnUpload = document.getElementById("btn-media-upload");
+  const btnAudio  = document.getElementById("btn-media-audio");
+
+  const videoFile = document.getElementById("video-file-input");
+  const videoLabel = document.getElementById("video-file-label");
+  const videoLinkEl = document.getElementById("video-link-input");
+
+  const audioFile = document.getElementById("audio-file-input");
+  const audioLabel = document.getElementById("audio-file-label");
+
+  const ytEl = document.getElementById("youtube-url-input");
+  const startEl = document.getElementById("start-input");
+  const endEl = document.getElementById("end-input");
+
+  // 新增/收起（以及取消編輯）
+  if (btnNew && form) {
+    btnNew.addEventListener("click", () => {
+      markUserInteracted("btn-new");
+
+      // 編輯中：這顆就是「取消編輯」
+      if (formMode === "edit" || editState.active) {
+        resetFormToAddMode();
+        return;
+      }
+
+      // 新增：切換顯示
+      if (!isFormOpen) {
+        form.classList.remove("hidden");
+        form.style.display = "block";
+        btnNew.textContent = "收起";
+        isFormOpen = true;
+        formMode = "add";
+      } else {
+        resetFormToAddMode();
+      }
+    });
+  }
+
+  // 表單送出（submit 事件）
+  if (form) form.addEventListener("submit", handleSubmit);
+
+  // 媒體模式切換
+  if (btnYoutube) btnYoutube.addEventListener("click", () => {
+    setMediaMode("youtube");
+    if (videoFile) { videoFile.value = ""; }
+    if (videoLabel) videoLabel.textContent = "";
+    if (videoLinkEl) videoLinkEl.value = "";
+    if (audioFile) { audioFile.value = ""; }
+    if (audioLabel) audioLabel.textContent = "";
+    clearRecordedMediaState();
+  });
+
+  if (btnUpload) btnUpload.addEventListener("click", () => {
+    setMediaMode("upload");
+    if (ytEl) ytEl.value = "";
+    if (startEl) startEl.value = "";
+    if (endEl) endEl.value = "";
+    if (audioFile) { audioFile.value = ""; }
+    if (audioLabel) audioLabel.textContent = "";
+    clearRecordedMediaState();
+  });
+
+  if (btnAudio) btnAudio.addEventListener("click", () => {
+    setMediaMode("audio");
+    if (ytEl) ytEl.value = "";
+    if (startEl) startEl.value = "";
+    if (endEl) endEl.value = "";
+    if (videoFile) { videoFile.value = ""; }
+    if (videoLabel) videoLabel.textContent = "";
+    if (videoLinkEl) videoLinkEl.value = "";
+  });
+
+  // 顯示檔名
+  if (videoFile) videoFile.addEventListener("change", () => {
+    markUserInteracted("video-file-change");
+    const f = videoFile.files && videoFile.files[0];
+    if (videoLabel) videoLabel.textContent = f ? f.name : "";
+    if (f && videoLinkEl) videoLinkEl.value = "";
+  });
+
+  if (audioFile) audioFile.addEventListener("change", () => {
+    markUserInteracted("audio-file-change");
+    const f = audioFile.files && audioFile.files[0];
+    if (audioLabel) audioLabel.textContent = f ? f.name : "";
+    if (f) window.recordedAudioBlob = null;
+  });
+}
+
+// ===== [JS-PATCH-B] cancelAdminReply：回覆取消 =====
+function cancelAdminReply() {
+  const box = document.getElementById("admin-reply");
+  if (!box) return;
+
+  // 回到目前選取列的原始回覆
+  let raw = String(currentReplyOriginalRaw || "");
+  if (!raw) {
+    box.value = REPLY_PREFIX + "\n";
+  } else if (raw.startsWith(REPLY_PREFIX)) {
+    box.value = raw;
+  } else {
+    box.value = REPLY_PREFIX + "\n" + raw;
+  }
+
+  ensureReplyPrefix();
+  autoResizeReply();
+  hideReplyActions();
+}
+
+
 // ===== [JS-19] DOMContentLoaded：全部啟動 ======
 document.addEventListener("DOMContentLoaded", () => {
   window.currentMediaMode = null;
