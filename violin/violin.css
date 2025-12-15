@@ -71,20 +71,17 @@ textarea::-webkit-input-placeholder {
   opacity: 0.7;
 }
 
-/* ===== [CSS-0.7] Busy 鎖定：處理中禁止互動（含游標/鍵盤） ===== */
+/* ===== [CSS-0.7] Busy 鎖定：處理中禁止互動（單一版本，避免互相打架） ===== */
 body.is-busy {
   cursor: wait;
+  overflow: hidden;
 }
 
 /* 整頁避免點擊穿透 */
-body.is-busy .page {
-  pointer-events: none;
-  user-select: none;
-}
-
-/* 但保留視覺（不會消失），只是不能點 */
+body.is-busy .page,
 body.is-busy .page * {
   pointer-events: none !important;
+  user-select: none;
 }
 
 /* 顯示「處理中…」遮罩 */
@@ -131,8 +128,8 @@ form#community-form {
   margin-bottom: 8px;
   padding: 6px 8px;
   border-radius: 6px;
-  border: 1px solid #d1a343;        /* 邊框改成金色一點 */
-  background: #141b20;              /* 底色加深，與表格區拉開 */
+  border: 1px solid #d1a343;
+  background: #141b20;
   box-shadow: 0 0 10px rgba(0,0,0,0.65);
 }
 form#community-form label {
@@ -160,12 +157,8 @@ form#community-form input[type="text"]:not(:disabled) {
 }
 
 /* [11] 防止點到 username 文字出現藍底選取（允許輸入，但不顯示選取藍底） */
-form#community-form input[type="text"]::selection {
-  background: transparent;
-}
-form#community-form input[type="text"]::-moz-selection {
-  background: transparent;
-}
+form#community-form input[type="text"]::selection { background: transparent; }
+form#community-form input[type="text"]::-moz-selection { background: transparent; }
 
 /* 鎖定狀態（等名稱驗證）→ 深底 */
 form#community-form input[type="text"]:disabled {
@@ -174,10 +167,8 @@ form#community-form input[type="text"]:disabled {
   -webkit-text-fill-color: #999;
 }
 
-/* 如果 JS 在忙碌時把 input/textarea disabled，讓 caret 不要閃（[7] 配合用） */
-input:disabled, textarea:disabled {
-  caret-color: transparent;
-}
+/* 如果 JS 在忙碌時把 input/textarea disabled，讓 caret 不要閃 */
+input:disabled, textarea:disabled { caret-color: transparent; }
 
 #record-btn {
   padding: 4px 10px;
@@ -186,7 +177,7 @@ input:disabled, textarea:disabled {
   background: #3a3f44;
   color: #f5f5f5;
   font-size: 12px;
-  cursor: not-allowed; /* 預留錄音 */
+  cursor: not-allowed;
   opacity: 0.6;
 }
 
@@ -245,25 +236,23 @@ input:disabled, textarea:disabled {
   font-weight: 600;
 }
 
-/* [6] 編輯時被 disabled 的兩顆鈕：字樣顏色再淺一階 */
+/* 編輯時被 disabled：淡一點 */
 .media-select-btn:disabled {
-  opacity: 0.22;            /* 再淡一階 */
+  opacity: 0.22;
   filter: grayscale(0.55);
   cursor: default;
 }
 
-/* [9] YouTube：平常不要一直紅，只有 active 才紅；紅色帶一點黃，字體稍粗 */
+/* YouTube 按鈕：平常黑灰，active 才紅 */
 #btn-media-youtube {
-  background: #3a3f44;      /* 跟其他一樣黑灰底 */
+  background: #3a3f44;
   border-color: #777;
   color: #f5f5f5;
   font-weight: 650;
 }
-#btn-media-youtube:hover:not(:disabled) {
-  background: #4a5056;
-}
+#btn-media-youtube:hover:not(:disabled) { background: #4a5056; }
 #btn-media-youtube.active {
-  background: #d84a2a;      /* 紅 + 一點黃（偏橘紅） */
+  background: #d84a2a;
   border-color: #ffb27a;
   color: #140700;
   font-weight: 750;
@@ -274,8 +263,7 @@ input:disabled, textarea:disabled {
   color: #777;
 }
 
-
-/* 表單內：錄影/錄音控制列（目前只給錄音用） */
+/* 表單內：錄音控制列 */
 .media-record-toolbar {
   display: flex;
   align-items: center;
@@ -302,7 +290,7 @@ input:disabled, textarea:disabled {
   cursor: default;
 }
 
-/* 錄音中：白點變紅、外觀稍亮並閃爍 */
+/* 錄音中：紅點閃 */
 .media-record-btn.recording {
   color: #ff4b4b;
   border-color: #ff8080;
@@ -310,7 +298,7 @@ input:disabled, textarea:disabled {
   animation: recordBlink 0.8s ease-in-out infinite;
 }
 
-/* [5] 暫停中：保持「暫停鍵外觀」但變紅，不閃爍（JS 加 class=paused 即生效） */
+/* 暫停中：紅、不閃 */
 .media-record-btn.paused {
   color: #ff4b4b;
   border-color: #ff8080;
@@ -324,7 +312,7 @@ input:disabled, textarea:disabled {
   100% { opacity: 1; }
 }
 
-/* 右上影音區的 audio 播放器（有錄音時使用） */
+/* 右上影音區的 audio 播放器 */
 #audio-player {
   position: absolute;
   left: 0;
@@ -332,7 +320,7 @@ input:disabled, textarea:disabled {
   bottom: 0;
   width: 100%;
   background: #111315;
-  display: none; /* 預設隱藏，需要時由 JS 顯示 */
+  display: none;
 }
 
 .media-record-status {
@@ -340,7 +328,7 @@ input:disabled, textarea:disabled {
   opacity: 0.8;
 }
 
-/* 錄影 / 錄音預覽區 */
+/* 錄音預覽 */
 .rec-preview {
   width: 100%;
   max-height: 140px;
@@ -349,15 +337,14 @@ input:disabled, textarea:disabled {
   background: #111;
 }
 
-
 /* =====================================================
  * [CSS-2] 左側：留言列表表格
  * ===================================================== */
 
 .comments-wrapper {
   flex: 1 1 auto;
-  overflow-y: auto;          /* 僅縱向捲動 */
-  overflow-x: hidden;        /* 不要橫向卷軸 */
+  overflow-y: auto;
+  overflow-x: hidden;
   border-radius: 6px;
   border: 1px solid #444;
   background: #202427;
@@ -366,7 +353,7 @@ table#comments-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 12px;
-  table-layout: fixed;       /* 固定欄寬，避免左右亂跑 */
+  table-layout: fixed;
 }
 table#comments-table thead {
   position: sticky;
@@ -381,15 +368,13 @@ table#comments-table td {
   text-align: left;
   vertical-align: top;
   word-wrap: break-word;
-  word-break: break-word;    /* 依裝置寬度自動折行 */
+  word-break: break-word;
 }
 table#comments-table th {
   font-weight: 600;
   font-size: 12px;
 }
-table#comments-table tbody tr:nth-child(even) {
-  background: #252a2e;
-}
+table#comments-table tbody tr:nth-child(even) { background: #252a2e; }
 
 .col-nick  { width: 80px; white-space: nowrap; }
 .col-text  { width: 50%; position: relative; }
@@ -403,11 +388,9 @@ table#comments-table tbody tr:nth-child(even) {
   font-size: 13px;
 }
 
-.media-flag {
-  font-size: 16px;   /* 圖示稍微放大 */
-}
+.media-flag { font-size: 16px; }
 
-/* 每列前面的筆按鈕（進入編輯用） */
+/* 每列前面的筆按鈕 */
 .row-edit-btn {
   display: inline-flex;
   align-items: center;
@@ -424,17 +407,6 @@ table#comments-table tbody tr:nth-child(even) {
   flex-shrink: 0;
 }
 .row-edit-btn:hover { background: #4a5056; }
-
-.play-video-btn {
-  padding: 2px 6px;
-  border-radius: 12px;
-  border: 1px solid #888;
-  background: #3a3f44;
-  color: #f5f5f5;
-  font-size: 11px;
-  cursor: pointer;
-  margin-top: 2px;
-}
 
 /* 表頭的「編輯」小鈕 */
 .edit-header-btn {
@@ -462,17 +434,17 @@ table#comments-table tbody tr:nth-child(even) {
 }
 
 #comments-tbody tr.selected {
-  background: #4f7a3b !important; /* 比原本再亮一點 */
+  background: #4f7a3b !important;
 }
 
-/* 選到的列閃一下（給回覆區名稱按鈕用） */
+/* 選到的列閃一下 */
 .row-flash { animation: rowFlash 0.8s ease-out; }
 @keyframes rowFlash {
   0%   { background-color: #7fbf4f; }
   100% { background-color: inherit; }
 }
 
-/* 左側 Back 按鈕（移到表格底下） */
+/* 左側 Back 按鈕 */
 #back-button {
   margin-top: 6px;
   align-self: flex-start;
@@ -484,7 +456,6 @@ table#comments-table tbody tr:nth-child(even) {
   font-size: 12px;
   cursor: pointer;
 }
-
 
 /* =====================================================
  * [CSS-3] 右側：視覺區框架
@@ -505,7 +476,7 @@ table#comments-table tbody tr:nth-child(even) {
 }
 .current-point { font-size: 12px; opacity: 0.9; }
 
-/* 右上角「尚未選取留言 / 播放中…」暫時不顯示 */
+/* 右上角資訊暫時不顯示 */
 .current-point { display: none; }
 
 .visual-body {
@@ -532,6 +503,12 @@ table#comments-table tbody tr:nth-child(even) {
   position: relative;
   min-height: 150px;
 }
+
+/* 讓使用者知道「點這裡是互動區」 */
+.video-frame-wrap { cursor: pointer; }
+.video-frame-wrap iframe { cursor: pointer; }
+#audio-player { cursor: pointer; }
+
 .video-frame-wrap iframe {
   width: 100%;
   height: 100%;
@@ -548,7 +525,6 @@ table#comments-table tbody tr:nth-child(even) {
   text-align: center;
   padding: 8px;
 }
-
 
 /* =====================================================
  * [CSS-4] 右側：多層圓
@@ -579,28 +555,22 @@ table#comments-table tbody tr:nth-child(even) {
   transition: border-color 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
 }
 
-.ring-main {
-  border: 3px solid var(--ring-main-color);
-  opacity: 0.8;
-}
-.ring-boundary {
-  border: 1.2px solid var(--ring-boundary-color);
-  opacity: 0.7;
-}
+.ring-main { border: 3px solid var(--ring-main-color); opacity: 0.8; }
+.ring-boundary { border: 1.2px solid var(--ring-boundary-color); opacity: 0.7; }
 .ring-b45 {
   border: 1px solid transparent;
   box-shadow: 0 0 16px var(--ring-outer-fog);
   opacity: 0.9;
 }
 
-.ring-b45 { inset: 4%;  } /* 4.5 */
-.ring-4   { inset: 10%; } /* 4   */
-.ring-b35 { inset: 20%; } /* 3.5 */
-.ring-3   { inset: 26%; } /* 3   */
-.ring-b25 { inset: 36%; } /* 2.5 */
-.ring-2   { inset: 42%; } /* 2   */
-.ring-b15 { inset: 52%; } /* 1.5 */
-.ring-1   { inset: 60%; } /* 1   */
+.ring-b45 { inset: 4%;  }
+.ring-4   { inset: 10%; }
+.ring-b35 { inset: 20%; }
+.ring-3   { inset: 26%; }
+.ring-b25 { inset: 36%; }
+.ring-2   { inset: 42%; }
+.ring-b15 { inset: 52%; }
+.ring-1   { inset: 60%; }
 
 .ring.active {
   border-color: var(--ring-highlight-color);
@@ -616,9 +586,7 @@ table#comments-table tbody tr:nth-child(even) {
   color: #cfe9cf;
   text-shadow: 0 0 3px #000;
 }
-/* 暫時隱藏層級文字 */
 .layer-label { display: none; }
-
 
 /* =====================================================
  * [CSS-5] 右側下半：回覆區 + 指板
@@ -630,10 +598,8 @@ table#comments-table tbody tr:nth-child(even) {
   align-items: stretch;
 }
 
-/* 回覆區寬度改成和影片同樣比例（約 6:4） */
+/* 回覆區寬度 */
 .reply-area { flex: 1 1 60%; }
-
-.reply-area-header { font-size: 13px; margin: 0 0 4px; }
 
 .reply-target {
   font-size: 12px;
@@ -641,7 +607,6 @@ table#comments-table tbody tr:nth-child(even) {
   opacity: 0.85;
 }
 
-/* 回覆區下方的「儲存 / 取消」 */
 .reply-actions {
   margin-top: 4px;
   display: flex;
@@ -681,17 +646,11 @@ table#comments-table tbody tr:nth-child(even) {
   cursor: default;
 }
 
-/* 被項目連動時，顏色跟 .selected row 一致 */
+/* 被項目連動時 */
 .reply-target-btn.linked {
   background: #4f7a3b;
   border-color: #4f7a3b;
   color: #f5f5f5;
-}
-
-.reply-note {
-  font-size: 11px;
-  opacity: 0.75;
-  margin-bottom: 4px;
 }
 
 #admin-reply {
@@ -708,7 +667,7 @@ table#comments-table tbody tr:nth-child(even) {
   outline: none;
 }
 
-/* [7] 如果 JS 把回覆鎖住 disabled：完全像不能互動（連游標都不要） */
+/* disabled 外觀 */
 #admin-reply:disabled {
   background: #171b1e;
   border-color: #3c3f42;
@@ -758,36 +717,6 @@ table#comments-table tbody tr:nth-child(even) {
   pointer-events: none;
 }
 
-
-/* =====================================================
- * [CSS-7] 忙碌鎖定模式（[7]：處理中禁止其他操作）
- * 只要 JS 在忙碌時加上 body.is-busy 即可一鍵鎖全站
- * ===================================================== */
-
-body.is-busy {
-  overflow: hidden;
-}
-
-body.is-busy .page {
-  pointer-events: none; /* 全站不能點 */
-}
-
-/* 但讓「處理中遮罩」自己可顯示（如果你之後加 HTML overlay） */
-.busy-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.55);
-  z-index: 9999;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  color: #f5f5f5;
-}
-body.is-busy .busy-overlay {
-  display: flex;
-}
-
 /* =====================================================
  * [CSS-6] 手機版
  * ===================================================== */
@@ -813,7 +742,7 @@ body.is-busy .busy-overlay {
 
   .panel-right .visual-body { min-height: 420px; }
 
-  /* 手機版：上層只要影片 */
+  /* 手機版：上層改成上下 */
   .top-row {
     flex-direction: column;
     min-height: 0;
@@ -843,4 +772,3 @@ body.is-busy .busy-overlay {
   .reply-area { flex: 1 1 60%; }
   .fingerboard-row { flex: 1 1 40%; }
 }
-
