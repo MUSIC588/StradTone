@@ -1,7 +1,9 @@
+// violin.js - 完整且修正後的版本
+
 // ===== [JS-0] 全域狀態 =====
 const API_URL =
   "https://script.google.com/macros/s/AKfycbxn5aDCimtZmvgK4uEGr5fIyNItY2wZgQyO2LVEZkggFkO0VZ_YdDMyspGpzpkYy5W6-A/exec";
- 
+
 let commentsCache = [];
 let currentSelectedId = null;
 
@@ -805,298 +807,6 @@ function clearRecordedMediaState() {
   }
 }
 
-// ===== [JS-A] 左側表單：錄音面板控制（MediaRecorder） (第 5 點) ======
-function stopAudioRecordingInternal(cancelOnly) {
-  const statusEl = document.getElementById("audio-rec-status");
-  const previewEl = document.getElementById("audio-rec-preview");
-  const btnStart = document.getElementById("audio-rec-start");
-  const btnStop = document.getElementById("audio-rec-stop");
-  const btnPause = document.getElementById("audio-rec-pause");
-  const btnCancel = document.getElementById("audio-rec-cancel");
-  
-  // [JS-MOD] 清除暫停狀態 class (第 5 點)
-  if (btnStart) btnStart.classList.remove("paused-rec");
-  if (btnPause) btnPause.classList.remove("paused-rec");
-
-
-  clearAudioRecTimer();
-  audioRecActive = false;
-  audioRecPaused = false;
-  audioRecAccumulated = 0;
-
-  if (audioRecRecorder && audioRecRecorder.state !== "inactive") {
-    if (cancelOnly) {
-      audioRecCancelling = true;
-    }
-    try {
-      audioRecRecorder.stop();
-    } catch (e) {}
-  }
-  audioRecRecorder = null;
-
-  if (audioRecStream) {
-    audioRecStream.getTracks().forEach((t) => t.stop());
-  }
-  audioRecStream = null;
-
-  if (cancelOnly) {
-    audioRecChunks = [];
-    window.recordedAudioBlob = null;
-    if (previewEl) {
-      previewEl.removeAttribute("src");
-      previewEl.load();
-    }
-    if (statusEl) statusEl.textContent = "錄音預備";
-  }
-
-  if (btnStart) btnStart.disabled = false;
-  if (btnStop) btnStop.disabled = true;
-  if (btnCancel) btnCancel.disabled = false;
-  if (btnPause) {
-    btnPause.disabled = true;
-    btnPause.classList.remove("recording");
-    // [JS-MOD] 暫停鍵永遠顯示 ⏸ (第 5 點)
-    btnPause.textContent = "⏸"; 
-  }
-
-  const btnStart2 = document.getElementById("audio-rec-start");
-  if (btnStart2) {
-    btnStart2.classList.remove("recording");
-  }
-}
-
-function setupAudioRecording() {
-  const btnStart = document.getElementById("audio-rec-start");
-  const btnStop = document.getElementById("audio-rec-stop");
-  const btnPause = document.getElementById("audio-rec-pause");
-  const btnCancel = document.getElementById("audio-rec-cancel");
-  const statusEl = document.getElementById("audio-rec-status");
-  const previewEl = document.getElementById("audio-rec-preview");
-
-  if (!btnStart || !btnStop || !btnCancel || !statusEl || !previewEl || !btnPause) {
-    return;
-  }
-
-  btnStart.disabled = false;
-  btnStop.disabled = true;
-  btnPause.disabled = true;
-  btnCancel.disabled = true;
-  
-  // [JS-MOD] 確保初始狀態 (第 5 點)
-  btnStart.classList.remove("paused-rec");
-  btnPause.classList.remove("paused-rec");
-  btnPause.textContent = "⏸";
-
-  btnStart.addEventListener("click", async () => {
-    // [JS-MOD] 任何錄音行為都視為互動 (第 2 點)
-    stopCarousel("user"); 
-    
-    if (audioRecActive) return;
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      statusEl.textContent = "此瀏覽器不支援麥克風錄音。";
-      return;
-    }
-
-    try {
-      stopAudioRecordingInternal(true);
-
-      btnStart.disabled = true;
-      btnStop.disabled = true;
-      btnPause.disabled = true;
-      btnCancel.disabled = true;
-      statusEl.textContent = "正在啟用麥克風…";
-
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioRecStream = stream;
-      audioRecChunks = [];
-      window.recordedAudioBlob = null;
-
-      const mimeType =
-        MediaRecorder.isTypeSupported &&
-        MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-          ? "audio/webm;codecs=opus"
-          : "audio/webm";
-
-      const recorder = new MediaRecorder(stream, { mimeType });
-      audioRecRecorder = recorder;
-      audioRecActive = true;
-      audioRecPaused = false;
-      audioRecAccumulated = 0;
-      audioRecCancelling = false;
-      
-      // [JS-MOD] 清除暫停狀態 class (第 5 點)
-      btnStart.classList.remove("paused-rec");
-      btnPause.classList.remove("paused-rec");
-
-
-      recorder.addEventListener("dataavailable", (ev) => {
-        if (ev.data && ev.data.size > 0) {
-          audioRecChunks.push(ev.data);
-        }
-      });
-
-      recorder.addEventListener("stop", () => {
-        clearAudioRecTimer();
-        audioRecActive = false;
-
-        if (audioRecStream) {
-          audioRecStream.getTracks().forEach((t) => t.stop());
-        }
-        audioRecStream = null;
-
-        if (audioRecCancelling) {
-          audioRecCancelling = false;
-          audioRecChunks = [];
-          window.recordedAudioBlob = null;
-          if (previewEl) {
-            previewEl.removeAttribute("src");
-            previewEl.load();
-          }
-          if (statusEl) statusEl.textContent = "錄音已取消。";
-          btnStart.disabled = false;
-          btnStop.disabled = true;
-          btnPause.disabled = true;
-          // [JS-MOD] 暫停鍵永遠顯示 ⏸ (第 5 點)
-          btnPause.textContent = "⏸";
-          btnCancel.disabled = false;
-          btnStart.classList.remove("recording");
-          btnStart.classList.remove("paused-rec"); // [JS-MOD] 確保清除
-          btnPause.classList.remove("paused-rec"); // [JS-MOD] 確保清除
-          return;
-        }
-
-        if (!audioRecChunks.length) return;
-
-        const blob = new Blob(audioRecChunks, { type: mimeType });
-        window.recordedAudioBlob = blob;
-
-        const url = URL.createObjectURL(blob);
-        previewEl.src = url;
-        previewEl.play().catch(() => {});
-
-        statusEl.textContent = "錄音完成，可按「發表」儲存。";
-
-        btnStart.disabled = false;
-        btnStop.disabled = true;
-        btnPause.disabled = true;
-        // [JS-MOD] 暫停鍵永遠顯示 ⏸ (第 5 點)
-        btnPause.textContent = "⏸"; 
-        btnCancel.disabled = false;
-
-        btnStart.classList.remove("recording");
-        btnStart.classList.remove("paused-rec"); // [JS-MOD] 確保清除
-        btnPause.classList.remove("paused-rec"); // [JS-MOD] 確保清除
-      });
-
-      audioRecStartTime = Date.now();
-      clearAudioRecTimer();
-      statusEl.textContent = "錄音中… 00:00";
-      audioRecTimerId = setInterval(() => {
-        if (!audioRecActive || audioRecPaused) return;
-        const elapsedSec =
-          audioRecAccumulated + (Date.now() - audioRecStartTime) / 1000;
-        statusEl.textContent = "錄音中… " + formatDuration(elapsedSec);
-      }, 500);
-
-      btnStart.classList.add("recording");
-      btnStop.disabled = false;
-      btnPause.disabled = false;
-      btnCancel.disabled = false;
-
-      recorder.start();
-    } catch (err) {
-      console.error(err);
-      statusEl.textContent = "無法啟用麥克風（可能被拒絕或裝置不支援）。";
-      btnStart.disabled = false;
-      btnStop.disabled = true;
-      btnPause.disabled = true;
-      btnCancel.disabled = false;
-      btnStart.classList.remove("recording");
-    }
-  });
-
-  btnStop.addEventListener("click", () => {
-    // [JS-MOD] 任何錄音行為都視為互動 (第 2 點)
-    stopCarousel("user"); 
-    
-    if (!audioRecActive || !audioRecRecorder) return;
-    audioRecPaused = false;
-    audioRecAccumulated = 0;
-    clearAudioRecTimer();
-    statusEl.textContent = "處理錄音中…";
-    btnStop.disabled = true;
-    if (btnPause) {
-      btnPause.disabled = true;
-      btnPause.classList.remove("recording");
-      // [JS-MOD] 暫停鍵永遠顯示 ⏸ (第 5 點)
-      btnPause.textContent = "⏸";
-    }
-    // [JS-MOD] 清除暫停狀態 class (第 5 點)
-    btnStart.classList.remove("paused-rec");
-    btnPause.classList.remove("paused-rec");
-    
-    audioRecRecorder.stop();
-  });
-
-  btnPause.addEventListener("click", () => {
-    // [JS-MOD] 任何錄音行為都視為互動 (第 2 點)
-    stopCarousel("user"); 
-    
-    if (!audioRecRecorder || !audioRecActive) return;
-
-    if (typeof audioRecRecorder.pause !== "function" ||
-        typeof audioRecRecorder.resume !== "function") {
-      statusEl.textContent = "此瀏覽器不支援暫停功能。";
-      btnPause.disabled = true;
-      return;
-    }
-
-    if (!audioRecPaused) {
-      // 暫停
-      audioRecPaused = true;
-      audioRecAccumulated += (Date.now() - audioRecStartTime) / 1000;
-      clearAudioRecTimer();
-      audioRecRecorder.pause();
-      statusEl.textContent = "錄音已暫停 " + formatDuration(audioRecAccumulated);
-      
-      // [JS-MOD] 暫停鍵保持 ⏸ 符號，但進入紅色暫停狀態 (第 5 點)
-      btnPause.classList.add("paused-rec");
-      btnStart.classList.add("paused-rec");
-      btnStart.classList.remove("recording"); // 停止閃爍
-    } else {
-      // 繼續
-      audioRecPaused = false;
-      audioRecStartTime = Date.now();
-      audioRecRecorder.resume();
-      statusEl.textContent = "錄音中… " + formatDuration(audioRecAccumulated);
-      clearAudioRecTimer();
-      audioRecTimerId = setInterval(() => {
-        if (!audioRecActive || audioRecPaused) return;
-        const elapsedSec =
-          audioRecAccumulated + (Date.now() - audioRecStartTime) / 1000;
-        statusEl.textContent = "錄音中… " + formatDuration(elapsedSec);
-      }, 500);
-      
-      // [JS-MOD] 繼續錄音，移除暫停狀態，紅點閃爍 (第 5 點)
-      btnPause.classList.remove("paused-rec");
-      btnStart.classList.remove("paused-rec");
-      btnStart.classList.add("recording");
-    }
-  });
-
-  btnCancel.addEventListener("click", () => {
-    // [JS-MOD] 任何錄音行為都視為互動 (第 2 點)
-    stopCarousel("user"); 
-    
-    if (audioRecActive && audioRecRecorder) {
-      stopAudioRecordingInternal(true);
-    } else {
-      stopAudioRecordingInternal(true);
-    }
-  });
-}
-
-// [JS-MOD] 媒體模式切換 (第 9 點)
 function setMediaMode(mode) {
   window.currentMediaMode = mode || null;
 
@@ -1143,7 +853,7 @@ function setMediaMode(mode) {
   }
 }
 
-// ===== [JS-11] 從「新增/編輯」復原成初始狀態 ======
+// ===== [JS-11] 從「新增/編輯」復原成初始狀態 (已移動至此，確保 setMediaMode 可用) ======
 function resetFormToAddMode() {
   const form = document.getElementById("community-form");
   const btnNew = document.getElementById("btn-new");
@@ -1754,7 +1464,8 @@ async function handleSubmit(e) {
     try {
       data = await res.json();
     } catch (err) {
-      throw new Error("無法解析伺服器回應（可能是權限或 CORS 問題）");
+      // 這是前端最容易抓到 Apps Script 權限或部署錯誤的地方
+      throw new Error("無法解析伺服器回應（可能是 Apps Script 權限不足、部署錯誤或 CORS 設定不正確）"); 
     }
 
     if (!data || data.status !== "ok") {
@@ -1802,7 +1513,7 @@ function bindToolbarAndForm() {
 
   form.classList.add("hidden");
   form.style.display = "none";
-  setMediaMode(null);
+  setMediaMode(null); // <-- 這裡現在可以找到 setMediaMode 了
   isFormOpen = false;
 
   if (btnNew) {
@@ -1907,7 +1618,298 @@ function bindToolbarAndForm() {
     });
   }
 
-  form.addEventListener("submit", handleSubmit);
+  form.addEventListener("submit", handleSubmit); // <-- 新增按鈕的送出邏輯現在可以正確綁定
+}
+
+// ===== [JS-A] 左側表單：錄音面板控制（MediaRecorder） (第 5 點) ======
+function stopAudioRecordingInternal(cancelOnly) {
+  const statusEl = document.getElementById("audio-rec-status");
+  const previewEl = document.getElementById("audio-rec-preview");
+  const btnStart = document.getElementById("audio-rec-start");
+  const btnStop = document.getElementById("audio-rec-stop");
+  const btnPause = document.getElementById("audio-rec-pause");
+  const btnCancel = document.getElementById("audio-rec-cancel");
+  
+  // [JS-MOD] 清除暫停狀態 class (第 5 點)
+  if (btnStart) btnStart.classList.remove("paused-rec");
+  if (btnPause) btnPause.classList.remove("paused-rec");
+
+
+  clearAudioRecTimer();
+  audioRecActive = false;
+  audioRecPaused = false;
+  audioRecAccumulated = 0;
+
+  if (audioRecRecorder && audioRecRecorder.state !== "inactive") {
+    if (cancelOnly) {
+      audioRecCancelling = true;
+    }
+    try {
+      audioRecRecorder.stop();
+    } catch (e) {}
+  }
+  audioRecRecorder = null;
+
+  if (audioRecStream) {
+    audioRecStream.getTracks().forEach((t) => t.stop());
+  }
+  audioRecStream = null;
+
+  if (cancelOnly) {
+    audioRecChunks = [];
+    window.recordedAudioBlob = null;
+    if (previewEl) {
+      previewEl.removeAttribute("src");
+      previewEl.load();
+    }
+    if (statusEl) statusEl.textContent = "錄音預備";
+  }
+
+  if (btnStart) btnStart.disabled = false;
+  if (btnStop) btnStop.disabled = true;
+  if (btnCancel) btnCancel.disabled = false;
+  if (btnPause) {
+    btnPause.disabled = true;
+    btnPause.classList.remove("recording");
+    // [JS-MOD] 暫停鍵永遠顯示 ⏸ (第 5 點)
+    btnPause.textContent = "⏸"; 
+  }
+
+  const btnStart2 = document.getElementById("audio-rec-start");
+  if (btnStart2) {
+    btnStart2.classList.remove("recording");
+  }
+}
+
+function setupAudioRecording() {
+  const btnStart = document.getElementById("audio-rec-start");
+  const btnStop = document.getElementById("audio-rec-stop");
+  const btnPause = document.getElementById("audio-rec-pause");
+  const btnCancel = document.getElementById("audio-rec-cancel");
+  const statusEl = document.getElementById("audio-rec-status");
+  const previewEl = document.getElementById("audio-rec-preview");
+
+  if (!btnStart || !btnStop || !btnCancel || !statusEl || !previewEl || !btnPause) {
+    return;
+  }
+
+  btnStart.disabled = false;
+  btnStop.disabled = true;
+  btnPause.disabled = true;
+  btnCancel.disabled = true;
+  
+  // [JS-MOD] 確保初始狀態 (第 5 點)
+  btnStart.classList.remove("paused-rec");
+  btnPause.classList.remove("paused-rec");
+  btnPause.textContent = "⏸";
+
+  btnStart.addEventListener("click", async () => {
+    // [JS-MOD] 任何錄音行為都視為互動 (第 2 點)
+    stopCarousel("user"); 
+    
+    if (audioRecActive) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      statusEl.textContent = "此瀏覽器不支援麥克風錄音。";
+      return;
+    }
+
+    try {
+      stopAudioRecordingInternal(true);
+
+      btnStart.disabled = true;
+      btnStop.disabled = true;
+      btnPause.disabled = true;
+      btnCancel.disabled = true;
+      statusEl.textContent = "正在啟用麥克風…";
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioRecStream = stream;
+      audioRecChunks = [];
+      window.recordedAudioBlob = null;
+
+      const mimeType =
+        MediaRecorder.isTypeSupported &&
+        MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+          ? "audio/webm;codecs=opus"
+          : "audio/webm";
+
+      const recorder = new MediaRecorder(stream, { mimeType });
+      audioRecRecorder = recorder;
+      audioRecActive = true;
+      audioRecPaused = false;
+      audioRecAccumulated = 0;
+      audioRecCancelling = false;
+      
+      // [JS-MOD] 清除暫停狀態 class (第 5 點)
+      btnStart.classList.remove("paused-rec");
+      btnPause.classList.remove("paused-rec");
+
+
+      recorder.addEventListener("dataavailable", (ev) => {
+        if (ev.data && ev.data.size > 0) {
+          audioRecChunks.push(ev.data);
+        }
+      });
+
+      recorder.addEventListener("stop", () => {
+        clearAudioRecTimer();
+        audioRecActive = false;
+
+        if (audioRecStream) {
+          audioRecStream.getTracks().forEach((t) => t.stop());
+        }
+        audioRecStream = null;
+
+        if (audioRecCancelling) {
+          audioRecCancelling = false;
+          audioRecChunks = [];
+          window.recordedAudioBlob = null;
+          if (previewEl) {
+            previewEl.removeAttribute("src");
+            previewEl.load();
+          }
+          if (statusEl) statusEl.textContent = "錄音已取消。";
+          btnStart.disabled = false;
+          btnStop.disabled = true;
+          btnPause.disabled = true;
+          // [JS-MOD] 暫停鍵永遠顯示 ⏸ (第 5 點)
+          btnPause.textContent = "⏸";
+          btnCancel.disabled = false;
+          btnStart.classList.remove("recording");
+          btnStart.classList.remove("paused-rec"); // [JS-MOD] 確保清除
+          btnPause.classList.remove("paused-rec"); // [JS-MOD] 確保清除
+          return;
+        }
+
+        if (!audioRecChunks.length) return;
+
+        const blob = new Blob(audioRecChunks, { type: mimeType });
+        window.recordedAudioBlob = blob;
+
+        const url = URL.createObjectURL(blob);
+        previewEl.src = url;
+        previewEl.play().catch(() => {});
+
+        statusEl.textContent = "錄音完成，可按「發表」儲存。";
+
+        btnStart.disabled = false;
+        btnStop.disabled = true;
+        btnPause.disabled = true;
+        // [JS-MOD] 暫停鍵永遠顯示 ⏸ (第 5 點)
+        btnPause.textContent = "⏸"; 
+        btnCancel.disabled = false;
+
+        btnStart.classList.remove("recording");
+        btnStart.classList.remove("paused-rec"); // [JS-MOD] 確保清除
+        btnPause.classList.remove("paused-rec"); // [JS-MOD] 確保清除
+      });
+
+      audioRecStartTime = Date.now();
+      clearAudioRecTimer();
+      statusEl.textContent = "錄音中… 00:00";
+      audioRecTimerId = setInterval(() => {
+        if (!audioRecActive || audioRecPaused) return;
+        const elapsedSec =
+          audioRecAccumulated + (Date.now() - audioRecStartTime) / 1000;
+        statusEl.textContent = "錄音中… " + formatDuration(elapsedSec);
+      }, 500);
+
+      btnStart.classList.add("recording");
+      btnStop.disabled = false;
+      btnPause.disabled = false;
+      btnCancel.disabled = false;
+
+      recorder.start();
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = "無法啟用麥克風（可能被拒絕或裝置不支援）。";
+      btnStart.disabled = false;
+      btnStop.disabled = true;
+      btnPause.disabled = true;
+      btnCancel.disabled = false;
+      btnStart.classList.remove("recording");
+    }
+  });
+
+  btnStop.addEventListener("click", () => {
+    // [JS-MOD] 任何錄音行為都視為互動 (第 2 點)
+    stopCarousel("user"); 
+    
+    if (!audioRecActive || !audioRecRecorder) return;
+    audioRecPaused = false;
+    audioRecAccumulated = 0;
+    clearAudioRecTimer();
+    statusEl.textContent = "處理錄音中…";
+    btnStop.disabled = true;
+    if (btnPause) {
+      btnPause.disabled = true;
+      btnPause.classList.remove("recording");
+      // [JS-MOD] 暫停鍵永遠顯示 ⏸ (第 5 點)
+      btnPause.textContent = "⏸";
+    }
+    // [JS-MOD] 清除暫停狀態 class (第 5 點)
+    btnStart.classList.remove("paused-rec");
+    btnPause.classList.remove("paused-rec");
+    
+    audioRecRecorder.stop();
+  });
+
+  btnPause.addEventListener("click", () => {
+    // [JS-MOD] 任何錄音行為都視為互動 (第 2 點)
+    stopCarousel("user"); 
+    
+    if (!audioRecRecorder || !audioRecActive) return;
+
+    if (typeof audioRecRecorder.pause !== "function" ||
+        typeof audioRecRecorder.resume !== "function") {
+      statusEl.textContent = "此瀏覽器不支援暫停功能。";
+      btnPause.disabled = true;
+      return;
+    }
+
+    if (!audioRecPaused) {
+      // 暫停
+      audioRecPaused = true;
+      audioRecAccumulated += (Date.now() - audioRecStartTime) / 1000;
+      clearAudioRecTimer();
+      audioRecRecorder.pause();
+      statusEl.textContent = "錄音已暫停 " + formatDuration(audioRecAccumulated);
+      
+      // [JS-MOD] 暫停鍵保持 ⏸ 符號，但進入紅色暫停狀態 (第 5 點)
+      btnPause.classList.add("paused-rec");
+      btnStart.classList.add("paused-rec");
+      btnStart.classList.remove("recording"); // 停止閃爍
+    } else {
+      // 繼續
+      audioRecPaused = false;
+      audioRecStartTime = Date.now();
+      audioRecRecorder.resume();
+      statusEl.textContent = "錄音中… " + formatDuration(audioRecAccumulated);
+      clearAudioRecTimer();
+      audioRecTimerId = setInterval(() => {
+        if (!audioRecActive || audioRecPaused) return;
+        const elapsedSec =
+          audioRecAccumulated + (Date.now() - audioRecStartTime) / 1000;
+        statusEl.textContent = "錄音中… " + formatDuration(elapsedSec);
+      }, 500);
+      
+      // [JS-MOD] 繼續錄音，移除暫停狀態，紅點閃爍 (第 5 點)
+      btnPause.classList.remove("paused-rec");
+      btnStart.classList.remove("paused-rec");
+      btnStart.classList.add("recording");
+    }
+  });
+
+  btnCancel.addEventListener("click", () => {
+    // [JS-MOD] 任何錄音行為都視為互動 (第 2 點)
+    stopCarousel("user"); 
+    
+    if (audioRecActive && audioRecRecorder) {
+      stopAudioRecordingInternal(true);
+    } else {
+      stopAudioRecordingInternal(true);
+    }
+  });
 }
 
 // [JS-MOD] 綁定多層圓/指板區的互動停止輪播 (第 2 點)
