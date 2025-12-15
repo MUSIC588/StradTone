@@ -1,85 +1,165 @@
-   * { box-sizing: border-box; }
+* { box-sizing: border-box; }
 
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, "Microsoft JhengHei", sans-serif;
-      background: #222629;
-      color: #f5f5f5;
-    }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, "Microsoft JhengHei", sans-serif;
+  background: #222629;
+  color: #f5f5f5;
+}
 
-    /* [CSS-1] 新 Header 樣式：較矮的固定 Header (第 8 點) */
-    .site-header {
-      /* 原本的 header 樣式已整合在此 */
-      margin-bottom: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 8px;
-      flex-wrap: wrap;
-      /* 讓 header 矮一點，並設定為回跳的目標 */
-      padding: 8px 12px 4px 12px;
-      background: #141b20; /* 底部陰影和背景色，類似表單 */
-      border-bottom: 1px solid #3a3f44;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-    }
-    
-    .site-header h1 { font-size: 20px; margin: 0; }
-    .site-header h2 { font-size: 14px; margin: 0; opacity: 0.8; }
-    .site-header small { font-size: 12px; opacity: 0.7; }
-    
-    /* 整個頁面的容器：桌機置中、固定寬度，避免縮放時整塊亂飄 */
-    .page {
-      min-height: 100vh;
-      /* 拿掉頂部的 padding，改由 site-header 處理 */
-      padding: 0 12px 12px 12px; 
-      max-width: 1100px;
-      margin: 0 auto;
-    }
+/* =====================================================
+ * 固定 Header / Footer（子頁矮版）
+ * ===================================================== */
+.site-header{
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #151a1e;
+  border-bottom: 1px solid #2e353b;
+}
+.site-header-inner{
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 8px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.site-title{ font-size: 16px; font-weight: 700; line-height: 1.1; }
+.site-subtitle{ font-size: 12px; opacity: .78; margin-top: 2px; }
+.header-btn{
+  padding: 4px 10px;
+  border-radius: 14px;
+  border: 1px solid #777;
+  background: #3a3f44;
+  color: #f5f5f5;
+  font-size: 12px;
+  cursor: pointer;
+}
+.header-btn:hover{ background:#4a5056; }
 
-    /* 確保 main 在 Header 下方 */
-    main.layout {
-      display: flex;
-      gap: 12px;
-      align-items: stretch;
-      padding-top: 4px; /* 稍微留點空間 */
-    }
+.site-footer{
+  position: sticky;
+  bottom: 0;
+  z-index: 40;
+  background: #151a1e;
+  border-top: 1px solid #2e353b;
+}
+.site-footer-inner{
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 6px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.footer-text{ font-size:12px; opacity:.8; }
+.footer-btn{
+  padding: 4px 10px;
+  border-radius: 14px;
+  border: 1px solid #777;
+  background: #3a3f44;
+  color: #f5f5f5;
+  font-size: 12px;
+  cursor: pointer;
+}
+.footer-btn:hover{ background:#4a5056; }
 
-    .panel {
-      background: #2d3236;
-      border-radius: 8px;
-      padding: 10px;
-      box-shadow: 0 0 8px rgba(0, 0, 0, 0.35);
-      min-height: 220px;
-    }
+/* =====================================================
+ * Busy Overlay（處理中時鎖全站）
+ * ===================================================== */
+.busy-overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+.busy-box{
+  width: min(320px, 86vw);
+  padding: 14px 14px;
+  border-radius: 10px;
+  background: #141b20;
+  border: 1px solid #d1a343;
+  box-shadow: 0 0 18px rgba(0,0,0,.7);
+  display:flex;
+  gap: 10px;
+  align-items:center;
+}
+.busy-spinner{
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.25);
+  border-top-color: rgba(255,255,255,.9);
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin{ to { transform: rotate(360deg); } }
+.busy-text{ font-size: 13px; opacity: .95; }
+.hidden { display: none !important; }
 
-    /* 左 40%、右 60%（桌機） */
-    .panel-left  { flex: 0 0 40%; max-width: 40%; display: flex; flex-direction: column; }
-    .panel-right { flex: 0 0 60%; max-width: 60%; display: flex; flex-direction: column; }
+/* Busy 狀態下：整站禁止互動（包含游標/鍵盤） */
+body.is-busy{
+  overflow: hidden;
+}
+body.is-busy .page{
+  pointer-events: none;
+}
+body.is-busy input,
+body.is-busy textarea{
+  caret-color: transparent;
+}
 
-    h2 { font-size: 16px; margin: 0 0 4px; }
+/* =====================================================
+ * 整個頁面的容器
+ * ===================================================== */
+.page {
+  min-height: 100vh;
+  padding: 12px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
 
-    /* 「給站主看的說明」文字 → 改成跟背景一樣色，等於隱藏 */
-    .hint,
-    .reply-note {
-      font-size: 12px;
-      line-height: 1.4;
-      color: #222629;  /* 和 body 背景一樣 */
-    }
+main.layout {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
 
-    .hidden { display: none !important; }
+.panel {
+  background: #2d3236;
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.35);
+  min-height: 220px;
+}
 
-    /* placeholder 顏色再淡一點 */
-    input::placeholder,
-    textarea::placeholder {
-      color: #999;
-      opacity: 0.7;
-    }
-    input::-webkit-input-placeholder,
-    textarea:::-webkit-input-placeholder {
-      color: #999;
-      opacity: 0.7;
-    }
+/* 左 40%、右 60%（桌機） */
+.panel-left  { flex: 0 0 40%; max-width: 40%; display: flex; flex-direction: column; }
+.panel-right { flex: 0 0 60%; max-width: 60%; display: flex; flex-direction: column; }
 
+/* 「給站主看的說明」文字 → 改成跟背景一樣色，等於隱藏 */
+.hint,
+.reply-note {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #222629;
+}
+
+/* placeholder 顏色再淡一點 */
+input::placeholder,
+textarea::placeholder {
+  color: #999;
+  opacity: 0.7;
+}
+input::-webkit-input-placeholder,
+textarea::-webkit-input-placeholder {
+  color: #999;
+  opacity: 0.7;
+}
 
 /* =====================================================
  * [CSS-1] 左側：工具列 + 表單
@@ -110,8 +190,8 @@ form#community-form {
   margin-bottom: 8px;
   padding: 6px 8px;
   border-radius: 6px;
-  border: 1px solid #d1a343;        /* 邊框改成金色一點 */
-  background: #141b20;               /* 底色加深，與表格區拉開 */
+  border: 1px solid #d1a343;
+  background: #141b20;
   box-shadow: 0 0 10px rgba(0,0,0,0.65);
 }
 form#community-form label {
@@ -130,32 +210,25 @@ form#community-form input[type="text"] {
   font-size: 13px;
 }
 
-/* 編輯 / 發表時可輸入 → 白底 */
+/* 可輸入 → 白底 */
 form#community-form input[type="text"]:not(:disabled) {
   background: #ffffff;
   color: #111;
 }
 
-/* [CSS-2] 驗證後的 username 鎖定狀態：深灰底再暗一些，且禁止藍色標示 (第 11 點) */
+/* 一般 disabled → 深底 */
 form#community-form input[type="text"]:disabled {
-  background: #161a1d; /* 比 #1f2326 更暗 */
+  background: #1f2326;
   color: #999;
-  /* 禁止選取產生藍底標示 */
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
 }
 
-#record-btn {
-  padding: 4px 10px;
-  border-radius: 16px;
-  border: 1px solid #777;
-  background: #3a3f44;
-  color: #f5f5f5;
-  font-size: 12px;
-  cursor: not-allowed; /* 預留錄音 */
-  opacity: 0.6;
+/* ✅(11) 編輯驗證完成後的 username：白底但更暗 + 不可選取藍底 */
+#nickname-input.verified-locked{
+  background: #d8d8d8 !important;
+  color: #101010 !important;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .form-row-inline {
@@ -165,19 +238,8 @@ form#community-form input[type="text"]:disabled {
   align-items: center;
 }
 
-#video-file-input {
-  font-size: 11px;
-}
-
-.sub-hint {
-  font-size: 11px;
-  opacity: 0.8;
-}
-
-/* [CSS-3] 媒體按鈕字樣顏色隱蔽：再淺一階 (第 6 點) */
-.sub-hint.media-hint {
-  opacity: 0.5; /* 0.8 → 0.5 */
-}
+#video-file-input { font-size: 11px; }
+#video-file-label { font-size: 11px; opacity: 0.8; }
 
 #submit-btn {
   padding: 4px 14px;
@@ -189,6 +251,8 @@ form#community-form input[type="text"]:disabled {
   cursor: pointer;
 }
 #submit-btn:hover { background: #e0b85f; }
+
+.sub-hint { font-size: 11px; opacity: 0.8; }
 
 /* 三顆媒體選擇按鈕 */
 .media-select-row {
@@ -204,59 +268,44 @@ form#community-form input[type="text"]:disabled {
   color: #f5f5f5;
   font-size: 12px;
   cursor: pointer;
-  opacity: 0.9;
-}
-.media-select-btn.active {
-  border-color: #d1a343;
-  background: #e0b85f;
-  color: #1d1d1d;
-  font-weight: 600;
+  opacity: 0.92;
 }
 
-.media-select-btn:disabled {
-  opacity: 0.35;
-  filter: grayscale(0.4);
-  cursor: default;
-}
-/* [CSS-4] YouTube 按鈕外觀調整 (第 9 點) */
-/* 調整紅色：C00000 → D9574D (加黃)；字體加粗 */
-#btn-media-youtube {
-  background: #d9574d; 
-  border-color: #ff8080;
-  color: #111111;
-  font-weight: 700; /* 更粗一點 */
-}
-#btn-media-youtube:hover:not(:disabled) {
-  background: #e0675d;
-}
-#btn-media-youtube.active {
-  background: #ff5e51;
-  border-color: #ff8080;
-  color: #000000;
-}
-
-/* [CSS-5] 非 active 時，如果不是 edit 模式，變回黑灰底 (第 9 點) */
-/* 編輯模式時，由於是 disabled，會套用 disabled 的顏色 */
-.media-select-row:not(.edit-mode) #btn-media-youtube:not(.active):not(:disabled) {
-  background: #3a3f44; /* 變回其他按鈕的底色 */
+/* ✅(9) YouTube 平常不要紅（避免你說的「選別顆但 YouTube 仍紅」） */
+#btn-media-youtube{
+  background: #3a3f44;
   border-color: #777;
   color: #f5f5f5;
   font-weight: 600;
 }
-.media-select-row:not(.edit-mode) #btn-media-youtube:not(.active):not(:disabled):hover {
-  background: #4a5056;
+
+/* Active 才紅（且紅加一點黃、更像你要的） */
+#btn-media-youtube.active{
+  background: #ff2b2b;      /* 紅帶一點黃感（偏亮） */
+  border-color: #ffd28a;     /* 黃暖邊 */
+  color: #111111;
+  font-weight: 800;
+}
+#btn-media-youtube.active:hover:not(:disabled){
+  background: #ff3a3a;
 }
 
-#btn-media-youtube:disabled {
-  /* 維持原本的 disabled 顏色，避免突兀 */
-  background: #4a2a2a;
-  border-color: #774444;
-  color: #888;
+.media-select-btn.active {
+  border-color: #d1a343;
+  background: #e0b85f;
+  color: #1d1d1d;
+  font-weight: 700;
 }
 
+/* ✅(6) 編輯時隱蔽那兩個鈕：disabled 更淡一階 */
+.media-select-btn:disabled {
+  opacity: 0.22;
+  color: #6f767c;
+  filter: grayscale(0.55);
+  cursor: default;
+}
 
-
-/* 表單內：錄影/錄音控制列（目前只給錄音用） */
+/* 表單內：錄音控制列 */
 .media-record-toolbar {
   display: flex;
   align-items: center;
@@ -283,36 +332,26 @@ form#community-form input[type="text"]:disabled {
   cursor: default;
 }
 
-/* 錄音中：白點變紅、外觀稍亮並閃爍 */
-.media-record-btn#audio-rec-start.recording {
+/* 錄音中：紅色 + 閃爍 */
+.media-record-btn.recording {
   color: #ff4b4b;
   border-color: #ff8080;
   background: #4a3a3a;
   animation: recordBlink 0.8s ease-in-out infinite;
 }
-
 @keyframes recordBlink {
   0%   { opacity: 1; }
   50%  { opacity: 0.3; }
   100% { opacity: 1; }
 }
 
-/* [CSS-6] 暫停中：紅點保持紅色但不閃爍 (第 5 點) */
-.media-record-btn#audio-rec-pause.paused-rec {
-  /* 暫停鍵的顏色改為紅色，並取消閃爍 */
-  color: #ff4b4b; 
-  border-color: #ff8080;
-  background: #4a3a3a;
-  /* 移除動畫 */
-  animation: none; 
-}
-/* 讓紅點保持紅色 (當 audio-rec-start 停止閃爍) */
-.media-record-btn#audio-rec-start:not(.recording).paused-rec {
-    color: #ff4b4b; 
+/* ✅(5) 暫停：紅但不閃（start 紅點保持、pause 鍵也維持 ⏸） */
+.media-record-btn.paused {
+  animation: none !important;
+  opacity: 1 !important;
 }
 
-
-/* 右上影音區的 audio 播放器（有錄音時使用） */
+/* 右上影音區 audio 播放器 */
 #audio-player {
   position: absolute;
   left: 0;
@@ -320,15 +359,11 @@ form#community-form input[type="text"]:disabled {
   bottom: 0;
   width: 100%;
   background: #111315;
-  display: none; /* 預設隱藏，需要時由 JS 顯示 */
+  display: none;
 }
 
-.media-record-status {
-  font-size: 11px;
-  opacity: 0.8;
-}
+.media-record-status { font-size: 11px; opacity: 0.8; }
 
-/* 錄影 / 錄音預覽區 */
 .rec-preview {
   width: 100%;
   max-height: 140px;
@@ -337,15 +372,14 @@ form#community-form input[type="text"]:disabled {
   background: #111;
 }
 
-
-  /* =====================================================
+/* =====================================================
  * [CSS-2] 左側：留言列表表格
  * ===================================================== */
 
 .comments-wrapper {
   flex: 1 1 auto;
-  overflow-y: auto;           /* 僅縱向捲動 */
-  overflow-x: hidden;         /* 不要橫向卷軸 */
+  overflow-y: auto;
+  overflow-x: hidden;
   border-radius: 6px;
   border: 1px solid #444;
   background: #202427;
@@ -354,7 +388,7 @@ table#comments-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 12px;
-  table-layout: fixed;        /* 固定欄寬，避免左右亂跑 */
+  table-layout: fixed;
 }
 table#comments-table thead {
   position: sticky;
@@ -369,7 +403,7 @@ table#comments-table td {
   text-align: left;
   vertical-align: top;
   word-wrap: break-word;
-  word-break: break-word;     /* 依裝置寬度自動折行 */
+  word-break: break-word;
 }
 table#comments-table th {
   font-weight: 600;
@@ -390,12 +424,8 @@ table#comments-table tbody tr:nth-child(even) {
   flex-wrap: wrap;
   font-size: 13px;
 }
+.media-flag { font-size: 16px; }
 
-.media-flag {
-  font-size: 16px;   /* 圖示稍微放大 */
-}
-
-/* 每列前面的筆按鈕（進入編輯用） */
 .row-edit-btn {
   display: inline-flex;
   align-items: center;
@@ -411,22 +441,8 @@ table#comments-table tbody tr:nth-child(even) {
   cursor: pointer;
   flex-shrink: 0;
 }
-.row-edit-btn:hover {
-  background: #4a5056;
-}
+.row-edit-btn:hover { background: #4a5056; }
 
-.play-video-btn {
-  padding: 2px 6px;
-  border-radius: 12px;
-  border: 1px solid #888;
-  background: #3a3f44;
-  color: #f5f5f5;
-  font-size: 11px;
-  cursor: pointer;
-  margin-top: 2px;
-}
-
-/* 表頭的「編輯」小鈕 */
 .edit-header-btn {
   margin-left: 6px;
   padding: 1px 6px;
@@ -452,19 +468,15 @@ table#comments-table tbody tr:nth-child(even) {
 }
 
 #comments-tbody tr.selected {
-  background: #4f7a3b !important; /* 比原本再亮一點 */
+  background: #4f7a3b !important;
 }
 
-/* 選到的列閃一下（給回覆區名稱按鈕用） */
-.row-flash {
-  animation: rowFlash 0.8s ease-out;
-}
+.row-flash { animation: rowFlash 0.8s ease-out; }
 @keyframes rowFlash {
   0%   { background-color: #7fbf4f; }
   100% { background-color: inherit; }
 }
 
-/* 左側 Back 按鈕（移到表格底下） */
 #back-button {
   margin-top: 6px;
   align-self: flex-start;
@@ -477,179 +489,179 @@ table#comments-table tbody tr:nth-child(even) {
   cursor: pointer;
 }
 
+/* =====================================================
+ * [CSS-3] 右側：視覺區框架
+ * ===================================================== */
 
-    /* =====================================================
-     * [CSS-3] 右側：視覺區框架
-     * ===================================================== */
+.visual-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+}
+.visual-header {
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.current-point { font-size: 12px; opacity: 0.9; }
+.current-point { display: none; }
 
-    .visual-wrapper {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      height: 100%;
-    }
-    .visual-header {
-      font-size: 13px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-    }
-    .current-point { font-size: 12px; opacity: 0.9; }
+.visual-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 260px;
+}
 
-    /* 右上角「尚未選取留言 / 播放中…」暫時不顯示 */
-    .current-point {
-      display: none;
-    }
+.top-row {
+  display: flex;
+  gap: 8px;
+  min-height: 170px;
+}
 
-    .visual-body {
-      flex: 1 1 auto;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      min-height: 260px;
-    }
+/* 左：影片／錄音格子 */
+.video-frame-wrap {
+  flex: 1 1 60%;
+  background: #111315;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #555;
+  position: relative;
+  min-height: 150px;
+}
+.video-frame-wrap iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+.video-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #999;
+  text-align: center;
+  padding: 8px;
+}
 
-    .top-row {
-      display: flex;
-      gap: 8px;
-      min-height: 170px;
-    }
+/* ✅(2) 影片互動遮罩：點它會先停止輪播，再放行給 iframe / 影片互動 */
+.video-interaction-shield{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding: 10px;
+  background: rgba(0,0,0,.35);
+  border: none;
+  color: rgba(255,255,255,.92);
+  font-size: 12px;
+  cursor: pointer;
+}
+.video-interaction-shield:hover{
+  background: rgba(0,0,0,.45);
+}
 
-    /* 左：影片／錄音格子 */
-    .video-frame-wrap {
-      flex: 1 1 60%;
-      background: #111315;
-      border-radius: 6px;
-      overflow: hidden;
-      border: 1px solid #555;
-      position: relative;
-      min-height: 150px;
-    }
-    .video-frame-wrap iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-    .video-placeholder {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      color: #999;
-      text-align: center;
-      padding: 8px;
-    }
+/* =====================================================
+ * [CSS-4] 右側：多層圓
+ * ===================================================== */
 
-    /* =====================================================
-     * [CSS-4] 右側：多層圓
-     * ===================================================== */
+.circle-area {
+  flex: 1 1 40%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-    .circle-area {
-      flex: 1 1 40%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+.circle-stack {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  --ring-main-color: #5c7a5c;
+  --ring-boundary-color: #9ad09a;
+  --ring-highlight-color: #70ff70;
+  --ring-outer-fog: rgba(112, 255, 112, 0.35);
+  background: radial-gradient(circle at 20% 20%, #555, #111);
+}
 
-    .circle-stack {
-      position: relative;
-      width: 160px;
-      height: 160px;
-      border-radius: 50%;
-      --ring-main-color: #5c7a5c;
-      --ring-boundary-color: #9ad09a;
-      --ring-highlight-color: #70ff70;
-      --ring-outer-fog: rgba(112, 255, 112, 0.35);
-      background: radial-gradient(circle at 20% 20%, #555, #111);
-    }
+.ring {
+  position: absolute;
+  border-radius: 50%;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+}
 
-    .ring {
-      position: absolute;
-      border-radius: 50%;
-      transition: border-color 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
-    }
+.ring-main {
+  border: 3px solid var(--ring-main-color);
+  opacity: 0.8;
+}
+.ring-boundary {
+  border: 1.2px solid var(--ring-boundary-color);
+  opacity: 0.7;
+}
+.ring-b45 {
+  border: 1px solid transparent;
+  box-shadow: 0 0 16px var(--ring-outer-fog);
+  opacity: 0.9;
+}
 
-    .ring-main {
-      border: 3px solid var(--ring-main-color);
-      opacity: 0.8;
-    }
-    .ring-boundary {
-      border: 1.2px solid var(--ring-boundary-color);
-      opacity: 0.7;
-    }
-    .ring-b45 {
-      border: 1px solid transparent;
-      box-shadow: 0 0 16px var(--ring-outer-fog);
-      opacity: 0.9;
-    }
+.ring-b45 { inset: 4%;  }
+.ring-4   { inset: 10%; }
+.ring-b35 { inset: 20%; }
+.ring-3   { inset: 26%; }
+.ring-b25 { inset: 36%; }
+.ring-2   { inset: 42%; }
+.ring-b15 { inset: 52%; }
+.ring-1   { inset: 60%; }
 
-    .ring-b45 { inset: 4%;  } /* 4.5 */
-    .ring-4   { inset: 10%; } /* 4   */
-    .ring-b35 { inset: 20%; } /* 3.5 */
-    .ring-3   { inset: 26%; } /* 3   */
-    .ring-b25 { inset: 36%; } /* 2.5 */
-    .ring-2   { inset: 42%; } /* 2   */
-    .ring-b15 { inset: 52%; } /* 1.5 */
-    .ring-1   { inset: 60%; } /* 1   */
+.ring.active {
+  border-color: var(--ring-highlight-color);
+  opacity: 1;
+  box-shadow: 0 0 10px rgba(140, 255, 140, 0.9);
+}
 
-    .ring.active {
-      border-color: var(--ring-highlight-color);
-      opacity: 1;
-      box-shadow: 0 0 10px rgba(140, 255, 140, 0.9);
-    }
+.layer-label {
+  position: absolute;
+  bottom: 6px;
+  right: 8px;
+  font-size: 11px;
+  color: #cfe9cf;
+  text-shadow: 0 0 3px #000;
+}
+.layer-label { display: none; }
 
-    .layer-label {
-      position: absolute;
-      bottom: 6px;
-      right: 8px;
-      font-size: 11px;
-      color: #cfe9cf;
-      text-shadow: 0 0 3px #000;
-    }
+/* =====================================================
+ * [CSS-5] 右側下半：回覆區 + 指板
+ * ===================================================== */
 
-    /* 暫時隱藏層級文字 */
-    .layer-label {
-      display: none;
-    }
+.bottom-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
 
-    /* =====================================================
-     * [CSS-5] 右側下半：回覆區 + 指板
-     * ===================================================== */
+.reply-area { flex: 1 1 60%; }
 
-    .bottom-row {
-      display: flex;
-      gap: 8px;
-      align-items: stretch;
-    }
+.reply-target {
+  font-size: 12px;
+  margin-bottom: 4px;
+  opacity: 0.85;
+}
 
-    /* 回覆區寬度改成和影片同樣比例（約 6:4） */
-    .reply-area {
-      flex: 1 1 60%;
-    }
-
-    .reply-area-header {
-      font-size: 13px;
-      margin: 0 0 4px;
-    }
-
-    .reply-target {
-      font-size: 12px;
-      margin-bottom: 4px;
-      opacity: 0.85;
-    }
-
-/* 回覆區下方的「儲存 / 取消」 */
 .reply-actions {
   margin-top: 4px;
   display: flex;
   gap: 6px;
 }
-.reply-actions.hidden {
-  display: none;
-}
+.reply-actions.hidden { display: none; }
+
 .reply-action-btn {
   padding: 3px 10px;
   border-radius: 14px;
@@ -665,186 +677,130 @@ table#comments-table tbody tr:nth-child(even) {
   border-color: #777;
 }
 
-    .reply-target-btn {
-      padding: 3px 10px;
-      border-radius: 14px;
-      border: 1px solid #bbb;
-      background: #f5f5f5;
-      color: #222629;
-      font-size: 12px;
-      cursor: pointer;
-      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-    }
-    .reply-target-btn:disabled {
-      opacity: 0.6;
-      cursor: default;
-    }
+.reply-target-btn {
+  padding: 3px 10px;
+  border-radius: 14px;
+  border: 1px solid #bbb;
+  background: #f5f5f5;
+  color: #222629;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.reply-target-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.reply-target-btn.linked {
+  background: #4f7a3b;
+  border-color: #4f7a3b;
+  color: #f5f5f5;
+}
 
-    /* 被項目連動時，顏色跟 .selected row 一致 */
-    .reply-target-btn.linked {
-      background: #4f7a3b;
-      border-color: #4f7a3b;
-      color: #f5f5f5;
-    }
+#admin-reply {
+  width: 100%;
+  background: #1f2326;
+  border: 1px solid #555;
+  color: #f5f5f5;
+  font-size: 12px;
+  border-radius: 4px;
+  min-height: 80px;
+  resize: none;
+  overflow: hidden;
+  line-height: 1.4;
+}
 
-    .reply-note {
-      font-size: 11px;
-      opacity: 0.75;
-      margin-bottom: 4px;
-    }
+/* ✅(7) Busy 時：回覆區/輸入區不應該出現閃爍游標 */
+body.is-busy #admin-reply{
+  caret-color: transparent;
+}
 
-    #admin-reply {
-      width: 100%;
-      background: #1f2326;
-      border: 1px solid #555;
-      color: #f5f5f5;
-      font-size: 12px;
-      border-radius: 4px;
-      min-height: 80px;
-      resize: none;           /* 先由 JS 控制拖拉 */
-      overflow: hidden;       /* 由 JS 控制是否出現卷軸 */
-      line-height: 1.4;
-    }
+.fingerboard-row {
+  flex: 1 1 40%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-    .fingerboard-row {
-      flex: 1 1 40%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+.fingerboard {
+  position: relative;
+  width: 120px;
+  max-width: 140px;
+  height: 260px;
+  background: linear-gradient(180deg, #181a1d, #34383d);
+  border-radius: 14px;
+  overflow: hidden;
+  border: 2px solid #676f78;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.55);
+}
 
-    .fingerboard {
-      position: relative;
-      width: 120px;
-      max-width: 140px;
-      height: 260px;
-      background: linear-gradient(180deg, #181a1d, #34383d);
-      border-radius: 14px;
-      overflow: hidden;
-      border: 2px solid #676f78;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.55);
-    }
+.fb-string {
+  position: absolute;
+  top: 6%;
+  bottom: 6%;
+  width: 2px;
+  background: linear-gradient(180deg, #cfcfcf, #888);
+  opacity: 0.9;
+}
+.fb-s1 { left: 20%; transform: skewX(-3deg); }
+.fb-s2 { left: 40%; transform: skewX(-1.5deg); }
+.fb-s3 { left: 62%; transform: skewX( 1.5deg); }
+.fb-s4 { left: 80%; transform: skewX( 3deg); }
 
-    .fb-string {
-      position: absolute;
-      top: 6%;
-      bottom: 6%;
-      width: 2px;
-      background: linear-gradient(180deg, #cfcfcf, #888);
-      opacity: 0.9;
-    }
-    .fb-s1 { left: 20%; transform: skewX(-3deg); }
-    .fb-s2 { left: 40%; transform: skewX(-1.5deg); }
-    .fb-s3 { left: 62%; transform: skewX( 1.5deg); }
-    .fb-s4 { left: 80%; transform: skewX( 3deg); }
+.fingerboard-note {
+  position: absolute;
+  font-size: 10px;
+  color: #fdf5c5;
+  opacity: 0.95;
+  text-shadow: 0 0 2px #000;
+  pointer-events: none;
+}
 
-    .fingerboard-note {
-      position: absolute;
-      font-size: 10px;
-      color: #fdf5c5;
-      opacity: 0.95;
-      text-shadow: 0 0 2px #000;
-      pointer-events: none;
-    }
-    
-    /* [CSS-7] 鎖定互動介面的樣式 (第 7 點) */
-    body[data-processing="true"] {
-        /* 禁止所有點擊，除了 submit-btn 和 reply-actions 相關的按鈕 */
-        pointer-events: none;
-    }
-    /* 允許點擊送出和取消按鈕 */
-    body[data-processing="true"] #submit-btn,
-    body[data-processing="true"] .reply-actions button {
-        pointer-events: auto;
-    }
-    /* 禁止回覆區的 textarea 輸入，並移除閃爍游標 */
-    body[data-processing="true"] #admin-reply {
-        opacity: 0.6;
-        cursor: not-allowed;
-        caret-color: transparent; /* 移除閃爍直線 */
-        pointer-events: none; /* 再次確保禁止點擊 */
-    }
+/* =====================================================
+ * [CSS-6] 手機版
+ * ===================================================== */
 
+@media (max-width: 820px) {
+  .page {
+    padding: 0;
+    max-width: 100%;
+  }
 
-    /* =====================================================
-     * [CSS-6] 手機版
-     * ===================================================== */
+  main.layout { flex-direction: column; }
 
-    @media (max-width: 820px) {
-      .page {
-        padding: 0;         /* 手機版滿版 */
-        max-width: 100%;
-      }
+  #visual-panel { order: 1; }
+  #comments-section { order: 2; }
 
-      /* 手機版將 Header 固定在頂部 */
-      .site-header {
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        padding: 8px 10px 4px 10px;
-      }
-      
-      main.layout {
-        flex-direction: column;
-        padding-top: 0;
-      }
+  .panel-left,
+  .panel-right {
+    max-width: 100%;
+    width: 100%;
+    border-radius: 0;
+  }
 
-      /* 手機版：順序改成 右（影片+多層圓+回覆+指板）在上，左（表格）在下 */
-      #visual-panel {
-        order: 1;
-      }
-      #comments-section {
-        order: 2;
-      }
+  .panel-right .visual-body { min-height: 420px; }
 
-      .panel-left,
-      .panel-right {
-        max-width: 100%;
-        width: 100%;
-        border-radius: 0;
-      }
+  .top-row {
+    flex-direction: column;
+    min-height: 0;
+  }
 
-      .panel-right .visual-body {
-        min-height: 420px;
-      }
+  .video-frame-wrap {
+    width: 100%;
+    height: 160px !important;
+    min-height: 160px;
+  }
 
-      /* 手機版：上層只要影片，影片高度固定 */
-      .top-row {
-        flex-direction: column;
-        min-height: 0;
-      }
+  .circle-area {
+    justify-content: center;
+    margin-top: 6px;
+  }
 
-      .video-frame-wrap {
-        width: 100%;
-        height: 160px !important;
-        min-height: 160px;
-      }
+  .circle-stack { width: 160px; height: 160px; }
 
-      .circle-area {
-        justify-content: center;
-        margin-top: 6px;
-      }
+  .fingerboard { height: 220px; }
 
-      .circle-stack {
-        width: 160px;
-        height: 160px;
-      }
-
-      .fingerboard {
-        height: 220px;
-      }
-
-      /* 手機版：中層 回覆區 + 指板 左右並排 */
-      .bottom-row {
-        flex-direction: row;
-      }
-
-      .reply-area {
-        flex: 1 1 60%;
-      }
-
-      .fingerboard-row {
-        flex: 1 1 40%;
-      }
-    }
-
+  .bottom-row { flex-direction: row; }
+  .reply-area { flex: 1 1 60%; }
+  .fingerboard-row { flex: 1 1 40%; }
+}
