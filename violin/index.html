@@ -10,8 +10,11 @@
 </head>
 
 <body>
-   <div class="page">
-    <header>
+  <!-- 頁首錨點：之後所有「回到頂端」都可鎖定這裡 -->
+  <div id="page-top"></div>
+
+  <div class="page">
+    <header id="site-header">
       <h1>StradTone Violin</h1>
       <h2>提琴聲學實驗室</h2>
     </header>
@@ -103,6 +106,7 @@
               <input type="file" id="video-file-input" />
               <span id="video-file-label" class="sub-hint"></span>
             </div>
+
             <!-- 新增：一般影片 / 網頁連結（不限 YouTube） -->
             <div class="form-row-inline" id="video-link-row" style="margin-top:4px;">
               <input
@@ -206,22 +210,10 @@
                   <div class="ring ring-main ring-2" data-layer="2"></div>
                   <div class="ring ring-main ring-3" data-layer="3"></div>
                   <div class="ring ring-main ring-4" data-layer="4"></div>
-                  <div
-                    class="ring ring-boundary ring-b15"
-                    data-layer="1.5"
-                  ></div>
-                  <div
-                    class="ring ring-boundary ring-b25"
-                    data-layer="2.5"
-                  ></div>
-                  <div
-                    class="ring ring-boundary ring-b35"
-                    data-layer="3.5"
-                  ></div>
-                  <div
-                    class="ring ring-b45"
-                    data-layer="4.5"
-                  ></div>
+                  <div class="ring ring-boundary ring-b15" data-layer="1.5"></div>
+                  <div class="ring ring-boundary ring-b25" data-layer="2.5"></div>
+                  <div class="ring ring-boundary ring-b35" data-layer="3.5"></div>
+                  <div class="ring ring-b45" data-layer="4.5"></div>
 
                   <div class="layer-label" id="layer-label">
                     layers: –
@@ -265,54 +257,14 @@
                   <div class="fb-string fb-s4"></div>
 
                   <!-- 示意點 -->
-                  <div
-                    class="fingerboard-note"
-                    style="left:24%; top:8%;"
-                  >
-                    G0
-                  </div>
-                  <div
-                    class="fingerboard-note"
-                    style="left:24%; top:26%;"
-                  >
-                    G3
-                  </div>
-                  <div
-                    class="fingerboard-note"
-                    style="left:38%; top:18%;"
-                  >
-                    D5
-                  </div>
-                  <div
-                    class="fingerboard-note"
-                    style="left:38%; top:40%;"
-                  >
-                    D8
-                  </div>
-                  <div
-                    class="fingerboard-note"
-                    style="left:62%; top:22%;"
-                  >
-                    A7
-                  </div>
-                  <div
-                    class="fingerboard-note"
-                    style="left:62%; top:44%;"
-                  >
-                    A10
-                  </div>
-                  <div
-                    class="fingerboard-note"
-                    style="left:76%; top:30%;"
-                  >
-                    E9
-                  </div>
-                  <div
-                    class="fingerboard-note"
-                    style="left:76%; top:52%;"
-                  >
-                    E12
-                  </div>
+                  <div class="fingerboard-note" style="left:24%; top:8%;">G0</div>
+                  <div class="fingerboard-note" style="left:24%; top:26%;">G3</div>
+                  <div class="fingerboard-note" style="left:38%; top:18%;">D5</div>
+                  <div class="fingerboard-note" style="left:38%; top:40%;">D8</div>
+                  <div class="fingerboard-note" style="left:62%; top:22%;">A7</div>
+                  <div class="fingerboard-note" style="left:62%; top:44%;">A10</div>
+                  <div class="fingerboard-note" style="left:76%; top:30%;">E9</div>
+                  <div class="fingerboard-note" style="left:76%; top:52%;">E12</div>
                 </div>
               </div>
             </div>
@@ -320,6 +272,11 @@
         </div>
       </section>
     </main>
+
+    <!-- 先放一個 footer，不會影響功能；之後要做成主站風格再一起改 -->
+    <footer id="site-footer" style="margin-top:10px; font-size:12px; opacity:.65; text-align:center;">
+      © StradTone Violin
+    </footer>
   </div>
 
   <!-- 外部腳本：你的 violin.js -->
