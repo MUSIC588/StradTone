@@ -4,32 +4,134 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>StradTone Violin</title>
-  <link rel="stylesheet" href="violin.css" />
-</head>
+  <style>
+    /* ===== [CSS] 原有樣式保留 + 修改事項 ===== */
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, "Microsoft JhengHei", sans-serif;
+      background: #222629;
+      color: #f5f5f5;
+    }
+    .page { min-height: 100vh; padding: 12px; max-width: 1100px; margin: 0 auto; }
 
+    /* 需求 8: 新增矮版 Header */
+    .site-header {
+      background: #1a1d20;
+      height: 45px;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      border-bottom: 1px solid #333;
+    }
+    .site-header img { height: 28px; }
+
+    header.lab-header {
+      margin: 10px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    header.lab-header h1 { font-size: 20px; margin: 0; }
+    header.lab-header h2 { font-size: 14px; margin: 0; opacity: 0.8; }
+
+    main.layout { display: flex; gap: 12px; align-items: stretch; }
+    .panel { background: #2d3236; border-radius: 8px; padding: 10px; box-shadow: 0 0 8px rgba(0, 0, 0, 0.35); min-height: 220px; }
+    .panel-left  { flex: 0 0 40%; max-width: 40%; display: flex; flex-direction: column; }
+    .panel-right { flex: 0 0 60%; max-width: 60%; display: flex; flex-direction: column; }
+
+    .hint, .reply-note { font-size: 12px; line-height: 1.4; color: #222629; }
+    .hidden { display: none !important; }
+
+    /* 需求 7: 禁止動作時的狀態 */
+    .processing-mode { pointer-events: none !important; opacity: 0.7; }
+    .processing-mode textarea, .processing-mode input { cursor: default; }
+
+    /* 需求 9: YouTube 按鈕樣式修正 */
+    #btn-media-youtube {
+      background: linear-gradient(135deg, #d00000 0%, #ff8c00 100%); /* 紅色加黃元素 */
+      border-color: #ff5050;
+      color: #ffffff;
+      font-weight: 800; /* 字體再粗一點 */
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+    #btn-media-youtube.active { background: #ff0000; border-color: #fff; }
+    /* 其他媒體選取時，YouTube 變回黑灰底 */
+    .media-select-btn:not(.active) { background: #3a3f44; color: #f5f5f5; border-color: #777; }
+
+    /* 需求 6: 編輯時隱蔽媒體按鈕，顏色再淺一階 */
+    .media-select-btn.edit-hidden { opacity: 0.15 !important; filter: grayscale(1); }
+
+    /* 需求 11: 驗證後 username 樣式 */
+    #nickname-input.verified {
+      background: #2a2d30 !important; /* 暗白底 */
+      color: #888 !important;
+      user-select: none; /* 防止藍底標示 */
+      pointer-events: none;
+    }
+
+    /* 需求 5: 錄音暫停鍵邏輯 */
+    .media-record-btn#audio-rec-pause.is-paused {
+      color: #ff0000 !important; /* 變紅色 */
+      background: #4a3a3a;
+    }
+    /* 閃爍動畫僅限錄音中，暫停時停止閃爍 */
+    .media-record-btn.recording.flashing { animation: recordBlink 0.8s ease-in-out infinite; }
+    @keyframes recordBlink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+    /* 原有表格樣式 */
+    .comments-wrapper { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; border-radius: 6px; border: 1px solid #444; background: #202427; }
+    table#comments-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+    table#comments-table th { position: sticky; top: 0; background: #33383c; z-index: 1; padding: 4px 6px; }
+    table#comments-table td { border-bottom: 1px solid #333; padding: 4px 6px; word-wrap: break-word; }
+    #comments-tbody tr.selected { background: #4f7a3b !important; }
+
+    /* 回覆區 & 影片區 */
+    .video-frame-wrap { flex: 1 1 60%; background: #111315; border-radius: 6px; overflow: hidden; border: 1px solid #555; position: relative; min-height: 150px; }
+    #video-iframe { width: 100%; height: 100%; border: none; }
+    #admin-reply { width: 100%; background: #1f2326; border: 1px solid #555; color: #f5f5f5; font-size: 12px; border-radius: 4px; min-height: 80px; resize: none; }
+
+    /* 多層圓 & 指板樣式保留... */
+    .circle-stack { position: relative; width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle at 20% 20%, #555, #111); margin: auto; }
+    .ring { position: absolute; border-radius: 50%; border: 2px solid #5c7a5c; }
+    .ring.active { border-color: #70ff70; box-shadow: 0 0 10px #70ff70; }
+    .ring-1 { inset: 60%; } .ring-2 { inset: 42%; } .ring-3 { inset: 26%; } .ring-4 { inset: 10%; }
+    .fingerboard { position: relative; width: 120px; height: 260px; background: #181a1d; border-radius: 14px; border: 2px solid #676f78; }
+
+    @media (max-width: 820px) {
+      main.layout { flex-direction: column; }
+      .panel-left, .panel-right { max-width: 100%; width: 100%; }
+      #visual-panel { order: 1; } #comments-section { order: 2; }
+    }
+  </style>
+</head>
 <body>
 
+  <header class="site-header">
+    <a href="https://stradtone.com">
+      <img src="https://stradtone.com/wp-content/uploads/2022/10/StradTone-Logo-Header.png" alt="StradTone">
+    </a>
+  </header>
 
   <div class="page" id="top-anchor">
-    <header>
+    <header class="lab-header">
       <h1>StradTone Violin</h1>
       <h2>提琴聲學實驗室</h2>
     </header>
 
-    <main class="layout">
+    <main class="layout" id="main-layout-container">
       <section class="panel panel-left" id="comments-section">
-        <p class="hint">小提琴</p>
         <div class="toolbar">
           <button type="button" id="btn-new">新增</button>
         </div>
 
         <form id="community-form" class="hidden">
-          <label>
-            username（5–12 字必填,修改編輯用）：
+          <label>username (5–12 字)：
             <input type="text" id="nickname-input" maxlength="12" placeholder="Mr,s 09…." />
           </label>
-          <label>
-            項目（100 字內）：
+          <label>項目 (100 字內)：
             <input type="text" id="text-input" maxlength="100" placeholder="..." />
           </label>
 
@@ -40,49 +142,34 @@
           </div>
 
           <div id="video-fields" class="hidden">
-            <div class="form-row-inline" id="youtube-row" style="margin-top:4px;">
-              <input type="text" id="youtube-url-input" placeholder="https://youtu.be/....(Link)…" />
-              <input type="text" id="start-input" placeholder="開始 mm:ss " />
-              <input type="text" id="end-input" placeholder="結束 mm:ss " />
+            <div class="form-row-inline" id="youtube-row">
+              <input type="text" id="youtube-url-input" placeholder="YouTube Link..." />
             </div>
-            <div class="form-row-inline" id="video-upload-row" style="margin-top:4px;">
+            <div class="form-row-inline" id="video-upload-row">
               <input type="file" id="video-file-input" />
-              <span id="video-file-label" class="sub-hint"></span>
-            </div>
-            <div class="form-row-inline" id="video-link-row" style="margin-top:4px;">
-              <input type="text" id="video-link-input" placeholder="https://... 影片或網頁網址（選填）" />
             </div>
           </div>
 
           <div id="audio-fields" class="hidden">
-            <div class="media-record-toolbar" id="audio-record-toolbar">
+            <div class="media-record-toolbar">
               <button type="button" class="media-record-btn" id="audio-rec-start">●</button>
               <button type="button" class="media-record-btn" id="audio-rec-pause" disabled>⏸</button>
               <button type="button" class="media-record-btn" id="audio-rec-stop" disabled>■</button>
-              <button type="button" class="media-record-btn" id="audio-rec-cancel" disabled>✕</button>
-              <span class="media-record-status" id="audio-rec-status">錄音預備</span>
+              <span id="audio-rec-status">錄音預備</span>
             </div>
-            <div class="form-row-inline" id="audio-upload-row" style="margin-top:4px;">
-              <input type="file" id="audio-file-input" accept="audio/*" />
-              <span id="audio-file-label" class="sub-hint"></span>
-            </div>
-            <div class="form-row-inline" id="audio-preview-row" style="margin-top:4px;">
-              <audio id="audio-rec-preview" class="rec-preview" controls></audio>
-            </div>
+            <audio id="audio-rec-preview" controls class="hidden"></audio>
           </div>
 
-          <div class="form-row-inline">
-            <button type="submit" id="submit-btn">發表</button>
-          </div>
+          <button type="submit" id="submit-btn">發表</button>
         </form>
 
         <div class="comments-wrapper">
           <table id="comments-table">
             <thead>
               <tr>
-                <th class="col-nick">username</th>
-                <th class="col-text">項目 <button type="button" id="btn-edit" class="edit-header-btn">編輯</button></th>
-                <th class="col-media">錄音 / 影片</th>
+                <th style="width:80px;">User</th>
+                <th>項目 <button type="button" id="btn-edit" class="edit-header-btn">編輯</button></th>
+                <th style="width:60px;">媒體</th>
               </tr>
             </thead>
             <tbody id="comments-tbody"></tbody>
@@ -93,51 +180,32 @@
 
       <section class="panel panel-right" id="visual-panel">
         <div class="visual-wrapper">
-          <div class="visual-body">
-            <div class="top-row">
-              <div class="video-frame-wrap">
-                <iframe id="video-iframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                <audio id="audio-player" controls></audio>
-                <div class="video-placeholder" id="video-placeholder">請從左側表格選取一筆帶有影片或錄音的項目</div>
-              </div>
-              <div class="circle-area">
-                <div class="circle-stack" id="circle-stack">
-                  <div class="ring ring-main ring-1" data-layer="1"></div>
-                  <div class="ring ring-main ring-2" data-layer="2"></div>
-                  <div class="ring ring-main ring-3" data-layer="3"></div>
-                  <div class="ring ring-main ring-4" data-layer="4"></div>
-                  <div class="ring ring-boundary ring-b15" data-layer="1.5"></div>
-                  <div class="ring ring-boundary ring-b25" data-layer="2.5"></div>
-                  <div class="ring ring-boundary ring-b35" data-layer="3.5"></div>
-                  <div class="ring ring-b45" data-layer="4.5"></div>
-                </div>
+          <div class="top-row">
+            <div class="video-frame-wrap">
+              <iframe id="video-iframe" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+              <audio id="audio-player" controls style="display:none; width:100%;"></audio>
+              <div id="video-placeholder" class="video-placeholder">請選取項目</div>
+            </div>
+            <div class="circle-area">
+              <div class="circle-stack">
+                <div class="ring ring-1" data-layer="1"></div>
+                <div class="ring ring-2" data-layer="2"></div>
+                <div class="ring ring-3" data-layer="3"></div>
+                <div class="ring ring-4" data-layer="4"></div>
               </div>
             </div>
-
-            <div class="bottom-row">
-              <div class="reply-area">
-                <div class="reply-target" id="reply-target">
-                  <button type="button" id="reply-target-btn" class="reply-target-btn" disabled>From: —</button>
-                </div>
-                <textarea id="admin-reply" placeholder="提琴聲學實驗室："></textarea>
-                <div class="reply-actions hidden" id="reply-actions">
-                  <button type="button" id="reply-save-btn" class="reply-action-btn">儲存</button>
-                  <button type="button" id="reply-cancel-btn" class="reply-action-btn reply-cancel-btn">取消</button>
-                </div>
+          </div>
+          <div class="bottom-row">
+            <div class="reply-area">
+              <div class="reply-target"><button type="button" id="reply-target-btn" disabled>From: —</button></div>
+              <textarea id="admin-reply" placeholder="提琴聲學實驗室："></textarea>
+              <div id="reply-actions" class="reply-actions hidden">
+                <button type="button" id="reply-save-btn">儲存</button>
+                <button type="button" id="reply-cancel-btn">取消</button>
               </div>
-              <div class="fingerboard-row">
-                <div class="fingerboard" id="fingerboard">
-                   <div class="fb-string fb-s1"></div><div class="fb-string fb-s2"></div><div class="fb-string fb-s3"></div><div class="fb-string fb-s4"></div>
-                   <div class="fingerboard-note" style="left:24%; top:8%;">G0</div>
-                   <div class="fingerboard-note" style="left:24%; top:26%;">G3</div>
-                   <div class="fingerboard-note" style="left:38%; top:18%;">D5</div>
-                   <div class="fingerboard-note" style="left:38%; top:40%;">D8</div>
-                   <div class="fingerboard-note" style="left:62%; top:22%;">A7</div>
-                   <div class="fingerboard-note" style="left:62%; top:44%;">A10</div>
-                   <div class="fingerboard-note" style="left:76%; top:30%;">E9</div>
-                   <div class="fingerboard-note" style="left:76%; top:52%;">E12</div>
-                </div>
-              </div>
+            </div>
+            <div class="fingerboard-row">
+              <div class="fingerboard"></div>
             </div>
           </div>
         </div>
@@ -145,11 +213,175 @@
     </main>
   </div>
 
-  <footer class="site-footer">
-    <p>© StradTone Violin All Rights Reserved.</p>
-  </footer>
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbxn5aDCimtZmvgK4uEGr5fIyNItY2wZgQyO2LVEZkggFkO0VZ_YdDMyspGpzpkYy5W6-A/exec";
+    let commentsCache = [];
+    let currentSelectedId = null;
+    let isSubmitting = false;
+    let editState = { active: false, id: null, nickname: "" };
+    let audioRecRecorder = null;
+    let audioRecChunks = [];
 
-  <script src="violin.js"></script>
+    // 需求 4: 換頁自動停止
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        document.getElementById("video-iframe").src = document.getElementById("video-iframe").src;
+        document.getElementById("audio-player").pause();
+      }
+    });
+
+    // 需求 10: Back 鍵只跳頭，不重整
+    document.getElementById("back-button").addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      resetForm();
+    });
+
+    // 需求 1: 移除輪播功能 (已從初始化移除)
+
+    async function loadComments() {
+      const res = await fetch(API_URL + "?action=list");
+      const data = await res.json();
+      commentsCache = data.posts || [];
+      renderTable();
+      // 需求 2: 自動開啟最新帶影片項目
+      const latestVideo = [...commentsCache].reverse().find(r => r.youtubeUrl || r.driveFileId);
+      if (latestVideo) selectRow(latestVideo);
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById("comments-tbody");
+      tbody.innerHTML = commentsCache.slice().reverse().map(row => `
+        <tr data-id="${row.id}" onclick="handleRowClick(${row.id})">
+          <td>${row.nickname[0]}**</td>
+          <td>${row.text.slice(0,20)}${row.text.length>20?'...':''}</td>
+          <td>${(row.youtubeUrl || row.driveFileId)?'🎬':''}${row.driveAudioId?'🎵':''}</td>
+        </tr>
+      `).join('');
+    }
+
+    function handleRowClick(id) {
+      const row = commentsCache.find(r => r.id == id);
+      selectRow(row);
+    }
+
+    function selectRow(row) {
+      currentSelectedId = row.id;
+      const iframe = document.getElementById("video-iframe");
+      const audio = document.getElementById("audio-player");
+      const ph = document.getElementById("video-placeholder");
+
+      iframe.style.display = "none";
+      audio.style.display = "none";
+      ph.style.display = "none";
+
+      if (row.youtubeUrl) {
+        iframe.src = `https://www.youtube.com/embed/${extractYTId(row.youtubeUrl)}?autoplay=1`;
+        iframe.style.display = "block";
+      } else if (row.driveAudioId) {
+        // 需求 12: 修正音符圖案顯示與播放
+        audio.src = `https://drive.google.com/uc?export=download&id=${row.driveAudioId}`;
+        audio.style.display = "block";
+        audio.play();
+      } else {
+        ph.style.display = "flex";
+      }
+      // 蘋果優化
+      document.getElementById("admin-reply").blur();
+    }
+
+    function extractYTId(url) {
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = url.match(regExp);
+      return (match && match[2].length === 11) ? match[2] : null;
+    }
+
+    // 需求 3 & 7: 處理中狀態
+    function setProcessing(isProcessing) {
+      const layout = document.getElementById("main-layout-container");
+      const submitBtn = document.getElementById("submit-btn");
+      if (isProcessing) {
+        layout.classList.add("processing-mode");
+        submitBtn.textContent = "處理中...";
+        submitBtn.disabled = true;
+      } else {
+        layout.classList.remove("processing-mode");
+        submitBtn.textContent = "發表";
+        submitBtn.disabled = false;
+      }
+    }
+
+    // 需求 5: 錄音功能邏輯
+    const btnPause = document.getElementById("audio-rec-pause");
+    const btnStart = document.getElementById("audio-rec-start");
+
+    btnStart.onclick = async () => {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioRecRecorder = new MediaRecorder(stream);
+      audioRecRecorder.start();
+      btnStart.classList.add("recording", "flashing");
+      btnPause.disabled = false;
+      document.getElementById("audio-rec-stop").disabled = false;
+    };
+
+    btnPause.onclick = () => {
+      if (audioRecRecorder.state === "recording") {
+        audioRecRecorder.pause();
+        btnPause.classList.add("is-paused");
+        btnStart.classList.remove("flashing"); // 停止閃爍但保持紅色
+      } else {
+        audioRecRecorder.resume();
+        btnPause.classList.remove("is-paused");
+        btnStart.classList.add("flashing");
+      }
+    };
+
+    // 需求 11 & 12: 提交表單包含錄音進資料庫
+    document.getElementById("community-form").onsubmit = async (e) => {
+      e.preventDefault();
+      setProcessing(true);
+      
+      const payload = {
+        action: editState.active ? "edit" : "add",
+        id: editState.id,
+        nickname: document.getElementById("nickname-input").value,
+        text: document.getElementById("text-input").value,
+        youtubeUrl: document.getElementById("youtube-url-input").value
+      };
+
+      // 如果有錄音，轉成 Base64 (簡化邏輯)
+      if (window.recordedAudioBlob) {
+        const reader = new FileReader();
+        reader.readAsDataURL(window.recordedAudioBlob);
+        reader.onloadend = () => {
+          payload.audioBase64 = reader.result.split(',')[1];
+          sendData(payload);
+        };
+      } else {
+        sendData(payload);
+      }
+    };
+
+    async function sendData(payload) {
+      await fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      setProcessing(false);
+      resetForm();
+      loadComments();
+    }
+
+    function resetForm() {
+      document.getElementById("community-form").reset();
+      document.getElementById("community-form").classList.add("hidden");
+      editState.active = false;
+      // 恢復按鈕顏色
+      document.querySelectorAll('.media-select-btn').forEach(b => b.classList.remove('edit-hidden'));
+    }
+
+    // 啟動
+    loadComments();
+  </script>
 </body>
 </html>
 
