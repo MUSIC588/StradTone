@@ -2,120 +2,61 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>StradTone Violin</title>
-
-  <!-- 外部樣式表 -->
   <link rel="stylesheet" href="violin.css" />
 </head>
 
 <body>
-  <div class="page">
+  <header class="site-header">
+    <a href="https://stradtone.com"><img src="https://stradtone.com/wp-content/uploads/2022/10/StradTone-Logo-Header.png" alt="StradTone" style="height:30px;"></a>
+  </header>
+
+  <div class="page" id="top-anchor">
     <header>
       <h1>StradTone Violin</h1>
       <h2>提琴聲學實驗室</h2>
     </header>
 
     <main class="layout">
-      <!-- 左：留言 / 發表 / 錄音 / 影片 -->
       <section class="panel panel-left" id="comments-section">
-        <p class="hint">
-          小提琴
-        </p>
-
+        <p class="hint">小提琴</p>
         <div class="toolbar">
           <button type="button" id="btn-new">新增</button>
         </div>
 
-        <!-- 起始收起來 -->
         <form id="community-form" class="hidden">
           <label>
             username（5–12 字必填,修改編輯用）：
-            <input
-              type="text"
-              id="nickname-input"
-              maxlength="12"
-              placeholder="Mr,s 09…."
-            />
+            <input type="text" id="nickname-input" maxlength="12" placeholder="Mr,s 09…." />
           </label>
           <label>
             項目（100 字內）：
-            <input
-              type="text"
-              id="text-input"
-              maxlength="100"
-              placeholder="..."
-            />
+            <input type="text" id="text-input" maxlength="100" placeholder="..." />
           </label>
 
-          <!-- 三顆媒體按鈕：只能選一種媒體 -->
           <div class="form-row-inline media-select-row">
-            <button
-              type="button"
-              class="media-select-btn"
-              id="btn-media-youtube"
-              data-media="youtube"
-            >
-              YouTube
-            </button>
-            <button
-              type="button"
-              class="media-select-btn"
-              id="btn-media-upload"
-              data-media="upload"
-            >
-              影片
-            </button>
-            <button
-              type="button"
-              class="media-select-btn"
-              id="btn-media-audio"
-              data-media="audio"
-            >
-              錄音
-            </button>
+            <button type="button" class="media-select-btn" id="btn-media-youtube" data-media="youtube">YouTube</button>
+            <button type="button" class="media-select-btn" id="btn-media-upload" data-media="upload">影片</button>
+            <button type="button" class="media-select-btn" id="btn-media-audio" data-media="audio">錄音</button>
           </div>
 
-          <!-- 影片欄位（包含 YouTube / 上傳） -->
           <div id="video-fields" class="hidden">
-            <!-- YouTube 區塊（只在「YouTube」模式顯示） -->
             <div class="form-row-inline" id="youtube-row" style="margin-top:4px;">
-              <input
-                type="text"
-                id="youtube-url-input"
-                placeholder="https://youtu.be/....(Link)…"
-              />
-              <input
-                type="text"
-                id="start-input"
-                placeholder="開始 mm:ss "
-              />
-              <input
-                type="text"
-                id="end-input"
-                placeholder="結束 mm:ss "
-              />
+              <input type="text" id="youtube-url-input" placeholder="https://youtu.be/....(Link)…" />
+              <input type="text" id="start-input" placeholder="開始 mm:ss " />
+              <input type="text" id="end-input" placeholder="結束 mm:ss " />
             </div>
-
-            <!-- 上傳影片 / 圖片檔案（只在「影片」模式顯示） -->
             <div class="form-row-inline" id="video-upload-row" style="margin-top:4px;">
-              <!-- 不限制檔案種類，交給系統預設選單 -->
               <input type="file" id="video-file-input" />
               <span id="video-file-label" class="sub-hint"></span>
             </div>
-            <!-- 新增：一般影片 / 網頁連結（不限 YouTube） -->
             <div class="form-row-inline" id="video-link-row" style="margin-top:4px;">
-              <input
-                type="text"
-                id="video-link-input"
-                placeholder="https://... 影片或網頁網址（選填）"
-              />
+              <input type="text" id="video-link-input" placeholder="https://... 影片或網頁網址（選填）" />
             </div>
           </div>
 
-          <!-- 錄音欄位 -->
           <div id="audio-fields" class="hidden">
-            <!-- 錄音控制列 -->
             <div class="media-record-toolbar" id="audio-record-toolbar">
               <button type="button" class="media-record-btn" id="audio-rec-start">●</button>
               <button type="button" class="media-record-btn" id="audio-rec-pause" disabled>⏸</button>
@@ -123,14 +64,10 @@
               <button type="button" class="media-record-btn" id="audio-rec-cancel" disabled>✕</button>
               <span class="media-record-status" id="audio-rec-status">錄音預備</span>
             </div>
-
-            <!-- 上傳現有音檔 -->
             <div class="form-row-inline" id="audio-upload-row" style="margin-top:4px;">
               <input type="file" id="audio-file-input" accept="audio/*" />
               <span id="audio-file-label" class="sub-hint"></span>
             </div>
-
-            <!-- 錄音預覽 -->
             <div class="form-row-inline" id="audio-preview-row" style="margin-top:4px;">
               <audio id="audio-rec-preview" class="rec-preview" controls></audio>
             </div>
@@ -146,173 +83,61 @@
             <thead>
               <tr>
                 <th class="col-nick">username</th>
-                <th class="col-text">
-                  項目
-                  <button
-                    type="button"
-                    id="btn-edit"
-                    class="edit-header-btn"
-                  >
-                    編輯
-                  </button>
-                </th>
+                <th class="col-text">項目 <button type="button" id="btn-edit" class="edit-header-btn">編輯</button></th>
                 <th class="col-media">錄音 / 影片</th>
               </tr>
             </thead>
-            <tbody id="comments-tbody">
-              <!-- JS 動態插入 -->
-            </tbody>
+            <tbody id="comments-tbody"></tbody>
           </table>
         </div>
-
-        <!-- Back 按鈕移到左邊表格底下 -->
         <button id="back-button" type="button">Back</button>
       </section>
 
-      <!-- 右：影片 + 多層圓 + 回覆 + 指板 -->
       <section class="panel panel-right" id="visual-panel">
         <div class="visual-wrapper">
-          <div class="visual-header">
-            <div class="current-point" id="current-info">
-              尚未選取留言
-            </div>
-          </div>
-
           <div class="visual-body">
-            <!-- 上層：影片 + 多層圓（桌機）；手機時會調整排版 -->
             <div class="top-row">
-              <!-- 左：影片格 -->
               <div class="video-frame-wrap">
-                <iframe
-                  id="video-iframe"
-                  src=""
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  referrerpolicy="origin-when-cross-origin"
-                  allowfullscreen
-                ></iframe>
-
-                <!-- 錄音播放用 -->
+                <iframe id="video-iframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                 <audio id="audio-player" controls></audio>
-
-                <div class="video-placeholder" id="video-placeholder">
-                  請從左側表格選取一筆帶有影片或錄音的項目
-                </div>
+                <div class="video-placeholder" id="video-placeholder">請從左側表格選取一筆帶有影片或錄音的項目</div>
               </div>
-
-              <!-- 右：多層圓 -->
               <div class="circle-area">
                 <div class="circle-stack" id="circle-stack">
                   <div class="ring ring-main ring-1" data-layer="1"></div>
                   <div class="ring ring-main ring-2" data-layer="2"></div>
                   <div class="ring ring-main ring-3" data-layer="3"></div>
                   <div class="ring ring-main ring-4" data-layer="4"></div>
-                  <div
-                    class="ring ring-boundary ring-b15"
-                    data-layer="1.5"
-                  ></div>
-                  <div
-                    class="ring ring-boundary ring-b25"
-                    data-layer="2.5"
-                  ></div>
-                  <div
-                    class="ring ring-boundary ring-b35"
-                    data-layer="3.5"
-                  ></div>
-                  <div
-                    class="ring ring-b45"
-                    data-layer="4.5"
-                  ></div>
-
-                  <div class="layer-label" id="layer-label">
-                    layers: –
-                  </div>
+                  <div class="ring ring-boundary ring-b15" data-layer="1.5"></div>
+                  <div class="ring ring-boundary ring-b25" data-layer="2.5"></div>
+                  <div class="ring ring-boundary ring-b35" data-layer="3.5"></div>
+                  <div class="ring ring-b45" data-layer="4.5"></div>
                 </div>
               </div>
             </div>
 
-            <!-- 中層：回覆區 + 點點位置圖 -->
             <div class="bottom-row">
               <div class="reply-area">
                 <div class="reply-target" id="reply-target">
-                  <button
-                    type="button"
-                    id="reply-target-btn"
-                    class="reply-target-btn"
-                    disabled
-                  >
-                    From: —
-                  </button>
+                  <button type="button" id="reply-target-btn" class="reply-target-btn" disabled>From: —</button>
                 </div>
-                <p class="reply-note">
-                  <!-- 給管理員看的說明，已在 CSS 隱藏 -->
-                </p>
-                <textarea
-                  id="admin-reply"
-                  placeholder="提琴聲學實驗室："
-                ></textarea>
-
+                <textarea id="admin-reply" placeholder="提琴聲學實驗室："></textarea>
                 <div class="reply-actions hidden" id="reply-actions">
                   <button type="button" id="reply-save-btn" class="reply-action-btn">儲存</button>
                   <button type="button" id="reply-cancel-btn" class="reply-action-btn reply-cancel-btn">取消</button>
                 </div>
               </div>
-
               <div class="fingerboard-row">
                 <div class="fingerboard" id="fingerboard">
-                  <div class="fb-string fb-s1"></div>
-                  <div class="fb-string fb-s2"></div>
-                  <div class="fb-string fb-s3"></div>
-                  <div class="fb-string fb-s4"></div>
-
-                  <!-- 示意點 -->
-                  <div
-                    class="fingerboard-note"
-                    style="left:24%; top:8%;"
-                  >
-                    G0
-                  </div>
-                  <div
-                    class="fingerboard-note"
-                    style="left:24%; top:26%;"
-                  >
-                    G3
-                  </div>
-                  <div
-                    class="fingerboard-note"
-                    style="left:38%; top:18%;"
-                  >
-                    D5
-                  </div>
-                  <div
-                    class="fingerboard-note"
-                    style="left:38%; top:40%;"
-                  >
-                    D8
-                  </div>
-                  <div
-                    class="fingerboard-note"
-                    style="left:62%; top:22%;"
-                  >
-                    A7
-                  </div>
-                  <div
-                    class="fingerboard-note"
-                    style="left:62%; top:44%;"
-                  >
-                    A10
-                  </div>
-                  <div
-                    class="fingerboard-note"
-                    style="left:76%; top:30%;"
-                  >
-                    E9
-                  </div>
-                  <div
-                    class="fingerboard-note"
-                    style="left:76%; top:52%;"
-                  >
-                    E12
-                  </div>
+                   <div class="fb-string fb-s1"></div><div class="fb-string fb-s2"></div><div class="fb-string fb-s3"></div><div class="fb-string fb-s4"></div>
+                   <div class="fingerboard-note" style="left:24%; top:8%;">G0</div>
+                   <div class="fingerboard-note" style="left:24%; top:26%;">G3</div>
+                   <div class="fingerboard-note" style="left:38%; top:18%;">D5</div>
+                   <div class="fingerboard-note" style="left:38%; top:40%;">D8</div>
+                   <div class="fingerboard-note" style="left:62%; top:22%;">A7</div>
+                   <div class="fingerboard-note" style="left:62%; top:44%;">A10</div>
+                   <div class="fingerboard-note" style="left:76%; top:30%;">E9</div>
+                   <div class="fingerboard-note" style="left:76%; top:52%;">E12</div>
                 </div>
               </div>
             </div>
@@ -322,7 +147,11 @@
     </main>
   </div>
 
-  <!-- 外部腳本：你的 violin.js -->
+  <footer class="site-footer">
+    <p>© StradTone Violin All Rights Reserved.</p>
+  </footer>
+
   <script src="violin.js"></script>
 </body>
 </html>
+
