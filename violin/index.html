@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>StradTone Violin</title>
   <style>
-    /* ===== [CSS] 原有樣式保留 + 修改事項 ===== */
+    /* === [CSS-0] 原始樣式完整保留 === */
     * { box-sizing: border-box; }
     body {
       margin: 0;
@@ -14,20 +14,21 @@
       color: #f5f5f5;
     }
     .page { min-height: 100vh; padding: 12px; max-width: 1100px; margin: 0 auto; }
-
-    /* 需求 8: 新增矮版 Header */
-    .site-header {
+    
+    /* 需求 8: 新增矮版 Header 與 Footer (模擬主站) */
+    .stradtone-header {
       background: #1a1d20;
-      height: 45px;
+      height: 40px;
       display: flex;
       align-items: center;
-      padding: 0 20px;
+      padding: 0 15px;
       border-bottom: 1px solid #333;
     }
-    .site-header img { height: 28px; }
+    .stradtone-header img { height: 20px; }
 
     header.lab-header {
-      margin: 10px 0;
+      margin-top: 10px;
+      margin-bottom: 10px;
       display: flex;
       justify-content: space-between;
       align-items: baseline;
@@ -42,86 +43,106 @@
     .panel-left  { flex: 0 0 40%; max-width: 40%; display: flex; flex-direction: column; }
     .panel-right { flex: 0 0 60%; max-width: 60%; display: flex; flex-direction: column; }
 
-    .hint, .reply-note { font-size: 12px; line-height: 1.4; color: #222629; }
-    .hidden { display: none !important; }
+    /* 需求 7: 禁止動作時的狀態 (全域禁用與隱藏游標) */
+    .global-locked { pointer-events: none !important; }
+    .global-locked textarea, .global-locked input { caret-color: transparent !important; }
+    .processing-text { color: #d1a343; font-size: 12px; margin-left: 10px; }
 
-    /* 需求 7: 禁止動作時的狀態 */
-    .processing-mode { pointer-events: none !important; opacity: 0.7; }
-    .processing-mode textarea, .processing-mode input { cursor: default; }
-
-    /* 需求 9: YouTube 按鈕樣式修正 */
+    /* 需求 9: YouTube 按鈕修正 (紅色加黃元素 + 粗體) */
     #btn-media-youtube {
-      background: linear-gradient(135deg, #d00000 0%, #ff8c00 100%); /* 紅色加黃元素 */
+      background: #c00000; /* 原色 */
       border-color: #ff5050;
-      color: #ffffff;
-      font-weight: 800; /* 字體再粗一點 */
-      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+      color: #111111;
+      font-weight: 800; /* 粗體 */
     }
-    #btn-media-youtube.active { background: #ff0000; border-color: #fff; }
+    #btn-media-youtube.active {
+      background: #e60000; /* 稍微偏橘紅 */
+      border-color: #ffd700; /* 金色邊 */
+      color: #000;
+    }
     /* 其他媒體選取時，YouTube 變回黑灰底 */
     .media-select-btn:not(.active) { background: #3a3f44; color: #f5f5f5; border-color: #777; }
 
-    /* 需求 6: 編輯時隱蔽媒體按鈕，顏色再淺一階 */
-    .media-select-btn.edit-hidden { opacity: 0.15 !important; filter: grayscale(1); }
+    /* 需求 6: 編輯時隱蔽媒體按鈕 (更淺一階) */
+    .media-select-btn.edit-hidden { opacity: 0.15 !important; }
 
-    /* 需求 11: 驗證後 username 樣式 */
+    /* 需求 11: username 驗證後樣式 */
     #nickname-input.verified {
       background: #2a2d30 !important; /* 暗白底 */
       color: #888 !important;
-      user-select: none; /* 防止藍底標示 */
+      user-select: none;
       pointer-events: none;
     }
 
-    /* 需求 5: 錄音暫停鍵邏輯 */
+    /* 需求 5: 錄音鍵邏輯 */
     .media-record-btn#audio-rec-pause.is-paused {
-      color: #ff0000 !important; /* 變紅色 */
-      background: #4a3a3a;
+      color: #ff0000 !important; 
     }
-    /* 閃爍動畫僅限錄音中，暫停時停止閃爍 */
     .media-record-btn.recording.flashing { animation: recordBlink 0.8s ease-in-out infinite; }
     @keyframes recordBlink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
-    /* 原有表格樣式 */
+    /* --- [CSS-2] 表格與其他樣式保留 --- */
     .comments-wrapper { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; border-radius: 6px; border: 1px solid #444; background: #202427; }
     table#comments-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
-    table#comments-table th { position: sticky; top: 0; background: #33383c; z-index: 1; padding: 4px 6px; }
-    table#comments-table td { border-bottom: 1px solid #333; padding: 4px 6px; word-wrap: break-word; }
+    table#comments-table th { position: sticky; top: 0; background: #33383c; z-index: 1; padding: 4px 6px; text-align: left; }
+    table#comments-table td { border-bottom: 1px solid #333; padding: 4px 6px; vertical-align: top; word-wrap: break-word; }
+    .col-nick { width: 80px; } .col-media { width: 90px; }
     #comments-tbody tr.selected { background: #4f7a3b !important; }
+    .hint, .reply-note { font-size: 12px; line-height: 1.4; color: #222629; }
+    .hidden { display: none !important; }
 
-    /* 回覆區 & 影片區 */
-    .video-frame-wrap { flex: 1 1 60%; background: #111315; border-radius: 6px; overflow: hidden; border: 1px solid #555; position: relative; min-height: 150px; }
-    #video-iframe { width: 100%; height: 100%; border: none; }
-    #admin-reply { width: 100%; background: #1f2326; border: 1px solid #555; color: #f5f5f5; font-size: 12px; border-radius: 4px; min-height: 80px; resize: none; }
+    /* --- [CSS-4] 多層圓 (8層全恢復) --- */
+    .circle-stack {
+      position: relative; width: 160px; height: 160px; border-radius: 50%;
+      --ring-main-color: #5c7a5c; --ring-boundary-color: #9ad09a; --ring-highlight-color: #70ff70;
+      background: radial-gradient(circle at 20% 20%, #555, #111);
+      margin: auto;
+    }
+    .ring { position: absolute; border-radius: 50%; transition: border-color 0.12s, box-shadow 0.12s; }
+    .ring-main { border: 3px solid var(--ring-main-color); opacity: 0.8; }
+    .ring-boundary { border: 1.2px solid var(--ring-boundary-color); opacity: 0.7; }
+    .ring-b45 { inset: 4%; border: 1px solid transparent; box-shadow: 0 0 16px rgba(112,255,112,0.35); }
+    .ring-4 { inset: 10%; } .ring-b35 { inset: 20%; } .ring-3 { inset: 26%; }
+    .ring-b25 { inset: 36%; } .ring-2 { inset: 42%; } .ring-b15 { inset: 52%; } .ring-1 { inset: 60%; }
+    .ring.active { border-color: var(--ring-highlight-color); opacity: 1; box-shadow: 0 0 10px rgba(140,255,140,0.9); }
 
-    /* 多層圓 & 指板樣式保留... */
-    .circle-stack { position: relative; width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle at 20% 20%, #555, #111); margin: auto; }
-    .ring { position: absolute; border-radius: 50%; border: 2px solid #5c7a5c; }
-    .ring.active { border-color: #70ff70; box-shadow: 0 0 10px #70ff70; }
-    .ring-1 { inset: 60%; } .ring-2 { inset: 42%; } .ring-3 { inset: 26%; } .ring-4 { inset: 10%; }
-    .fingerboard { position: relative; width: 120px; height: 260px; background: #181a1d; border-radius: 14px; border: 2px solid #676f78; }
+    /* --- [CSS-5] 指板恢復 --- */
+    .fingerboard {
+      position: relative; width: 120px; height: 260px; background: linear-gradient(180deg, #181a1d, #34383d);
+      border-radius: 14px; border: 2px solid #676f78; margin: auto;
+    }
+    .fb-string { position: absolute; top: 6%; bottom: 6%; width: 2px; background: #888; opacity: 0.9; }
+    .fb-s1 { left: 20%; } .fb-s2 { left: 40%; } .fb-s3 { left: 62%; } .fb-s4 { left: 80%; }
+    .fingerboard-note { position: absolute; font-size: 10px; color: #fdf5c5; pointer-events: none; }
 
+    /* 手機版排版保留 */
     @media (max-width: 820px) {
       main.layout { flex-direction: column; }
-      .panel-left, .panel-right { max-width: 100%; width: 100%; }
       #visual-panel { order: 1; } #comments-section { order: 2; }
+      .panel-left, .panel-right { max-width: 100%; width: 100%; border-radius: 0; }
+      .video-frame-wrap { height: 160px !important; }
+      .bottom-row { flex-direction: row; }
     }
+    
+    /* 表單特定樣式 */
+    form#community-form { padding: 6px 8px; border: 1px solid #d1a343; background: #141b20; }
+    #admin-reply { width: 100%; background: #1f2326; color: #f5f5f5; border-radius: 4px; border: 1px solid #555; }
+    .media-select-btn { padding: 3px 10px; border-radius: 14px; cursor: pointer; border: 1px solid #777; font-size: 12px; }
   </style>
 </head>
 <body>
 
-  <header class="site-header">
-    <a href="https://stradtone.com">
-      <img src="https://stradtone.com/wp-content/uploads/2022/10/StradTone-Logo-Header.png" alt="StradTone">
-    </a>
+  <header class="stradtone-header">
+    <a href="https://stradtone.com"><img src="https://stradtone.com/wp-content/uploads/2022/10/StradTone-Logo-Header.png" alt="StradTone"></a>
   </header>
 
-  <div class="page" id="top-anchor">
+  <div class="page" id="top-point">
     <header class="lab-header">
       <h1>StradTone Violin</h1>
       <h2>提琴聲學實驗室</h2>
     </header>
 
-    <main class="layout" id="main-layout-container">
+    <main class="layout" id="main-container">
       <section class="panel panel-left" id="comments-section">
         <div class="toolbar">
           <button type="button" id="btn-new">新增</button>
@@ -142,10 +163,10 @@
           </div>
 
           <div id="video-fields" class="hidden">
-            <div class="form-row-inline" id="youtube-row">
+            <div class="form-row-inline" id="youtube-row" style="margin-top:4px;">
               <input type="text" id="youtube-url-input" placeholder="YouTube Link..." />
             </div>
-            <div class="form-row-inline" id="video-upload-row">
+            <div class="form-row-inline" id="video-upload-row" style="display:none; margin-top:4px;">
               <input type="file" id="video-file-input" />
             </div>
           </div>
@@ -157,19 +178,22 @@
               <button type="button" class="media-record-btn" id="audio-rec-stop" disabled>■</button>
               <span id="audio-rec-status">錄音預備</span>
             </div>
-            <audio id="audio-rec-preview" controls class="hidden"></audio>
+            <audio id="audio-rec-preview" controls class="hidden" style="width:100%; margin-top:4px;"></audio>
           </div>
 
-          <button type="submit" id="submit-btn">發表</button>
+          <div class="form-row-inline" style="margin-top:6px;">
+            <button type="submit" id="submit-btn">發表</button>
+            <span id="proc-label" class="processing-text hidden">處理中...</span>
+          </div>
         </form>
 
         <div class="comments-wrapper">
           <table id="comments-table">
             <thead>
               <tr>
-                <th style="width:80px;">User</th>
+                <th class="col-nick">username</th>
                 <th>項目 <button type="button" id="btn-edit" class="edit-header-btn">編輯</button></th>
-                <th style="width:60px;">媒體</th>
+                <th class="col-media">媒體</th>
               </tr>
             </thead>
             <tbody id="comments-tbody"></tbody>
@@ -183,21 +207,25 @@
           <div class="top-row">
             <div class="video-frame-wrap">
               <iframe id="video-iframe" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-              <audio id="audio-player" controls style="display:none; width:100%;"></audio>
+              <audio id="audio-player" controls style="display:none; position:absolute; bottom:0; width:100%;"></audio>
               <div id="video-placeholder" class="video-placeholder">請選取項目</div>
             </div>
             <div class="circle-area">
-              <div class="circle-stack">
-                <div class="ring ring-1" data-layer="1"></div>
-                <div class="ring ring-2" data-layer="2"></div>
-                <div class="ring ring-3" data-layer="3"></div>
-                <div class="ring ring-4" data-layer="4"></div>
+              <div class="circle-stack" id="circle-stack">
+                <div class="ring ring-main ring-1" data-layer="1"></div>
+                <div class="ring ring-main ring-2" data-layer="2"></div>
+                <div class="ring ring-main ring-3" data-layer="3"></div>
+                <div class="ring ring-main ring-4" data-layer="4"></div>
+                <div class="ring ring-boundary ring-b15" data-layer="1.5"></div>
+                <div class="ring ring-boundary ring-b25" data-layer="2.5"></div>
+                <div class="ring ring-boundary ring-b35" data-layer="3.5"></div>
+                <div class="ring ring-b45" data-layer="4.5"></div>
               </div>
             </div>
           </div>
           <div class="bottom-row">
             <div class="reply-area">
-              <div class="reply-target"><button type="button" id="reply-target-btn" disabled>From: —</button></div>
+              <div class="reply-target"><button type="button" id="reply-target-btn" class="reply-target-btn" disabled>From: —</button></div>
               <textarea id="admin-reply" placeholder="提琴聲學實驗室："></textarea>
               <div id="reply-actions" class="reply-actions hidden">
                 <button type="button" id="reply-save-btn">儲存</button>
@@ -205,7 +233,17 @@
               </div>
             </div>
             <div class="fingerboard-row">
-              <div class="fingerboard"></div>
+              <div class="fingerboard" id="fingerboard">
+                <div class="fb-string fb-s1"></div><div class="fb-string fb-s2"></div><div class="fb-string fb-s3"></div><div class="fb-string fb-s4"></div>
+                <div class="fingerboard-note" style="left:24%; top:8%;">G0</div>
+                <div class="fingerboard-note" style="left:24%; top:26%;">G3</div>
+                <div class="fingerboard-note" style="left:38%; top:18%;">D5</div>
+                <div class="fingerboard-note" style="left:38%; top:40%;">D8</div>
+                <div class="fingerboard-note" style="left:62%; top:22%;">A7</div>
+                <div class="fingerboard-note" style="left:62%; top:44%;">A10</div>
+                <div class="fingerboard-note" style="left:76%; top:30%;">E9</div>
+                <div class="fingerboard-note" style="left:76%; top:52%;">E12</div>
+              </div>
             </div>
           </div>
         </div>
@@ -214,49 +252,57 @@
   </div>
 
   <script>
+    /* === [JS] 邏輯完全恢復並植入修改 === */
     const API_URL = "https://script.google.com/macros/s/AKfycbxn5aDCimtZmvgK4uEGr5fIyNItY2wZgQyO2LVEZkggFkO0VZ_YdDMyspGpzpkYy5W6-A/exec";
     let commentsCache = [];
     let currentSelectedId = null;
-    let isSubmitting = false;
     let editState = { active: false, id: null, nickname: "" };
     let audioRecRecorder = null;
     let audioRecChunks = [];
+    let isSubmitting = false;
 
-    // 需求 4: 換頁自動停止
+    // 需求 4: 換頁/背景 自動暫停影片與聲音
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
-        document.getElementById("video-iframe").src = document.getElementById("video-iframe").src;
-        document.getElementById("audio-player").pause();
+        const iframe = document.getElementById("video-iframe");
+        const audio = document.getElementById("audio-player");
+        if (iframe.src) iframe.src = iframe.src; 
+        audio.pause();
       }
     });
 
-    // 需求 10: Back 鍵只跳頭，不重整
-    document.getElementById("back-button").addEventListener("click", () => {
+    // 需求 10: Back 鍵邏輯
+    document.getElementById("back-button").onclick = () => {
       window.scrollTo({ top: 0, behavior: "smooth" });
       resetForm();
-    });
+    };
 
-    // 需求 1: 移除輪播功能 (已從初始化移除)
-
+    // 載入與初始化
     async function loadComments() {
-      const res = await fetch(API_URL + "?action=list");
+      const res = await fetch(API_URL + "?action=list", { cache: "no-cache" });
       const data = await res.json();
       commentsCache = data.posts || [];
       renderTable();
       // 需求 2: 自動開啟最新帶影片項目
-      const latestVideo = [...commentsCache].reverse().find(r => r.youtubeUrl || r.driveFileId);
-      if (latestVideo) selectRow(latestVideo);
+      const newestWithMedia = [...commentsCache].reverse().find(r => r.youtubeUrl || r.driveFileId || r.driveAudioId);
+      if (newestWithMedia) selectRow(newestWithMedia);
     }
 
     function renderTable() {
       const tbody = document.getElementById("comments-tbody");
-      tbody.innerHTML = commentsCache.slice().reverse().map(row => `
-        <tr data-id="${row.id}" onclick="handleRowClick(${row.id})">
-          <td>${row.nickname[0]}**</td>
-          <td>${row.text.slice(0,20)}${row.text.length>20?'...':''}</td>
+      tbody.innerHTML = commentsCache.slice().reverse().map(row => {
+        const selected = row.id == currentSelectedId ? 'class="selected"' : '';
+        return `<tr data-id="${row.id}" ${selected} onclick="handleRowClick(${row.id})">
+          <td>${maskName(row.nickname)}</td>
+          <td>${row.text.slice(0,25)}...</td>
           <td>${(row.youtubeUrl || row.driveFileId)?'🎬':''}${row.driveAudioId?'🎵':''}</td>
-        </tr>
-      `).join('');
+        </tr>`;
+      }).join('');
+    }
+
+    function maskName(s) {
+      if (!s) return "匿名";
+      return s.length <= 2 ? s[0] + "*" : s[0] + "*".repeat(s.length-2) + s[s.length-1];
     }
 
     function handleRowClick(id) {
@@ -266,121 +312,160 @@
 
     function selectRow(row) {
       currentSelectedId = row.id;
+      renderTable();
       const iframe = document.getElementById("video-iframe");
       const audio = document.getElementById("audio-player");
       const ph = document.getElementById("video-placeholder");
-
-      iframe.style.display = "none";
-      audio.style.display = "none";
-      ph.style.display = "none";
+      
+      iframe.style.display = "none"; audio.style.display = "none"; ph.style.display = "none";
+      iframe.src = "";
 
       if (row.youtubeUrl) {
-        iframe.src = `https://www.youtube.com/embed/${extractYTId(row.youtubeUrl)}?autoplay=1`;
+        iframe.src = `https://www.youtube-nocookie.com/embed/${extractYTId(row.youtubeUrl)}?autoplay=1`;
         iframe.style.display = "block";
       } else if (row.driveAudioId) {
-        // 需求 12: 修正音符圖案顯示與播放
         audio.src = `https://drive.google.com/uc?export=download&id=${row.driveAudioId}`;
         audio.style.display = "block";
-        audio.play();
-      } else {
-        ph.style.display = "flex";
+        audio.play().catch(()=>{});
+      } else { ph.style.display = "flex"; }
+
+      // 需求 8: 蘋果手機選取後跳至頂端
+      if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        document.getElementById("admin-reply").blur();
       }
-      // 蘋果優化
-      document.getElementById("admin-reply").blur();
     }
 
     function extractYTId(url) {
-      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-      const match = url.match(regExp);
-      return (match && match[2].length === 11) ? match[2] : null;
+      const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:.*v=|\/embed\/))([^?&]+)/);
+      return m ? m[1] : "";
     }
 
-    // 需求 3 & 7: 處理中狀態
-    function setProcessing(isProcessing) {
-      const layout = document.getElementById("main-layout-container");
-      const submitBtn = document.getElementById("submit-btn");
-      if (isProcessing) {
-        layout.classList.add("processing-mode");
-        submitBtn.textContent = "處理中...";
-        submitBtn.disabled = true;
+    // 需求 3 & 7: 禁止功能與顯示處理中
+    function setGlobalLock(locked) {
+      const container = document.getElementById("main-container");
+      const procLabel = document.getElementById("proc-label");
+      if (locked) {
+        container.classList.add("global-locked");
+        procLabel.classList.remove("hidden");
       } else {
-        layout.classList.remove("processing-mode");
-        submitBtn.textContent = "發表";
-        submitBtn.disabled = false;
+        container.classList.remove("global-locked");
+        procLabel.classList.add("hidden");
       }
     }
 
-    // 需求 5: 錄音功能邏輯
-    const btnPause = document.getElementById("audio-rec-pause");
-    const btnStart = document.getElementById("audio-rec-start");
+    // 需求 5: 錄音控制邏輯
+    const btnRecStart = document.getElementById("audio-rec-start");
+    const btnRecPause = document.getElementById("audio-rec-pause");
+    const btnRecStop = document.getElementById("audio-rec-stop");
 
-    btnStart.onclick = async () => {
+    btnRecStart.onclick = async () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioRecRecorder = new MediaRecorder(stream);
+      audioRecChunks = [];
+      audioRecRecorder.ondataavailable = e => audioRecChunks.push(e.data);
+      audioRecRecorder.onstop = () => {
+        const blob = new Blob(audioRecChunks, { type: 'audio/webm' });
+        window.recordedAudioBlob = blob;
+        const preview = document.getElementById("audio-rec-preview");
+        preview.src = URL.createObjectURL(blob);
+        preview.classList.remove("hidden");
+      };
       audioRecRecorder.start();
-      btnStart.classList.add("recording", "flashing");
-      btnPause.disabled = false;
-      document.getElementById("audio-rec-stop").disabled = false;
+      btnRecStart.classList.add("recording", "flashing");
+      btnRecPause.disabled = false; btnRecStop.disabled = false;
     };
 
-    btnPause.onclick = () => {
+    btnRecPause.onclick = () => {
       if (audioRecRecorder.state === "recording") {
         audioRecRecorder.pause();
-        btnPause.classList.add("is-paused");
-        btnStart.classList.remove("flashing"); // 停止閃爍但保持紅色
+        btnRecPause.classList.add("is-paused");
+        btnRecStart.classList.remove("flashing"); // 停止閃爍
       } else {
         audioRecRecorder.resume();
-        btnPause.classList.remove("is-paused");
-        btnStart.classList.add("flashing");
+        btnRecPause.classList.remove("is-paused");
+        btnRecStart.classList.add("flashing"); // 恢復閃爍
       }
     };
 
-    // 需求 11 & 12: 提交表單包含錄音進資料庫
-    document.getElementById("community-form").onsubmit = async (e) => {
-      e.preventDefault();
-      setProcessing(true);
-      
-      const payload = {
-        action: editState.active ? "edit" : "add",
-        id: editState.id,
-        nickname: document.getElementById("nickname-input").value,
-        text: document.getElementById("text-input").value,
-        youtubeUrl: document.getElementById("youtube-url-input").value
-      };
+    btnRecStop.onclick = () => {
+      audioRecRecorder.stop();
+      btnRecStart.classList.remove("recording", "flashing");
+      btnRecPause.disabled = true; btnRecStop.disabled = true;
+    };
 
-      // 如果有錄音，轉成 Base64 (簡化邏輯)
-      if (window.recordedAudioBlob) {
-        const reader = new FileReader();
-        reader.readAsDataURL(window.recordedAudioBlob);
-        reader.onloadend = () => {
-          payload.audioBase64 = reader.result.split(',')[1];
-          sendData(payload);
-        };
+    // 表單處理
+    document.getElementById("btn-new").onclick = () => {
+      const f = document.getElementById("community-form");
+      f.classList.toggle("hidden");
+      if (!f.classList.contains("hidden")) {
+        document.getElementById("btn-new").textContent = "取消新增";
       } else {
-        sendData(payload);
+        resetForm();
       }
     };
-
-    async function sendData(payload) {
-      await fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
-      setProcessing(false);
-      resetForm();
-      loadComments();
-    }
 
     function resetForm() {
       document.getElementById("community-form").reset();
       document.getElementById("community-form").classList.add("hidden");
+      document.getElementById("btn-new").textContent = "新增";
       editState.active = false;
-      // 恢復按鈕顏色
-      document.querySelectorAll('.media-select-btn').forEach(b => b.classList.remove('edit-hidden'));
+      document.querySelectorAll('.media-select-btn').forEach(b => {
+        b.classList.remove('active', 'edit-hidden');
+        b.disabled = false;
+      });
+      document.getElementById("nickname-input").classList.remove("verified");
+    }
+
+    // 需求 9: 按鈕互斥與顏色切換
+    document.querySelectorAll('.media-select-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.media-select-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const m = btn.dataset.media;
+        document.getElementById("video-fields").className = (m==='youtube' || m==='upload') ? "" : "hidden";
+        document.getElementById("audio-fields").className = (m==='audio') ? "" : "hidden";
+        document.getElementById("youtube-row").style.display = (m==='youtube') ? "flex" : "none";
+        document.getElementById("video-upload-row").style.display = (m==='upload') ? "flex" : "none";
+      };
+    });
+
+    // 需求 11 & 12: 提交數據
+    document.getElementById("community-form").onsubmit = async (e) => {
+      e.preventDefault();
+      setGlobalLock(true);
+      
+      const payload = {
+        action: editState.active ? "edit" : "add",
+        nickname: document.getElementById("nickname-input").value,
+        text: document.getElementById("text-input").value,
+        youtubeUrl: document.getElementById("youtube-url-input").value,
+        type: document.querySelector('.media-select-btn.active')?.dataset.media || 'text'
+      };
+
+      if (window.recordedAudioBlob) {
+        const reader = new FileReader();
+        reader.readAsDataURL(window.recordedAudioBlob);
+        reader.onloadend = async () => {
+          payload.audioBase64 = reader.result.split(',')[1];
+          await finalSubmit(payload);
+        };
+      } else {
+        await finalSubmit(payload);
+      }
+    };
+
+    async function finalSubmit(p) {
+      try {
+        await fetch(API_URL, { method: "POST", body: JSON.stringify(p) });
+        await loadComments();
+        resetForm();
+      } catch (err) { alert("提交失敗"); }
+      setGlobalLock(false);
     }
 
     // 啟動
-    loadComments();
+    window.onload = loadComments;
   </script>
 </body>
 </html>
