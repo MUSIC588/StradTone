@@ -1,197 +1,328 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
-    <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-            <title>Violin 1:1 Pro</title>
-        <style>
-                    /* 防止選取與手勢干擾 */
-                    * {
-                                    -webkit-tap-highlight-color: transparent;
-                                    user-select: none;
-                                    -webkit-user-select: none;
-                                    touch-action: none;
-                    }
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StradTone Violin</title>
 
-                    body {
-                                    margin: 0;
-                                    background: #000;
-                                    color: white;
-                                    display: flex;
-                                    flex-direction: column;
-                                    align-items: center;
-                                    font-family: sans-serif;
-                                    height: 100vh;
-                                    overflow: hidden;
-                    }
+  <!-- 外部樣式表 -->
+  <link rel="stylesheet" href="violin.css" />
+</head>
 
-                    /* 啟動遮罩：解決所有行動裝置無聲問題 */
-                    #overlay {
-                                    position: fixed;
-                                    top: 0; left: 0; right: 0; bottom: 0;
-                                    background: rgba(0,0,0,0.95);
-                                    display: flex;
-                                    justify-content: center;
-                                    align-items: center;
-                                    z-index: 999;
-                    }
+<body>
+  <div class="page">
+    <header>
+      <h1>StradTone Violin</h1>
+      <h2>提琴聲學實驗室</h2>
+    </header>
 
-                    #start-btn {
-                                    padding: 25px 50px;
-                                    font-size: 22px;
-                                    background: #1db954;
-                                    color: white;
-                                    border: none;
-                                    border-radius: 50px;
-                                    box-shadow: 0 4px 15px rgba(29,185,84,0.4);
-                    }
+    <main class="layout">
+      <!-- 左：留言 / 發表 / 錄音 / 影片 -->
+      <section class="panel panel-left" id="comments-section">
+        <p class="hint">
+          小提琴
+        </p>
 
-                    #fingerboard {
-                                    width: 75mm;
-                                    height: 160mm;
-                                    background: #1a1a1a;
-                                    position: relative;
-                                    border-top: 8mm solid #333; /* 弦枕 */
-                                    margin-top: 20px;
-                                    box-shadow: 0 0 50px rgba(255,255,255,0.1);
-                    }
+        <div class="toolbar">
+          <button type="button" id="btn-new">新增</button>
+        </div>
 
-                    .string {
-                                    width: 2px;
-                                    height: 100%;
-                                    background: linear-gradient(to right, #ddd, #999);
-                                    position: absolute;
-                                    top: 0;
-                    }
+        <!-- 起始收起來 -->
+        <form id="community-form" class="hidden">
+          <label>
+            username（5–12 字必填,修改編輯用）：
+            <input
+              type="text"
+              id="nickname-input"
+              maxlength="12"
+              placeholder="Mr,s 09…."
+            />
+          </label>
+          <label>
+            項目（100 字內）：
+            <input
+              type="text"
+              id="text-input"
+              maxlength="100"
+              placeholder="..."
+            />
+          </label>
 
-                    /* 弦位置 (由右至左：E, A, D, G) */
-                    #string-e { right: 15mm; }
-                    #string-a { right: 30mm; }
-                    #string-d { right: 45mm; }
-                    #string-g { right: 60mm; }
+          <!-- 三顆媒體按鈕：只能選一種媒體 -->
+          <div class="form-row-inline media-select-row">
+            <button
+              type="button"
+              class="media-select-btn"
+              id="btn-media-youtube"
+              data-media="youtube"
+            >
+              YouTube
+            </button>
+            <button
+              type="button"
+              class="media-select-btn"
+              id="btn-media-upload"
+              data-media="upload"
+            >
+              影片
+            </button>
+            <button
+              type="button"
+              class="media-select-btn"
+              id="btn-media-audio"
+              data-media="audio"
+            >
+              錄音
+            </button>
+          </div>
 
-                    /* 準確點位標記 */
-                    #marker {
-                                    position: absolute;
-                                    width: 15mm;
-                                    height: 15mm;
-                                    background: rgba(29, 185, 84, 0.6);
-                                    border: 2px solid #fff;
-                                    border-radius: 50%;
-                                    transform: translate(-50%, -50%);
-                                    display: none;
-                                    justify-content: center;
-                                    align-items: center;
-                                    font-size: 20px;
-                                    font-weight: bold;
-                                    pointer-events: none;
-                    }
-                </style>
-    </head>
-    <body oncontextmenu="return false;">
+          <!-- 影片欄位（包含 YouTube / 上傳） -->
+          <div id="video-fields" class="hidden">
+            <!-- YouTube 區塊（只在「YouTube」模式顯示） -->
+            <div class="form-row-inline" id="youtube-row" style="margin-top:4px;">
+              <input
+                type="text"
+                id="youtube-url-input"
+                placeholder="https://youtu.be/....(Link)…"
+              />
+              <input
+                type="text"
+                id="start-input"
+                placeholder="開始 mm:ss "
+              />
+              <input
+                type="text"
+                id="end-input"
+                placeholder="結束 mm:ss "
+              />
+            </div>
 
-        <div id="overlay">
-                <button id="start-btn">點擊啟動 (解鎖音效)</button>button>
-        </div>div>
+            <!-- 上傳影片 / 圖片檔案（只在「影片」模式顯示） -->
+            <div class="form-row-inline" id="video-upload-row" style="margin-top:4px;">
+              <!-- 不限制檔案種類，交給系統預設選單 -->
+              <input type="file" id="video-file-input" />
+              <span id="video-file-label" class="sub-hint"></span>
+            </div>
+            <!-- 新增：一般影片 / 網頁連結（不限 YouTube） -->
+            <div class="form-row-inline" id="video-link-row" style="margin-top:4px;">
+              <input
+                type="text"
+                id="video-link-input"
+                placeholder="https://... 影片或網頁網址（選填）"
+              />
+            </div>
+          </div>
 
-        <div id="info" style="padding: 20px; color: #aaa;">4/4 小提琴第一把位實體練習</div>div>
+          <!-- 錄音欄位 -->
+          <div id="audio-fields" class="hidden">
+            <!-- 錄音控制列 -->
+            <div class="media-record-toolbar" id="audio-record-toolbar">
+              <button type="button" class="media-record-btn" id="audio-rec-start">●</button>
+              <button type="button" class="media-record-btn" id="audio-rec-pause" disabled>⏸</button>
+              <button type="button" class="media-record-btn" id="audio-rec-stop" disabled>■</button>
+              <button type="button" class="media-record-btn" id="audio-rec-cancel" disabled>✕</button>
+              <span class="media-record-status" id="audio-rec-status">錄音預備</span>
+            </div>
 
-        <div id="fingerboard">
-                <div id="marker"></div>div>
-                <div class="string" id="string-g"></div>div>
-                <div class="string" id="string-d"></div>div>
-                <div class="string" id="string-a"></div>div>
-                <div class="string" id="string-e"></div>div>
-        </div>div>
+            <!-- 上傳現有音檔 -->
+            <div class="form-row-inline" id="audio-upload-row" style="margin-top:4px;">
+              <input type="file" id="audio-file-input" accept="audio/*" />
+              <span id="audio-file-label" class="sub-hint"></span>
+            </div>
 
-        <script>
-                let audioCtx = null;
-                let activeOsc = null;
-                const marker = document.getElementById('marker');
-                const fingerboard = document.getElementById('fingerboard');
-                const overlay = document.getElementById('overlay');
+            <!-- 錄音預覽 -->
+            <div class="form-row-inline" id="audio-preview-row" style="margin-top:4px;">
+              <audio id="audio-rec-preview" class="rec-preview" controls></audio>
+            </div>
+          </div>
 
-                // 初始化音訊環境
-                function initAudio() {
-                            if (!audioCtx) {
-                                            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                            }
-                            if (audioCtx.state === 'suspended') {
-                                            audioCtx.resume();
-                            }
-                            overlay.style.display = 'none';
-                }
+          <div class="form-row-inline">
+            <button type="submit" id="submit-btn">發表</button>
+          </div>
+        </form>
 
-                document.getElementById('start-btn').addEventListener('click', initAudio);
+        <div class="comments-wrapper">
+          <table id="comments-table">
+            <thead>
+              <tr>
+                <th class="col-nick">username</th>
+                <th class="col-text">
+                  項目
+                  <button
+                    type="button"
+                    id="btn-edit"
+                    class="edit-header-btn"
+                  >
+                    編輯
+                  </button>
+                </th>
+                <th class="col-media">錄音 / 影片</th>
+              </tr>
+            </thead>
+            <tbody id="comments-tbody">
+              <!-- JS 動態插入 -->
+            </tbody>
+          </table>
+        </div>
 
-                const L = 328; // 4/4 小提琴弦長 mm
-                const strings = {
-                            'E': { x: 15, baseFreq: 659.25, notes: ["E","F","F#","G","G#","A","A#","B"] },
-                            'A': { x: 30, baseFreq: 440.00, notes: ["A","A#","B","C","C#","D","D#","E"] },
-                            'D': { x: 45, baseFreq: 293.66, notes: ["D","D#","E","F","F#","G","G#","A"] },
-                            'G': { x: 60, baseFreq: 196.00, notes: ["G","G#","A","A#","B","C","C#","D"] }
-                };
+        <!-- Back 按鈕移到左邊表格底下 -->
+        <button id="back-button" type="button">Back</button>
+      </section>
 
-                function getDist(n) { return L * (1 - Math.pow(0.5, n / 12)); }
+      <!-- 右：影片 + 多層圓 + 回覆 + 指板 -->
+      <section class="panel panel-right" id="visual-panel">
+        <div class="visual-wrapper">
+          <div class="visual-header">
+            <div class="current-point" id="current-info">
+              尚未選取留言
+            </div>
+          </div>
 
-                function handleInput(e) {
-                            e.preventDefault();
-                            const touch = e.touches ? e.touches[0] : e;
-                            const rect = fingerboard.getBoundingClientRect();
-                            const pxToMm = 25.4 / 96; // 假設標準 96dpi
+          <div class="visual-body">
+            <!-- 上層：影片 + 多層圓（桌機）；手機時會調整排版 -->
+            <div class="top-row">
+              <!-- 左：影片格 -->
+              <div class="video-frame-wrap">
+                <iframe
+                  id="video-iframe"
+                  src=""
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  referrerpolicy="origin-when-cross-origin"
+                  allowfullscreen
+                ></iframe>
 
-                            const relX_px = touch.clientX - rect.left;
-                            const relY_px = touch.clientY - rect.top;
+                <!-- 錄音播放用 -->
+                <audio id="audio-player" controls></audio>
 
-                            // 換算 mm
-                            const touchX_mm = (rect.width - relX_px) * pxToMm;
-                            const touchY_mm = relY_px * pxToMm;
+                <div class="video-placeholder" id="video-placeholder">
+                  請從左側表格選取一筆帶有影片或錄音的項目
+                </div>
+              </div>
 
-                            let selectedStr = null;
-                            for (let s in strings) {
-                                            if (Math.abs(touchX_mm - strings[s].x) < 7) {
-                                                                selectedStr = s;
-                                                                break;
-                                            }
-                            }
+              <!-- 右：多層圓 -->
+              <div class="circle-area">
+                <div class="circle-stack" id="circle-stack">
+                  <div class="ring ring-main ring-1" data-layer="1"></div>
+                  <div class="ring ring-main ring-2" data-layer="2"></div>
+                  <div class="ring ring-main ring-3" data-layer="3"></div>
+                  <div class="ring ring-main ring-4" data-layer="4"></div>
+                  <div
+                    class="ring ring-boundary ring-b15"
+                    data-layer="1.5"
+                  ></div>
+                  <div
+                    class="ring ring-boundary ring-b25"
+                    data-layer="2.5"
+                  ></div>
+                  <div
+                    class="ring ring-boundary ring-b35"
+                    data-layer="3.5"
+                  ></div>
+                  <div
+                    class="ring ring-b45"
+                    data-layer="4.5"
+                  ></div>
 
-                            if (!selectedStr) {
-                                            stopSound();
-                                            return;
-                            }
+                  <div class="layer-label" id="layer-label">
+                    layers: –
+                  </div>
+                </div>
+              </div>
+            </div>
 
-                            let closestN = -1;
-                            let minDist = 999;
-                            for (let n = 1; n <= 7; n++) {
-                                            let d = getDist(n);
-                                            if (Math.abs(touchY_mm - d) < minDist) {
-                                                                minDist = Math.abs(touchY_mm - d);
-                                                                closestN = n;
-                                            }
-                            }
+            <!-- 中層：回覆區 + 點點位置圖 -->
+            <div class="bottom-row">
+              <div class="reply-area">
+                <div class="reply-target" id="reply-target">
+                  <button
+                    type="button"
+                    id="reply-target-btn"
+                    class="reply-target-btn"
+                    disabled
+                  >
+                    From: —
+                  </button>
+                </div>
+                <p class="reply-note">
+                  <!-- 給管理員看的說明，已在 CSS 隱藏 -->
+                </p>
+                <textarea
+                  id="admin-reply"
+                  placeholder="提琴聲學實驗室："
+                ></textarea>
 
-                            const step = getDist(closestN + 1) - getDist(closestN);
-                            if (minDist <= step * 0.1) {
-                                            const freq = strings[selectedStr].baseFreq * Math.pow(2, closestN / 12);
-                                            marker.style.display = 'flex';
-                                            marker.style.left = relX_px + 'px';
-                                            marker.style.top = relY_px + 'px';
-                                            marker.textContent = strings[selectedStr].notes[closestN];
-                                            playSound(freq);
-                            } else {
-                                            playTap();
-                                            stopSound();
-                            }
-                }
+                <div class="reply-actions hidden" id="reply-actions">
+                  <button type="button" id="reply-save-btn" class="reply-action-btn">儲存</button>
+                  <button type="button" id="reply-cancel-btn" class="reply-action-btn reply-cancel-btn">取消</button>
+                </div>
+              </div>
 
-                function playSound(freq) {
-                            if (activeOsc && Math.abs(activeOsc.frequency.value - freq) < 1) return;
-                            stopSound();
-                            activeOsc = audioCtx.createOscillator();
-                            let gain = audioCtx.createGain();
-                            activeOsc.type = 'sawtooth';
-                            activeOsc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                            gain.gain.setValueAtTime(0.15, audioCt l Cltf
-        </script>
-        </style></title>
-    </head>
+              <div class="fingerboard-row">
+                <div class="fingerboard" id="fingerboard">
+                  <div class="fb-string fb-s1"></div>
+                  <div class="fb-string fb-s2"></div>
+                  <div class="fb-string fb-s3"></div>
+                  <div class="fb-string fb-s4"></div>
+
+                  <!-- 示意點 -->
+                  <div
+                    class="fingerboard-note"
+                    style="left:24%; top:8%;"
+                  >
+                    G0
+                  </div>
+                  <div
+                    class="fingerboard-note"
+                    style="left:24%; top:26%;"
+                  >
+                    G3
+                  </div>
+                  <div
+                    class="fingerboard-note"
+                    style="left:38%; top:18%;"
+                  >
+                    D5
+                  </div>
+                  <div
+                    class="fingerboard-note"
+                    style="left:38%; top:40%;"
+                  >
+                    D8
+                  </div>
+                  <div
+                    class="fingerboard-note"
+                    style="left:62%; top:22%;"
+                  >
+                    A7
+                  </div>
+                  <div
+                    class="fingerboard-note"
+                    style="left:62%; top:44%;"
+                  >
+                    A10
+                  </div>
+                  <div
+                    class="fingerboard-note"
+                    style="left:76%; top:30%;"
+                  >
+                    E9
+                  </div>
+                  <div
+                    class="fingerboard-note"
+                    style="left:76%; top:52%;"
+                  >
+                    E12
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 外部腳本：你的 violin.js -->
+  <script src="violin.js"></script>
+</body>
+</html>
