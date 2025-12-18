@@ -1,163 +1,191 @@
-<!DOCTYPE html>
+TYPE html>
 <html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Violin 1st Position Trainer</title>
-    <style>
-        body {
-            margin: 0;
-            background: #2c1e14;
-            display: flex;
-            justify-content: center;
-            font-family: sans-serif;
-            touch-action: none; /* 防止縮放與捲動 */
-        }
+    <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+            <title>Violin Pro 1:1 Trainer</title>
+        <style>
+                    :root {
+                                    --bg-color: #1a1a1a;
+                                    --wood: #3d2b1f;
+                    }
+                    body {
+                                    margin: 0;
+                                    background: var(--bg-color);
+                                    color: white;
+                                    display: flex;
+                                    justify-content: center;
+                                    align-items: flex-start;
+                                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica;
+                                    /* 關鍵：防止選取與系統手勢 */
+                                    user-select: none;
+                                    -webkit-user-select: none;
+                                    touch-action: none;
+                                    overflow: hidden;
+                    }
 
-        /* 指板容器：確保物理尺寸 */
-        #fingerboard {
-            width: 60mm; /* 四條弦的寬度 */
-            height: 150mm; /* 容納第一把位 */
-            background: #1a1a1a;
-            position: relative;
-            border-top: 5mm solid #444; /* 弦枕 Nut */
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-        }
+                    #fingerboard {
+                                    width: 70mm;
+                                    height: 180mm;
+                                    background: linear-gradient(to right, #222, #111 50%, #222);
+                                    position: relative;
+                                    border-top: 6mm solid #333; /* Nut */
+                                    box-shadow: 0 0 50px rgba(0,0,0,0.8);
+                                    margin-top: 40px;
+                    }
 
-        .string {
-            width: 1px;
-            height: 100%;
-            background: linear-gradient(to bottom, #ddd, #888);
-            position: absolute;
-            top: 0;
-        }
+                    .string {
+                                    width: 1.5px;
+                                    height: 100%;
+                                    background: linear-gradient(to right, #eee, #999);
+                                    position: absolute;
+                                    top: 0;
+                                    box-shadow: 1px 0 2px rgba(0,0,0,0.5);
+                    }
 
-        /* 弦的位置由右至左：E, A, D, G */
-        #string-e { right: 10mm; }
-        #string-a { right: 25mm; }
-        #string-d { right: 40mm; }
-        #string-g { right: 55mm; }
+                    /* 弦位：E A D G (從右至左) */
+                    #string-e { right: 15mm; }
+                    #string-a { right: 30mm; }
+                    #string-d { right: 45mm; }
+                    #string-g { right: 60mm; }
 
-        /* 觸控偵測點 */
-        .note-marker {
-            position: absolute;
-            width: 8mm;
-            height: 4mm;
-            border-radius: 50%;
-            transform: translate(50%, -50%);
-            border: 1px dashed rgba(255,255,255,0.3);
-            pointer-events: none;
-        }
+                    /* 準確點位視覺效果 */
+                    #marker {
+                                    position: absolute;
+                                    width: 12mm;
+                                    height: 12mm;
+                                    background: rgba(76, 175, 80, 0.6);
+                                    border: 2px solid #4CAF50;
+                                    border-radius: 50%;
+                                    transform: translate(50%, -50%);
+                                    display: none; /* 預設隱藏 */
+                                    justify-content: center;
+                                    align-items: center;
+                                    font-weight: bold;
+                                    color: white;
+                                    pointer-events: none;
+                                    z-index: 10;
+                    }
 
-        #feedback {
-            position: fixed;
-            top: 20px;
-            color: white;
-            text-align: center;
-            width: 100%;
-            font-size: 1.2rem;
-        }
-    </style>
-</head>
-<body>
+                    #info {
+                                    position: fixed;
+                                    top: 15px;
+                                    text-align: center;
+                                    width: 100%;
+                                    z-index: 20;
+                                    font-weight: 300;
+                                    letter-spacing: 1px;
+                    }
+                </style>
+    </head>
+    <body>
 
-<div id="feedback">請點擊指板開始練習</div>
-<div id="fingerboard">
-    <div class="string" id="string-g"></div>
-    <div class="string" id="string-d"></div>
-    <div class="string" id="string-a"></div>
-    <div class="string" id="string-e"></div>
-</div>
+        <div id="info">請在弦上按壓以練習音準</div>div>
+        <div id="fingerboard">
+                <div id="marker"></div>div>
+                <div class="string" id="string-g"></div>div>
+                <div class="string" id="string-d"></div>div>
+                <div class="string" id="string-a"></div>div>
+                <div class="string" id="string-e"></div>div>
+        </div>div>
 
-<script>
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const feedback = document.getElementById('feedback');
-    const fingerboard = document.getElementById('fingerboard');
+        <script>
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const marker = document.getElementById('marker');
+                const fingerboard = document.getElementById('fingerboard');
+                let activeOsc = null;
+                let activeGain = null;
 
-    // 4/4 小提琴物理參數 (mm)
-    const L = 328; 
-    const strings = {
-        'E': { x: 10, baseFreq: 659.25 },
-        'A': { x: 25, baseFreq: 440.00 },
-        'D': { x: 40, baseFreq: 293.66 },
-        'G': { x: 55, baseFreq: 196.00 }
-    };
+                const L = 328; 
+                const strings = {
+                            'E': { x: 15, baseFreq: 659.25, notes: ["E","F","F#","G","G#","A","A#","B"] },
+                            'A': { x: 30, baseFreq: 440.00, notes: ["A","A#","B","C","C#","D","D#","E"] },
+                            'D': { x: 45, baseFreq: 293.66, notes: ["D","D#","E","F","F#","G","G#","A"] },
+                            'G': { x: 60, baseFreq: 196.00, notes: ["G","G#","A","A#","B","C","C#","D"] }
+                };
 
-    // 計算半音位置 (從弦枕往下的 mm)
-    function getDist(n) {
-        return L * (1 - Math.pow(0.5, n / 12));
-    }
+                function getDist(n) { return L * (1 - Math.pow(0.5, n / 12)); }
 
-    // 初始化檢測：當使用者觸碰
-    fingerboard.addEventListener('touchstart', handleTouch);
+                // 處理觸控開始
+                fingerboard.addEventListener('touchstart', (e) => {
+                            e.preventDefault();
+                            handleInteraction(e.touches[0]);
+                }, { passive: false });
 
-    function handleTouch(e) {
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        
-        const touch = e.touches[0];
-        const rect = fingerboard.getBoundingClientRect();
-        
-        // 將像素轉換為 mm (大約值，取決於瀏覽器 PPI 報告)
-        const pxToMm = 25.4 / 96; // 標準 CSS 像素比例
-        const touchX_mm = (rect.right - touch.clientX) * pxToMm; // 從右側計算
-        const touchY_mm = (touch.clientY - rect.top) * pxToMm;
+                // 處理觸控移動 (長按滑動)
+                fingerboard.addEventListener('touchmove', (e) => {
+                            e.preventDefault();
+                            handleInteraction(e.touches[0]);
+                }, { passive: false });
 
-        checkNote(touchX_mm, touchY_mm);
-    }
+                // 觸控結束
+                fingerboard.addEventListener('touchend', stopSound);
 
-    function checkNote(x, y) {
-        // 1. 判斷哪條弦 (容錯範圍 ±5mm)
-        let activeString = null;
-        for (let s in strings) {
-            if (Math.abs(x - strings[s].x) < 5) {
-                activeString = s;
-                break;
-            }
-        }
+                function handleInteraction(touch) {
+                            if (audioCtx.state === 'suspended') audioCtx.resume();
 
-        if (!activeString) return;
+                            const rect = fingerboard.getBoundingClientRect();
+                            const pxToMm = 25.4 / 96; 
+                            const touchX_mm = (rect.right - touch.clientX) * pxToMm;
+                            const touchY_mm = (touch.clientY - rect.top) * pxToMm;
 
-        // 2. 判斷半音位置
-        let closestNote = 0;
-        let minDist = 999;
-        
-        for (let n = 1; n <= 7; n++) { // 檢測到第一把位第 7 半音 (四指)
-            let targetY = getDist(n);
-            let diff = Math.abs(y - targetY);
-            if (diff < minDist) {
-                minDist = diff;
-                closestNote = n;
-            }
-        }
+                            // 1. 識別弦
+                            let activeStrKey = null;
+                            for (let s in strings) {
+                                            if (Math.abs(touchX_mm - strings[s].x) < 6) {
+                                                                activeStrKey = s;
+                                                                break;
+                                            }
+                            }
 
-        // 3. 10% 容錯檢測
-        // 計算該半音與下一個半音間距的 10%
-        const stepWidth = getDist(closestNote + 1) - getDist(closestNote);
-        const tolerance = stepWidth * 0.1;
+                            if (!activeStrKey) {
+                                            stopSound();
+                                            return;
+                            }
 
-        if (minDist <= tolerance) {
-            playTone(strings[activeString].baseFreq * Math.pow(2, closestNote / 12));
-            feedback.innerText = `準確！ ${activeString} 弦 第 ${closestNote} 半音`;
-            feedback.style.color = "#4CAF50";
-        } else {
-            feedback.innerText = "位置偏差！音準錯誤";
-            feedback.style.color = "#FF5252";
-            // 可加入一個低沈的錯誤音
-        }
-    }
+                            // 2. 識別半音位
+                            let closestNote = -1;
+                            let minDist = 999;
+                            for (let n = 1; n <= 7; n++) {
+                                            let d = getDist(n);
+                                            if (Math.abs(touchY_mm - d) < minDist) {
+                                                                minDist = Math.abs(touchY_mm - d);
+                                                                closestNote = n;
+                                            }
+                            }
 
-    function playTone(freq) {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.5);
-    }
-</script>
-</body>
-</html>
+                            const stepWidth = getDist(closestNote + 1) - getDist(closestNote);
+                            const tolerance = stepWidth * 0.1;
 
+                            // 3. 判斷是否在 10% 內
+                            if (minDist <= tolerance) {
+                                            const freq = strings[activeStrKey].baseFreq * Math.pow(2, closestNote / 12);
+                                            const noteName = strings[activeStrKey].notes[closestNote];
+                                            showMarker(touch.clientX, touch.clientY, noteName);
+                                            startContinuousSound(freq);
+                            } else {
+                                            // 4. 不在 10% 內，發出敲擊聲並隱藏標記
+                                            marker.style.display = 'none';
+                                            playTapSound();
+                                            stopSound(); // 停止持續音
+                            }
+                }
+
+                function startContinuousSound(freq) {
+                            if (activeOsc && Math.abs(activeOsc.frequency.value - freq) < 1) return;
+                            stopSound();
+
+                            activeOsc = audioCtx.createOscillator();
+                            activeGain = audioCtx.createGain();
+                            activeOsc.type = 'sawtooth'; // 鋸齒波較像弦樂感
+
+                            // 低通濾波器讓聲音柔和一點
+                            const filter = audioCtx.createBiquadFilter();
+                            filter.type = "lowpass";
+                            filter.frequency.value = 2000;
+
+                            activeOsc.frequency.setValueAtTime(fresv 1itsa5vmer
+        </script>
+    </body>
+        </style></title>
+    </head>
