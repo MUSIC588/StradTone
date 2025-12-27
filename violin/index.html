@@ -2,13 +2,13 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>StradTone Violin</title>
   <link rel="stylesheet" href="violin.css" />
 </head>
 
 <body>
-  <div class="page" id="page-top">
+  <div class="page">
     <header>
       <h1>StradTone Violin</h1>
       <h2>提琴聲學實驗室</h2>
@@ -43,9 +43,30 @@
           </label>
 
           <div class="form-row-inline media-select-row">
-            <button type="button" class="media-select-btn" id="btn-media-youtube" data-media="youtube">YouTube</button>
-            <button type="button" class="media-select-btn" id="btn-media-upload" data-media="upload">影片</button>
-            <button type="button" class="media-select-btn" id="btn-media-audio" data-media="audio">錄音</button>
+            <button
+              type="button"
+              class="media-select-btn"
+              id="btn-media-youtube"
+              data-media="youtube"
+            >
+              YouTube
+            </button>
+            <button
+              type="button"
+              class="media-select-btn"
+              id="btn-media-upload"
+              data-media="upload"
+            >
+              影片
+            </button>
+            <button
+              type="button"
+              class="media-select-btn"
+              id="btn-media-audio"
+              data-media="audio"
+            >
+              錄音
+            </button>
           </div>
 
           <div id="video-fields" class="hidden">
@@ -100,18 +121,20 @@
             <tbody id="comments-tbody"></tbody>
           </table>
         </div>
-
         <button id="back-button" type="button">Back</button>
       </section>
 
       <section class="panel panel-right" id="visual-panel">
         <div class="visual-wrapper">
+          <div class="visual-header">
+            <div class="current-point" id="current-info">尚未選取留言</div>
+          </div>
           <div class="visual-body">
             <div class="top-row">
               <div class="video-frame-wrap">
-                <iframe id="video-iframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" referrerpolicy="origin-when-cross-origin" allowfullscreen></iframe>
+                <iframe id="video-iframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                 <audio id="audio-player" controls></audio>
-                <div class="video-placeholder" id="video-placeholder">請從左側表格選取一筆帶有影片或錄音的項目</div>
+                <div class="video-placeholder" id="video-placeholder">請從左側表格選取一筆項目</div>
               </div>
               <div class="circle-area">
                 <div class="circle-stack" id="circle-stack">
@@ -126,7 +149,6 @@
                 </div>
               </div>
             </div>
-
             <div class="bottom-row">
               <div class="reply-area">
                 <div class="reply-target">
@@ -138,21 +160,12 @@
                   <button type="button" id="reply-cancel-btn" class="reply-action-btn reply-cancel-btn">取消</button>
                 </div>
               </div>
-
               <div class="fingerboard-row">
                 <div class="fingerboard" id="fingerboard">
-                  <div class="fb-string fb-s1"></div>
-                  <div class="fb-string fb-s2"></div>
-                  <div class="fb-string fb-s3"></div>
-                  <div class="fb-string fb-s4"></div>
-                  <div class="fingerboard-note" style="left:24%; top:8%;">G0</div>
-                  <div class="fingerboard-note" style="left:24%; top:26%;">G3</div>
-                  <div class="fingerboard-note" style="left:38%; top:18%;">D5</div>
-                  <div class="fingerboard-note" style="left:38%; top:40%;">D8</div>
-                  <div class="fingerboard-note" style="left:62%; top:22%;">A7</div>
-                  <div class="fingerboard-note" style="left:62%; top:44%;">A10</div>
-                  <div class="fingerboard-note" style="left:76%; top:30%;">E9</div>
-                  <div class="fingerboard-note" style="left:76%; top:52%;">E12</div>
+                   <div class="fb-string fb-s1"></div>
+                   <div class="fb-string fb-s2"></div>
+                   <div class="fb-string fb-s3"></div>
+                   <div class="fb-string fb-s4"></div>
                 </div>
               </div>
             </div>
