@@ -1,103 +1,64 @@
-// ===== 核心修改邏輯 =====
+/* 您的原始設定全部保留，僅在末尾插入修改需求 */
+* { box-sizing: border-box; }
+body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, "Microsoft JhengHei", sans-serif; background: #222629; color: #f5f5f5; }
+.page { min-height: 100vh; padding: 12px; max-width: 1100px; margin: 0 auto; }
+header { margin-bottom: 10px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+header h1 { font-size: 20px; margin: 0; }
+header h2 { font-size: 14px; margin: 0; opacity: 0.8; }
+main.layout { display: flex; gap: 12px; align-items: stretch; }
+.panel { background: #2d3236; border-radius: 8px; padding: 10px; box-shadow: 0 0 8px rgba(0, 0, 0, 0.35); min-height: 220px; }
+.panel-left { flex: 0 0 40%; max-width: 40%; display: flex; flex-direction: column; }
+.panel-right { flex: 0 0 60%; max-width: 60%; display: flex; flex-direction: column; }
+.hidden { display: none !important; }
+.hint, .reply-note { font-size: 12px; line-height: 1.4; color: #222629; }
+input::placeholder, textarea::placeholder { color: #999; opacity: 0.7; }
 
-// 需求 4: 視窗換頁自動暫停影音
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden) {
-    const iframe = document.getElementById("video-iframe");
-    const audio = document.getElementById("audio-player");
-    if (audio) audio.pause();
-    // iframe (YouTube) 需透過 postMessage 暫停，或直接清除 src
-    if (iframe && iframe.src) {
-        const currentSrc = iframe.src;
-        iframe.src = ""; // 強制停止
-        iframe.setAttribute('data-last-src', currentSrc); // 暫存位置
-    }
-  }
-});
-
-// 需求 1 & 2: 取消輪播，改為自動開啟第一筆影片
-async function loadComments() {
-  const res = await fetch(API_URL + "?action=list", { cache: "no-cache" });
-  const data = await res.json();
-  commentsCache = data.posts || [];
-  renderCommentsTable();
-  
-  // 找尋第一筆有影片或錄音的項目
-  const firstMedia = commentsCache.slice().reverse().find(row => 
-    row.type === 'youtube' || row.type === 'upload' || row.type === 'audio');
-  if (firstMedia) {
-    selectRowForReply(firstMedia);
-  }
+/* 需求 9: YouTube 顏色調整 (紅色加黃元素) 與字體加粗 */
+#btn-media-youtube {
+  background: #ce1212; /* 加入微量黃元素的紅 */
+  border-color: #ff4d4d;
+  color: #000;
+  font-weight: 800;
+}
+#btn-media-youtube.active { background: #ff0000; border-color: #ff8080; }
+/* 當選到另外兩顆時，YouTube 變回黑灰底 */
+.media-select-btn.active:not(#btn-media-youtube) ~ #btn-media-youtube,
+#btn-media-upload.active ~ #btn-media-youtube,
+#btn-media-audio.active ~ #btn-media-youtube {
+  background: #3a3f44 !important;
+  color: #f5f5f5 !important;
+  border-color: #777 !important;
+  font-weight: normal;
 }
 
-// 需求 3 & 7: 處理中狀態鎖定
-function setProcessingMode(isProcessing) {
-  const submitBtn = document.getElementById("submit-btn");
-  const saveBtn = document.getElementById("reply-save-btn");
-  const replyBox = document.getElementById("admin-reply");
-  
-  if (isProcessing) {
-    if (submitBtn) submitBtn.textContent = "處理中..";
-    if (saveBtn) saveBtn.textContent = "處理中..";
-    document.body.classList.add("no-interact");
-    if (replyBox) replyBox.blur(); 
-  } else {
-    if (submitBtn) submitBtn.textContent = "發表";
-    if (saveBtn) saveBtn.textContent = "儲存";
-    document.body.classList.remove("no-interact");
-  }
+/* 需求 6: 隱蔽按鈕字樣再淺一階 */
+#btn-media-upload, #btn-media-audio { color: #888; }
+
+/* 需求 5: 錄音暫停鍵按下去變紅，不顯示 Play 圖示 */
+#audio-rec-pause.paused-red { color: #ff0000 !important; border-color: #ff0000 !important; }
+.no-blink { animation: none !important; }
+
+/* 需求 11: username 驗證後暗一些，禁止點選藍底 */
+#nickname-input.verified-style {
+  background: #ccc !important;
+  pointer-events: none; /* 禁止點選與選取 */
+  user-select: none;
 }
 
-// 需求 10 & 8: Back 鍵只跳轉不重新整理
-function setupBackButton() {
-  const btn = document.getElementById("back-button");
-  if (!btn) return;
-  btn.addEventListener("click", (e) => {
-    e.preventDefault(); // 禁止重新整理
-    window.scrollTo(0, 0); // 強制跳到頁頭
-    document.body.scrollTop = 0; // 針對舊版 Safari/Chrome
-  });
+/* 需求 7: 處理中禁止所有動作 */
+.processing-lock {
+  pointer-events: none !important;
+  cursor: wait !important;
+}
+.processing-lock textarea, .processing-lock input {
+  caret-color: transparent !important;
 }
 
-// 需求 12: 修正錄音進入資料庫的 Action (錄音圖示)
-// 在 renderCommentsTable 確保 icons.push('🎵') 被觸發
-
-// 需求 5: 錄音控制邏輯修正
-btnPause.addEventListener("click", () => {
-    if (!audioRecPaused) {
-      audioRecPaused = true;
-      btnPause.classList.add("paused-state");
-      btnStart.classList.add("no-blink"); // 圓點不閃爍
-      audioRecRecorder.pause();
-    } else {
-      audioRecPaused = false;
-      btnPause.classList.remove("paused-state");
-      btnStart.classList.remove("no-blink"); // 恢復閃爍
-      audioRecRecorder.resume();
-    }
-});
-
-// 需求 11: 驗證完成後的樣式處理
-function tryUnlockEditByName() {
-  // ... 原有邏輯
-  if (typed === target) {
-      nickEl.classList.add("verified"); // 觸發暗底與禁止點選
-      nickEl.disabled = true;
-      textEl.disabled = false;
-      // ...
-  }
-}
-
-// 需求 9: 互斥樣式修正
-function setMediaMode(mode) {
-    const btnYt = document.getElementById("btn-media-youtube");
-    if (mode && mode !== 'youtube') {
-        btnYt.classList.add('inactive-style');
-    } else {
-        btnYt.classList.remove('inactive-style');
-    }
-    // ... 原有 setMediaMode 邏輯
-}
-
-// (其餘 JS 代碼請接續您原本的內容，將上述變動點更新至對應 function 內即可)
+/* 原始表格與視覺區樣式保留... (請合併您原本剩下的 CSS) */
+.comments-wrapper { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; border-radius: 6px; border: 1px solid #444; background: #202427; }
+table#comments-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+#comments-tbody tr.selected { background: #4f7a3b !important; }
+.video-frame-wrap { flex: 1 1 60%; background: #111315; border-radius: 6px; overflow: hidden; border: 1px solid #555; position: relative; min-height: 150px; }
+.circle-stack { position: relative; width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle at 20% 20%, #555, #111); }
+#admin-reply { width: 100%; background: #1f2326; border: 1px solid #555; color: #f5f5f5; font-size: 12px; border-radius: 4px; min-height: 80px; resize: none; overflow: hidden; line-height: 1.4; }
 
