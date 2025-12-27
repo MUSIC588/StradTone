@@ -6,69 +6,32 @@
   <title>StradTone Violin</title>
   <link rel="stylesheet" href="violin.css" />
 </head>
-
 <body>
   <div class="page">
     <header>
       <h1>StradTone Violin</h1>
       <h2>提琴聲學實驗室</h2>
     </header>
-
     <main class="layout">
       <section class="panel panel-left" id="comments-section">
         <p class="hint">小提琴</p>
-
         <div class="toolbar">
           <button type="button" id="btn-new">新增</button>
         </div>
-
         <form id="community-form" class="hidden">
           <label>
             username（5–12 字必填,修改編輯用）：
-            <input
-              type="text"
-              id="nickname-input"
-              maxlength="12"
-              placeholder="Mr,s 09…."
-            />
+            <input type="text" id="nickname-input" maxlength="12" placeholder="Mr,s 09…." />
           </label>
           <label>
             項目（100 字內）：
-            <input
-              type="text"
-              id="text-input"
-              maxlength="100"
-              placeholder="..."
-            />
+            <input type="text" id="text-input" maxlength="100" placeholder="..." />
           </label>
-
           <div class="form-row-inline media-select-row">
-            <button
-              type="button"
-              class="media-select-btn"
-              id="btn-media-youtube"
-              data-media="youtube"
-            >
-              YouTube
-            </button>
-            <button
-              type="button"
-              class="media-select-btn"
-              id="btn-media-upload"
-              data-media="upload"
-            >
-              影片
-            </button>
-            <button
-              type="button"
-              class="media-select-btn"
-              id="btn-media-audio"
-              data-media="audio"
-            >
-              錄音
-            </button>
+            <button type="button" class="media-select-btn" id="btn-media-youtube" data-media="youtube">YouTube</button>
+            <button type="button" class="media-select-btn" id="btn-media-upload" data-media="upload">影片</button>
+            <button type="button" class="media-select-btn" id="btn-media-audio" data-media="audio">錄音</button>
           </div>
-
           <div id="video-fields" class="hidden">
             <div class="form-row-inline" id="youtube-row" style="margin-top:4px;">
               <input type="text" id="youtube-url-input" placeholder="https://youtu.be/....(Link)…" />
@@ -83,7 +46,6 @@
               <input type="text" id="video-link-input" placeholder="https://... 影片或網頁網址（選填）" />
             </div>
           </div>
-
           <div id="audio-fields" class="hidden">
             <div class="media-record-toolbar" id="audio-record-toolbar">
               <button type="button" class="media-record-btn" id="audio-rec-start">●</button>
@@ -100,21 +62,16 @@
               <audio id="audio-rec-preview" class="rec-preview" controls></audio>
             </div>
           </div>
-
           <div class="form-row-inline">
             <button type="submit" id="submit-btn">發表</button>
           </div>
         </form>
-
         <div class="comments-wrapper">
           <table id="comments-table">
             <thead>
               <tr>
                 <th class="col-nick">username</th>
-                <th class="col-text">
-                  項目
-                  <button type="button" id="btn-edit" class="edit-header-btn">編輯</button>
-                </th>
+                <th class="col-text">項目 <button type="button" id="btn-edit" class="edit-header-btn">編輯</button></th>
                 <th class="col-media">錄音 / 影片</th>
               </tr>
             </thead>
@@ -123,18 +80,17 @@
         </div>
         <button id="back-button" type="button">Back</button>
       </section>
-
       <section class="panel panel-right" id="visual-panel">
         <div class="visual-wrapper">
           <div class="visual-header">
-            <div class="current-point" id="current-info">尚未選取留言</div>
+            <div class="current-point" id="current-info" style="display:none;">尚未選取留言</div>
           </div>
           <div class="visual-body">
             <div class="top-row">
               <div class="video-frame-wrap">
                 <iframe id="video-iframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                 <audio id="audio-player" controls></audio>
-                <div class="video-placeholder" id="video-placeholder">請從左側表格選取一筆項目</div>
+                <div class="video-placeholder" id="video-placeholder">請從左側表格選取一筆帶有影片或錄音的項目</div>
               </div>
               <div class="circle-area">
                 <div class="circle-stack" id="circle-stack">
@@ -151,7 +107,7 @@
             </div>
             <div class="bottom-row">
               <div class="reply-area">
-                <div class="reply-target">
+                <div class="reply-target" id="reply-target">
                   <button type="button" id="reply-target-btn" class="reply-target-btn" disabled>From: —</button>
                 </div>
                 <textarea id="admin-reply" placeholder="提琴聲學實驗室："></textarea>
@@ -162,10 +118,7 @@
               </div>
               <div class="fingerboard-row">
                 <div class="fingerboard" id="fingerboard">
-                   <div class="fb-string fb-s1"></div>
-                   <div class="fb-string fb-s2"></div>
-                   <div class="fb-string fb-s3"></div>
-                   <div class="fb-string fb-s4"></div>
+                  <div class="fb-string fb-s1"></div><div class="fb-s2 fb-string"></div><div class="fb-s3 fb-string"></div><div class="fb-s4 fb-string"></div>
                 </div>
               </div>
             </div>
