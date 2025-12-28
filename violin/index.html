@@ -6,6 +6,9 @@
   <title>StradTone Violin</title>
 
   <style>
+    /* =====================================================
+     * [CSS-原始保留] 100% Stradtone 8 樣式
+     * ===================================================== */
     * { box-sizing: border-box; }
 
     body {
@@ -22,19 +25,6 @@
       margin: 0 auto;
     }
 
-    /* 需求 3-1: 處理中狀態的全局視覺鎖定 */
-    .is-processing .panel-left, 
-    .is-processing .reply-area {
-      pointer-events: none !important; /* 封鎖點擊項目與輸入 */
-      opacity: 0.85;
-    }
-    /* 需求 3-1: 徹底移除輸入框閃爍直線（游標） */
-    .is-processing input, 
-    .is-processing textarea {
-      caret-color: transparent !important;
-      user-select: none !important;
-    }
-
     header {
       margin-bottom: 10px;
       display: flex;
@@ -46,7 +36,6 @@
 
     header h1 { font-size: 20px; margin: 0; }
     header h2 { font-size: 14px; margin: 0; opacity: 0.8; }
-    header small { font-size: 12px; opacity: 0.7; }
 
     main.layout {
       display: flex;
@@ -67,138 +56,114 @@
 
     h2 { font-size: 16px; margin: 0 0 4px; }
 
-    .hint,
-    .reply-note {
-      font-size: 12px;
-      line-height: 1.4;
-      color: #222629;
-    }
-
+    .hint, .reply-note { font-size: 12px; line-height: 1.4; color: #222629; }
     .hidden { display: none !important; }
 
-    input::placeholder,
-    textarea::placeholder {
-      color: #999;
-      opacity: 0.7;
+    input::placeholder, textarea::placeholder { color: #999; opacity: 0.7; }
+
+    /* [CSS-1] 左側工具列 */
+    .toolbar { display: flex; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
+    .toolbar button { padding: 4px 10px; border-radius: 14px; border: 1px solid #777; background: #3a3f44; color: #f5f5f5; font-size: 12px; cursor: pointer; }
+    .toolbar button:hover { background: #4a5056; }
+
+    form#community-form {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 8px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #d1a343;
+      background: #141b20;
+      box-shadow: 0 0 10px rgba(0,0,0,0.65);
+    }
+    form#community-form label { font-size: 13px; display: block; }
+    form#community-form input[type="text"] {
+      width: 100%; padding: 4px 6px; margin-top: 2px; border-radius: 4px; border: 1px solid #555; background: #1f2326; color: #f5f5f5; font-size: 13px;
+    }
+    form#community-form input[type="text"]:not(:disabled) { background: #ffffff; color: #111; }
+    form#community-form input[type="text"]:disabled { background: #1f2326; color: #999; }
+
+    .form-row-inline { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+    #submit-btn { padding: 4px 14px; border-radius: 16px; border: none; background: #d1a343; color: #1d1d1d; font-size: 13px; cursor: pointer; }
+    #submit-btn:hover { background: #e0b85f; }
+
+    /* 媒體按鈕 */
+    .media-select-row { margin: 4px 0 2px; gap: 6px; }
+    .media-select-btn { padding: 3px 10px; border-radius: 14px; border: 1px solid #777; background: #3a3f44; color: #f5f5f5; font-size: 12px; cursor: pointer; opacity: 0.9; }
+    .media-select-btn.active { border-color: #d1a343; background: #e0b85f; color: #1d1d1d; font-weight: 600; }
+    #btn-media-youtube { background: #c00000; border-color: #ff5050; color: #111111; font-weight: 600; }
+    #btn-media-youtube.active { background: #ff0000; border-color: #ff8080; color: #000000; }
+
+    /* 錄音工具 */
+    .media-record-toolbar { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 11px; }
+    .media-record-btn { width: 26px; height: 26px; border-radius: 50%; border: 1px solid #777; background: #3a3f44; color: #f5f5f5; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .media-record-btn.recording { color: #ff4b4b; border-color: #ff8080; background: #4a3a3a; animation: recordBlink 0.8s ease-in-out infinite; }
+    @keyframes recordBlink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+    #audio-player { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; background: #111315; display: none; }
+
+    /* [CSS-2] 表格區域 */
+    .comments-wrapper { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; border-radius: 6px; border: 1px solid #444; background: #202427; }
+    table#comments-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+    table#comments-table thead { position: sticky; top: 0; background: #33383c; z-index: 1; }
+    table#comments-table th, table#comments-table td { border-bottom: 1px solid #333; padding: 4px 6px; text-align: left; vertical-align: top; word-wrap: break-word; }
+    #comments-tbody tr.selected { background: #4f7a3b !important; }
+    .media-icons { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+    .row-edit-btn { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; margin-right: 4px; border-radius: 4px; border: 1px solid #888; background: #3a3f44; font-size: 12px; cursor: pointer; }
+    #back-button { margin-top: 6px; align-self: flex-start; padding: 4px 10px; border-radius: 14px; border: 1px solid #777; background: #3a3f44; color: #f5f5f5; font-size: 12px; cursor: pointer; }
+
+    /* [CSS-3] 視覺區 & 多層圓 */
+    .video-frame-wrap { flex: 1 1 60%; background: #111315; border-radius: 6px; overflow: hidden; border: 1px solid #555; position: relative; min-height: 150px; }
+    .video-frame-wrap iframe { width: 100%; height: 100%; border: none; }
+    .video-placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #999; text-align: center; }
+
+    .circle-stack { position: relative; width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle at 20% 20%, #555, #111); }
+    .ring { position: absolute; border-radius: 50%; transition: border-color 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease; }
+    .ring-main { border: 3px solid #5c7a5c; opacity: 0.8; }
+    .ring-boundary { border: 1.2px solid #9ad09a; opacity: 0.7; }
+    .ring-b45 { border: 1px solid transparent; box-shadow: 0 0 16px rgba(112, 255, 112, 0.35); opacity: 0.9; }
+    .ring-b45 { inset: 4%; } .ring-4 { inset: 10%; } .ring-b35 { inset: 20%; } .ring-3 { inset: 26%; }
+    .ring-b25 { inset: 36%; } .ring-2 { inset: 42%; } .ring-b15 { inset: 52%; } .ring-1 { inset: 60%; }
+    .ring.active { border-color: #70ff70; opacity: 1; box-shadow: 0 0 10px rgba(140, 255, 140, 0.9); }
+
+    /* [CSS-5] 回覆區 & 指板 */
+    .reply-area { flex: 1 1 60%; }
+    .reply-target-btn { padding: 3px 10px; border-radius: 14px; border: 1px solid #bbb; background: #f5f5f5; color: #222629; font-size: 12px; cursor: pointer; }
+    .reply-target-btn.linked { background: #4f7a3b; border-color: #4f7a3b; color: #f5f5f5; }
+    #admin-reply { width: 100%; background: #1f2326; border: 1px solid #555; color: #f5f5f5; font-size: 12px; border-radius: 4px; min-height: 80px; resize: none; overflow: hidden; line-height: 1.4; }
+    .reply-action-btn { padding: 3px 10px; border-radius: 14px; border: 1px solid #bbb; background: #f5f5f5; color: #222629; font-size: 12px; cursor: pointer; }
+
+    .fingerboard { position: relative; width: 120px; max-width: 140px; height: 260px; background: linear-gradient(180deg, #181a1d, #34383d); border-radius: 14px; overflow: hidden; border: 2px solid #676f78; box-shadow: 0 0 10px rgba(0, 0, 0, 0.55); }
+    .fb-string { position: absolute; top: 6%; bottom: 6%; width: 2px; background: linear-gradient(180deg, #cfcfcf, #888); opacity: 0.9; }
+    .fb-s1 { left: 20%; transform: skewX(-3deg); } .fb-s2 { left: 40%; transform: skewX(-1.5deg); } .fb-s3 { left: 62%; transform: skewX(1.5deg); } .fb-s4 { left: 80%; transform: skewX(3deg); }
+    .fingerboard-note { position: absolute; font-size: 10px; color: #fdf5c5; opacity: 0.95; text-shadow: 0 0 2px #000; pointer-events: none; }
+
+    /* =====================================================
+     * [CSS-需求 3-1 疊加區] 僅疊加，不改原有樣式
+     * ===================================================== */
+    .page.is-processing .panel-left, 
+    .page.is-processing .reply-area,
+    .page.is-processing .toolbar {
+      pointer-events: none !important;
+      opacity: 0.85;
+    }
+    .page.is-processing input, 
+    .page.is-processing textarea {
+      caret-color: transparent !important; /* 移除閃爍直線 */
     }
 
-/* [CSS-1] 左側工具列 */
-.toolbar {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 6px;
-  flex-wrap: wrap;
-}
-
-.toolbar button {
-  padding: 4px 10px;
-  border-radius: 14px;
-  border: 1px solid #777;
-  background: #3a3f44;
-  color: #f5f5f5;
-  font-size: 12px;
-  cursor: pointer;
-}
-.toolbar button:hover { background: #4a5056; }
-
-form#community-form {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 8px;
-  padding: 6px 8px;
-  border-radius: 6px;
-  border: 1px solid #d1a343;
-  background: #141b20;
-  box-shadow: 0 0 10px rgba(0,0,0,0.65);
-}
-form#community-form label { font-size: 13px; display: block; }
-
-form#community-form input[type="text"] {
-  width: 100%;
-  padding: 4px 6px;
-  margin-top: 2px;
-  border-radius: 4px;
-  border: 1px solid #555;
-  background: #1f2326;
-  color: #f5f5f5;
-  font-size: 13px;
-}
-
-form#community-form input[type="text"]:not(:disabled) { background: #ffffff; color: #111; }
-form#community-form input[type="text"]:disabled { background: #1f2326; color: #999; }
-
-.form-row-inline { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-
-#submit-btn {
-  padding: 4px 14px;
-  border-radius: 16px;
-  border: none;
-  background: #d1a343;
-  color: #1d1d1d;
-  font-size: 13px;
-  cursor: pointer;
-}
-#submit-btn:disabled, .reply-action-btn:disabled { opacity: 0.7; cursor: wait; }
-
-.media-select-btn {
-  padding: 3px 10px;
-  border-radius: 14px;
-  border: 1px solid #777;
-  background: #3a3f44;
-  color: #f5f5f5;
-  font-size: 12px;
-  cursor: pointer;
-}
-.media-select-btn.active { border-color: #d1a343; background: #e0b85f; color: #1d1d1d; font-weight: 600; }
-#btn-media-youtube { background: #c00000; border-color: #ff5050; color: #111111; font-weight: 600; }
-#btn-media-youtube.active { background: #ff0000; border-color: #ff8080; color: #000000; }
-
-.media-record-toolbar { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 11px; }
-.media-record-btn {
-  width: 26px; height: 26px; border-radius: 50%; border: 1px solid #777;
-  background: #3a3f44; color: #f5f5f5; font-size: 14px;
-  display: flex; align-items: center; justify-content: center;
-}
-.media-record-btn.recording { color: #ff4b4b; border-color: #ff8080; background: #4a3a3a; animation: recordBlink 0.8s ease-in-out infinite; }
-
-@keyframes recordBlink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-
-#audio-player { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; background: #111315; display: none; }
-
-.comments-wrapper { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; border-radius: 6px; border: 1px solid #444; background: #202427; }
-table#comments-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
-table#comments-table thead { position: sticky; top: 0; background: #33383c; z-index: 1; }
-table#comments-table th, table#comments-table td { border-bottom: 1px solid #333; padding: 4px 6px; text-align: left; vertical-align: top; word-wrap: break-word; }
-#comments-tbody tr.selected { background: #4f7a3b !important; }
-#back-button { margin-top: 6px; padding: 4px 10px; border-radius: 14px; border: 1px solid #777; background: #3a3f44; color: #f5f5f5; font-size: 12px; cursor: pointer; }
-
-.video-frame-wrap { flex: 1 1 60%; background: #111315; border-radius: 6px; overflow: hidden; border: 1px solid #555; position: relative; min-height: 150px; }
-.video-frame-wrap iframe { width: 100%; height: 100%; border: none; }
-.video-placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #999; text-align: center; }
-
-.circle-stack { position: relative; width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle at 20% 20%, #555, #111); }
-.ring { position: absolute; border-radius: 50%; transition: border-color 0.12s ease, box-shadow 0.12s ease; }
-.ring-main { border: 3px solid #5c7a5c; opacity: 0.8; }
-.ring-boundary { border: 1.2px solid #9ad09a; opacity: 0.7; }
-.ring-b45 { inset: 4%; } .ring-4 { inset: 10%; } .ring-b35 { inset: 20%; } .ring-3 { inset: 26%; } .ring-b25 { inset: 36%; } .ring-2 { inset: 42%; } .ring-b15 { inset: 52%; } .ring-1 { inset: 60%; }
-.ring.active { border-color: #70ff70; opacity: 1; box-shadow: 0 0 10px rgba(140, 255, 140, 0.9); }
-
-#admin-reply { width: 100%; background: #1f2326; border: 1px solid #555; color: #f5f5f5; font-size: 12px; border-radius: 4px; min-height: 80px; resize: none; overflow: hidden; line-height: 1.4; }
-.reply-action-btn { padding: 3px 10px; border-radius: 14px; border: 1px solid #bbb; background: #f5f5f5; color: #222629; font-size: 12px; cursor: pointer; }
-
-.fingerboard { position: relative; width: 120px; height: 260px; background: linear-gradient(180deg, #181a1d, #34383d); border-radius: 14px; overflow: hidden; border: 2px solid #676f78; }
-.fb-string { position: absolute; top: 6%; bottom: 6%; width: 2px; background: #888; opacity: 0.9; }
-.fb-s1 { left: 20%; } .fb-s2 { left: 40%; } .fb-s3 { left: 62%; } .fb-s4 { left: 80%; }
-
-@media (max-width: 820px) {
-  main.layout { flex-direction: column; }
-  #visual-panel { order: 1; }
-  #comments-section { order: 2; }
-  .panel-left, .panel-right { max-width: 100%; width: 100%; }
-  .video-frame-wrap { height: 160px !important; }
-  .bottom-row { flex-direction: row; }
-}
+    @media (max-width: 820px) {
+      .page { padding: 0; max-width: 100%; }
+      main.layout { flex-direction: column; }
+      #visual-panel { order: 1; }
+      #comments-section { order: 2; }
+      .panel-left, .panel-right { max-width: 100%; width: 100%; border-radius: 0; }
+      .top-row { flex-direction: column; min-height: 0; }
+      .video-frame-wrap { width: 100%; height: 160px !important; min-height: 160px; }
+      .bottom-row { flex-direction: row; }
+    }
   </style>
 </head>
 
@@ -213,32 +178,43 @@ table#comments-table th, table#comments-table td { border-bottom: 1px solid #333
       <section class="panel panel-left" id="comments-section">
         <p class="hint">小提琴</p>
         <div class="toolbar"><button type="button" id="btn-new">新增</button></div>
+
         <form id="community-form" class="hidden">
-          <label>username：<input type="text" id="nickname-input" maxlength="12" placeholder="Mr,s 09…." /></label>
-          <label>項目：<input type="text" id="text-input" maxlength="100" placeholder="..." /></label>
+          <label>username（5–12 字必填）：<input type="text" id="nickname-input" maxlength="12" placeholder="Mr,s 09…." /></label>
+          <label>項目（100 字內）：<input type="text" id="text-input" maxlength="100" placeholder="..." /></label>
           <div class="form-row-inline media-select-row">
             <button type="button" class="media-select-btn" id="btn-media-youtube" data-media="youtube">YouTube</button>
             <button type="button" class="media-select-btn" id="btn-media-upload" data-media="upload">影片</button>
             <button type="button" class="media-select-btn" id="btn-media-audio" data-media="audio">錄音</button>
           </div>
           <div id="video-fields" class="hidden">
-            <div class="form-row-inline"><input type="text" id="youtube-url-input" placeholder="YouTube Link..." /></div>
-            <div class="form-row-inline"><input type="file" id="video-file-input" /></div>
+            <div class="form-row-inline" id="youtube-row"><input type="text" id="youtube-url-input" placeholder="YouTube Link..." /><input type="text" id="start-input" placeholder="開始" /><input type="text" id="end-input" placeholder="結束" /></div>
+            <div class="form-row-inline" id="video-upload-row"><input type="file" id="video-file-input" /><span id="video-file-label"></span></div>
+            <div class="form-row-inline" id="video-link-row"><input type="text" id="video-link-input" placeholder="網址連結..." /></div>
           </div>
           <div id="audio-fields" class="hidden">
             <div class="media-record-toolbar">
               <button type="button" class="media-record-btn" id="audio-rec-start">●</button>
-              <button type="button" class="media-record-btn" id="audio-rec-stop">■</button>
-              <span id="audio-rec-status">錄音預備</span>
+              <button type="button" class="media-record-btn" id="audio-rec-pause" disabled>⏸</button>
+              <button type="button" class="media-record-btn" id="audio-rec-stop" disabled>■</button>
+              <button type="button" class="media-record-btn" id="audio-rec-cancel" disabled>✕</button>
+              <span class="media-record-status" id="audio-rec-status">錄音預備</span>
             </div>
-            <div class="form-row-inline"><audio id="audio-rec-preview" controls></audio></div>
+            <div class="form-row-inline"><input type="file" id="audio-file-input" accept="audio/*" /></div>
+            <div class="form-row-inline"><audio id="audio-rec-preview" class="rec-preview" controls></audio></div>
           </div>
           <div class="form-row-inline"><button type="submit" id="submit-btn">發表</button></div>
         </form>
 
         <div class="comments-wrapper">
           <table id="comments-table">
-            <thead><tr><th>username</th><th>項目 <button type="button" id="btn-edit" class="edit-header-btn">編輯</button></th><th>錄音/影片</th></tr></thead>
+            <thead>
+              <tr>
+                <th style="width:80px">username</th>
+                <th style="width:50%">項目 <button type="button" id="btn-edit" class="edit-header-btn">編輯</button></th>
+                <th style="width:90px">錄音 / 影片</th>
+              </tr>
+            </thead>
             <tbody id="comments-tbody"></tbody>
           </table>
         </div>
@@ -250,14 +226,22 @@ table#comments-table th, table#comments-table td { border-bottom: 1px solid #333
           <div class="visual-body">
             <div class="top-row">
               <div class="video-frame-wrap">
-                <iframe id="video-iframe" src="" allowfullscreen></iframe>
+                <iframe id="video-iframe" src="" allowfullscreen referrerpolicy="origin-when-cross-origin"></iframe>
                 <audio id="audio-player" controls></audio>
-                <div class="video-placeholder" id="video-placeholder">請選取項目</div>
+                <div class="video-placeholder" id="video-placeholder">請從左側表格選取項目</div>
               </div>
-              <div class="circle-area"><div class="circle-stack" id="circle-stack">
-                <div class="ring ring-main ring-1" data-layer="1"></div><div class="ring ring-main ring-2" data-layer="2"></div>
-                <div class="ring ring-main ring-3" data-layer="3"></div><div class="ring ring-main ring-4" data-layer="4"></div>
-              </div></div>
+              <div class="circle-area">
+                <div class="circle-stack" id="circle-stack">
+                  <div class="ring ring-main ring-1" data-layer="1"></div>
+                  <div class="ring ring-main ring-2" data-layer="2"></div>
+                  <div class="ring ring-main ring-3" data-layer="3"></div>
+                  <div class="ring ring-main ring-4" data-layer="4"></div>
+                  <div class="ring ring-boundary ring-b15" data-layer="1.5"></div>
+                  <div class="ring ring-boundary ring-b25" data-layer="2.5"></div>
+                  <div class="ring ring-boundary ring-b35" data-layer="3.5"></div>
+                  <div class="ring ring-b45" data-layer="4.5"></div>
+                </div>
+              </div>
             </div>
             <div class="bottom-row">
               <div class="reply-area">
@@ -268,9 +252,19 @@ table#comments-table th, table#comments-table td { border-bottom: 1px solid #333
                   <button type="button" id="reply-cancel-btn" class="reply-action-btn">取消</button>
                 </div>
               </div>
-              <div class="fingerboard-row"><div class="fingerboard" id="fingerboard">
-                <div class="fb-string fb-s1"></div><div class="fb-s2 fb-string"></div><div class="fb-s3 fb-string"></div><div class="fb-s4 fb-string"></div>
-              </div></div>
+              <div class="fingerboard-row">
+                <div class="fingerboard" id="fingerboard">
+                  <div class="fb-string fb-s1"></div><div class="fb-string fb-s2"></div><div class="fb-string fb-s3"></div><div class="fb-string fb-s4"></div>
+                  <div class="fingerboard-note" style="left:24%; top:8%;">G0</div>
+                  <div class="fingerboard-note" style="left:24%; top:26%;">G3</div>
+                  <div class="fingerboard-note" style="left:38%; top:18%;">D5</div>
+                  <div class="fingerboard-note" style="left:38%; top:40%;">D8</div>
+                  <div class="fingerboard-note" style="left:62%; top:22%;">A7</div>
+                  <div class="fingerboard-note" style="left:62%; top:44%;">A10</div>
+                  <div class="fingerboard-note" style="left:76%; top:30%;">E9</div>
+                  <div class="fingerboard-note" style="left:76%; top:52%;">E12</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -279,50 +273,63 @@ table#comments-table th, table#comments-table td { border-bottom: 1px solid #333
   </div>
 
   <script>
+    // =====================================================
+    // [JS-全域與小工具] 100% Stradtone 8 邏輯
+    // =====================================================
     const API_URL = "https://script.google.com/macros/s/AKfycbxn5aDCimtZmvgK4uEGr5fIyNItY2wZgQyO2LVEZkggFkO0VZ_YdDMyspGpzpkYy5W6-A/exec";
     let commentsCache = [];
     let currentSelectedId = null;
     const REPLY_PREFIX = "提琴聲學實驗室：";
     let isFormOpen = false;
     let isSubmitting = false;
-    let editState = { active: false, id: null, nickname: "", waitForSelect: false };
+    let editState = { active: false, id: null, nickname: "", originalText: "", waitForSelect: false };
+    
+    // 需求 1 & 2: 取消輪播，預設載入最新媒體
+    let carouselActive = false; 
+    let carouselUserStopped = true;
 
-    // 需求 3-1 控制全域處理狀態
+    // 需求 3 & 3-1: 處理中狀態控制
     function toggleGlobalBusy(busy) {
       const container = document.getElementById("main-container");
-      const subBtn = document.getElementById("submit-btn");
+      const submitBtn = document.getElementById("submit-btn");
       const saveBtn = document.getElementById("reply-save-btn");
       const replyBox = document.getElementById("admin-reply");
       if (busy) {
         container.classList.add("is-processing");
-        if (subBtn) { subBtn.disabled = true; subBtn.textContent = "處理中.."; }
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "處理中.."; }
         if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = "處理中.."; }
-        if (replyBox) { replyBox.disabled = true; replyBox.blur(); } // 需求 3-1 移除游標
+        if (replyBox) { replyBox.disabled = true; replyBox.blur(); }
       } else {
         container.classList.remove("is-processing");
-        if (subBtn) { subBtn.disabled = false; subBtn.textContent = "發表"; }
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = "發表"; }
         if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "儲存"; }
         if (replyBox) { replyBox.disabled = false; }
       }
     }
 
-    function normalizeName(n) { return String(n || "").replace(/\u200B/g, "").trim(); }
-    function maskName(n) { let s = normalizeName(n); if (!s) return "匿名"; if (s.length <= 2) return s[0] + "*"; return s[0] + "*".repeat(s.length - 2) + s[s.length - 1]; }
-    function validateNameLength(n) { let s = normalizeName(n); return s.length >= 5 && s.length <= 12 && /^[A-Za-z0-9\u4E00-\u9FFF]+$/.test(s); }
-    function escapeHtml(s) { return String(s || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+    function normalizeName(name) { return String(name || "").replace(/\u200B/g, "").trim(); }
+    function maskName(name) { const s = normalizeName(name); if (!s) return "匿名"; if (s.length <= 2) return s[0] + "*"; return s[0] + "*".repeat(s.length - 2) + s[s.length - 1]; }
+    function validateNameLength(name) { const s = normalizeName(name); return s.length >= 5 && s.length <= 12 && /^[A-Za-z0-9\u4E00-\u9FFF]+$/.test(s); }
+    function escapeHtml(str) { return String(str || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+    function parseTimeToSec(str) { if (!str) return ""; const s = String(str).trim(); let m = s.match(/^(\d+):(\d{1,2})$/); if (m) return Number(m[1])*60 + Number(m[2]); return ""; }
+    function buildDriveEmbedUrl(fid) { return fid ? "https://drive.google.com/file/d/" + fid + "/preview" : ""; }
+    function buildDriveDownloadUrl(fid) { return fid ? "https://drive.google.com/uc?export=download&id=" + fid : ""; }
     function scrollToVideoTop() { window.scrollTo({ top: 0, behavior: "smooth" }); }
+    function readFileAsBase64(file) { return new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => { const res = r.result || ""; const idx = res.indexOf(","); resolve(idx >= 0 ? res.slice(idx + 1) : res); }; r.onerror = () => reject(r.error); r.readAsDataURL(file); }); }
 
-    // [JS-2] 載入列表
+    // =====================================================
+    // [JS-核心功能] 載入、表格與影音連動
+    // =====================================================
     async function loadComments() {
       const res = await fetch(API_URL + "?action=list", { cache: "no-cache" });
       const data = await res.json();
       commentsCache = data.posts || [];
       renderCommentsTable();
-      const newest = commentsCache.slice().reverse().find(r => r.type === "youtube" || r.type === "upload" || r.type === "audio");
-      if (newest) selectRowForReply(newest, false);
+      // 需求 2: 自動開啟最新媒體項目
+      const newestMedia = commentsCache.slice().reverse().find(r => r.type === "youtube" || r.type === "upload" || r.type === "audio");
+      if (newestMedia) selectRowForReply(newestMedia, false);
     }
 
-    // [JS-3] 渲染表格 (100% 保留 stradtone 8 邏輯)
     function renderCommentsTable() {
       const tbody = document.getElementById("comments-tbody");
       if (!tbody) return;
@@ -332,19 +339,58 @@ table#comments-table th, table#comments-table td { border-bottom: 1px solid #333
         const type = row.type || "text";
         const selected = String(row.id) === String(currentSelectedId) ? ' class="selected"' : "";
         const editBtn = editState.waitForSelect ? `<button type="button" class="row-edit-btn" data-id="${row.id}">✎</button>` : "";
+        let icons = (type === "audio" || row.driveAudioId) ? "🎵" : "";
+        if (type === "youtube" || row.driveFileId || row.externalUrl) icons += "🎬";
+        if (row.reply && row.reply.replace(REPLY_PREFIX, "").trim()) icons += "💬";
         return `<tr data-id="${row.id}"${selected}>
           <td>${escapeHtml(nick)}</td>
           <td>${editBtn}${escapeHtml(row.text.slice(0, 30))}</td>
-          <td>${(type === "youtube" || type === "upload") ? "🎬" : (type === "audio" ? "🎵" : "—")}</td>
+          <td><div class="media-icons">${icons || "—"}</div></td>
         </tr>`;
       }).join("");
     }
 
-    // [JS-7] 回覆區保護邏輯 (核心！保留 stradtone 8 的規則)
+    function selectRowForReply(row, fromEdit) {
+      if (!row) return;
+      if (!fromEdit && (editState.active || isFormOpen)) resetFormToAddMode();
+      currentSelectedId = row.id; renderCommentsTable();
+      document.getElementById("reply-target-btn").textContent = "From: " + maskName(row.nickname);
+      const box = document.getElementById("admin-reply");
+      box.value = row.reply ? row.reply : REPLY_PREFIX + "\n";
+      showVideoForRow(row);
+      highlightLayers(row.layers); // 保留多層圓連動
+    }
+
+    function highlightLayers(layerStr) {
+      document.querySelectorAll(".ring").forEach(r => r.classList.remove("active"));
+      if (!layerStr) return;
+      const parts = layerStr.split(",").map(s => s.trim());
+      document.querySelectorAll(".ring").forEach(r => { if (parts.includes(r.dataset.layer)) r.classList.add("active"); });
+    }
+
+    function showVideoForRow(row) {
+      const i = document.getElementById("video-iframe"), a = document.getElementById("audio-player"), ph = document.getElementById("video-placeholder");
+      i.src = ""; a.pause(); i.style.display="none"; a.style.display="none"; ph.style.display="flex";
+      if (!row) return;
+      if (row.type === "youtube" && row.youtubeUrl) {
+        const id = row.youtubeUrl.match(/v=([^&]+)/)?.[1] || row.youtubeUrl.split("/").pop();
+        i.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`;
+        i.style.display="block"; ph.style.display="none";
+      } else if (row.type === "upload") {
+        i.src = row.externalUrl || row.linkUrl || buildDriveEmbedUrl(row.driveFileId);
+        i.style.display="block"; ph.style.display="none";
+      } else if (row.type === "audio") {
+        a.src = row.driveAudioId ? buildDriveDownloadUrl(row.driveAudioId) : row.audioUrl;
+        a.style.display="block"; ph.style.display="none"; a.play().catch(()=>{});
+      }
+    }
+
+    // =====================================================
+    // [JS-回覆與保護] 核心！100% 保留 Stradtone 8 的規則
+    // =====================================================
     function setupAdminReply() {
       const box = document.getElementById("admin-reply");
       if (!box) return;
-      // 保護前綴：禁止刪除前綴字
       box.addEventListener("keydown", (ev) => {
         const prefixLen = REPLY_PREFIX.length;
         const pos = box.selectionStart || 0;
@@ -357,79 +403,62 @@ table#comments-table th, table#comments-table td { border-bottom: 1px solid #333
         }
       });
       box.addEventListener("input", () => {
-        if (!box.value.startsWith(REPLY_PREFIX)) box.value = REPLY_PREFIX + "\n" + box.value.replace(REPLY_PREFIX, "").trim();
+        if (!box.value.startsWith(REPLY_PREFIX)) box.value = REPLY_PREFIX + "\n" + box.value.replace(new RegExp(REPLY_PREFIX, 'g'), "").trim();
         document.getElementById("reply-actions")?.classList.remove("hidden");
+        box.style.height = "auto"; box.style.height = Math.min(box.scrollHeight, 260) + "px";
       });
     }
 
-    function selectRowForReply(row, fromEdit) {
-      if (!row) return;
-      if (!fromEdit && (editState.active || isFormOpen)) resetFormToAddMode();
-      currentSelectedId = row.id; renderCommentsTable();
-      document.getElementById("reply-target-btn").textContent = "From: " + maskName(row.nickname);
-      const box = document.getElementById("admin-reply");
-      box.value = row.reply ? row.reply : REPLY_PREFIX + "\n";
-      scrollToVideoTop();
-      showVideoForRow(row);
-    }
-
-    function showVideoForRow(row) {
-      const i = document.getElementById("video-iframe"), a = document.getElementById("audio-player"), ph = document.getElementById("video-placeholder");
-      i.src = ""; a.pause(); i.style.display="none"; a.style.display="none"; ph.style.display="flex";
-      if (row.type === "youtube") { i.src = "https://www.youtube-nocookie.com/embed/" + (row.youtubeUrl.match(/v=([^&]+)/)?.[1] || "") + "?autoplay=1"; i.style.display="block"; ph.style.display="none"; }
-      else if (row.type === "audio") { a.src = row.audioUrl; a.style.display="block"; ph.style.display="none"; a.play().catch(()=>{}); }
-    }
-
-    // [JS-9] 儲存回覆 (需求 3 修改點)
+    // =====================================================
+    // [JS-提交邏輯] 需求 3 & 3-1 疊加點
+    // =====================================================
     async function saveAdminReply() {
       if (!currentSelectedId || isSubmitting) return;
-      toggleGlobalBusy(true);
+      toggleGlobalBusy(true); // 鎖定
       try {
-        const params = new URLSearchParams({ action: "reply", id: String(currentSelectedId), reply: document.getElementById("admin-reply").value.trim() });
-        const res = await fetch(API_URL + "?" + params.toString());
-        const data = await res.json();
-        if (data.status === "ok") { await loadComments(); document.getElementById("reply-actions").classList.add("hidden"); }
-      } catch (err) { alert("儲存失敗"); }
+        const res = await fetch(API_URL + `?action=reply&id=${currentSelectedId}&reply=${encodeURIComponent(document.getElementById("admin-reply").value.trim())}`);
+        if ((await res.json()).status === "ok") { await loadComments(); document.getElementById("reply-actions").classList.add("hidden"); }
+      } catch (e) { alert("儲存失敗"); }
       finally { toggleGlobalBusy(false); }
     }
 
-    // [JS-18] 表單送出 (需求 3 修改點)
     async function handleSubmit(e) {
       e.preventDefault(); if (isSubmitting) return;
       const nick = normalizeName(document.getElementById("nickname-input").value);
-      const txt = document.getElementById("text-input").value.trim();
-      if (!validateNameLength(nick) || !txt) { alert("請檢查欄位"); return; }
+      const text = document.getElementById("text-input").value.trim();
+      if (!validateNameLength(nick) || !text) { alert("請檢查欄位"); return; }
       
       isSubmitting = true; toggleGlobalBusy(true);
       try {
-        // ... 原本 stradtone 8 的傳輸邏輯 ...
-        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "add", nickname: nick, text: txt }) });
+        const payload = { action: "add", nickname: nick, text: text, type: "text" };
+        const file = document.getElementById("video-file-input").files[0];
+        if (file) { payload.type="upload"; payload.videoBase64 = await readFileAsBase64(file); payload.fileName=file.name; payload.mimeType=file.type; }
+        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
         if ((await res.json()).status === "ok") { resetFormToAddMode(); await loadComments(); }
-      } catch (err) { alert("發佈失敗"); }
+      } catch (e) { alert("發佈失敗"); }
       finally { isSubmitting = false; toggleGlobalBusy(false); }
     }
 
-    // [JS-12] 編輯功能恢復 (stradtone 8 邏輯)
-    function setupEditButton() {
-      document.getElementById("btn-edit")?.addEventListener("click", () => {
-        editState.waitForSelect = !editState.waitForSelect;
-        renderCommentsTable();
-      });
-    }
-
+    // =====================================================
+    // [JS-啟動與綁定]
+    // =====================================================
     function resetFormToAddMode() {
       isFormOpen = false; document.getElementById("community-form").classList.add("hidden");
       document.getElementById("btn-new").textContent = "新增";
-      document.getElementById("nickname-input").value = "";
-      document.getElementById("text-input").value = "";
+      document.getElementById("nickname-input").value = ""; document.getElementById("text-input").value = "";
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-      loadComments(); setupAdminReply(); setupEditButton();
+      loadComments(); setupAdminReply();
       document.getElementById("btn-new").addEventListener("click", () => {
+        if (document.querySelector(".is-processing")) return;
         isFormOpen = !isFormOpen;
         document.getElementById("community-form").classList.toggle("hidden", !isFormOpen);
         document.getElementById("btn-new").textContent = isFormOpen ? "取消新增" : "新增";
+      });
+      document.getElementById("btn-edit").addEventListener("click", () => {
+        if (document.querySelector(".is-processing")) return;
+        editState.waitForSelect = !editState.waitForSelect; renderCommentsTable();
       });
       document.getElementById("community-form").addEventListener("submit", handleSubmit);
       document.getElementById("reply-save-btn").addEventListener("click", saveAdminReply);
@@ -437,7 +466,7 @@ table#comments-table th, table#comments-table td { border-bottom: 1px solid #333
       document.getElementById("comments-tbody").addEventListener("click", e => {
         const tr = e.target.closest("tr"); if (!tr || document.querySelector(".is-processing")) return;
         const row = commentsCache.find(r => String(r.id) === tr.dataset.id);
-        if (e.target.classList.contains("row-edit-btn")) { /* 啟動編輯 */ } else { selectRowForReply(row, false); }
+        if (e.target.classList.contains("row-edit-btn")) { /* 編輯邏輯 */ } else { selectRowForReply(row, false); }
       });
     });
   </script>
