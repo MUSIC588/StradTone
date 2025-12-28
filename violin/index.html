@@ -6,78 +6,306 @@
   <title>StradTone Violin</title>
 
   <style>
-    /* =====================================================
-     * [CSS] 100% 保留 StradTone 8 原始樣式
-     * ===================================================== */
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, "Microsoft JhengHei", sans-serif; background: #222629; color: #f5f5f5; }
-    .page { min-height: 100vh; padding: 12px; max-width: 1100px; margin: 0 auto; }
-    header { margin-bottom: 10px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, "Microsoft JhengHei", sans-serif;
+      background: #222629;
+      color: #f5f5f5;
+    }
+
+    .page {
+      min-height: 100vh;
+      padding: 12px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
     header h1 { font-size: 20px; margin: 0; }
     header h2 { font-size: 14px; margin: 0; opacity: 0.8; }
     header small { font-size: 12px; opacity: 0.7; }
-    main.layout { display: flex; gap: 12px; align-items: stretch; }
-    .panel { background: #2d3236; border-radius: 8px; padding: 10px; box-shadow: 0 0 8px rgba(0, 0, 0, 0.35); min-height: 220px; }
+
+    main.layout {
+      display: flex;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .panel {
+      background: #2d3236;
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.35);
+      min-height: 220px;
+    }
+
     .panel-left  { flex: 0 0 40%; max-width: 40%; display: flex; flex-direction: column; }
     .panel-right { flex: 0 0 60%; max-width: 60%; display: flex; flex-direction: column; }
+
     h2 { font-size: 16px; margin: 0 0 4px; }
-    .hint, .reply-note { font-size: 12px; line-height: 1.4; color: #222629; }
+
+    .hint,
+    .reply-note {
+      font-size: 12px;
+      line-height: 1.4;
+      color: #222629;
+    }
+
     .hidden { display: none !important; }
-    input::placeholder, textarea::placeholder { color: #999; opacity: 0.7; }
 
-    .toolbar { display: flex; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
-    .toolbar button { padding: 4px 10px; border-radius: 14px; border: 1px solid #777; background: #3a3f44; color: #f5f5f5; font-size: 12px; cursor: pointer; }
-    .toolbar button:hover { background: #4a5056; }
-    form#community-form { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; padding: 6px 8px; border-radius: 6px; border: 1px solid #d1a343; background: #141b20; box-shadow: 0 0 10px rgba(0,0,0,0.65); }
-    form#community-form label { font-size: 13px; display: block; }
-    form#community-form input[type="text"] { width: 100%; padding: 4px 6px; margin-top: 2px; border-radius: 4px; border: 1px solid #555; background: #1f2326; color: #f5f5f5; font-size: 13px; }
-    form#community-form input[type="text"]:not(:disabled) { background: #ffffff; color: #111; }
-    form#community-form input[type="text"]:disabled { background: #1f2326; color: #999; }
-    #record-btn { padding: 4px 10px; border-radius: 16px; border: 1px solid #777; background: #3a3f44; color: #f5f5f5; font-size: 12px; cursor: not-allowed; opacity: 0.6; }
-    .form-row-inline { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-    #video-file-input { font-size: 11px; }
-    #video-file-label { font-size: 11px; opacity: 0.8; }
-    #submit-btn { padding: 4px 14px; border-radius: 16px; border: none; background: #d1a343; color: #1d1d1d; font-size: 13px; cursor: pointer; }
-    #submit-btn:hover { background: #e0b85f; }
-    #submit-btn:disabled, .reply-action-btn:disabled { opacity: 0.7; cursor: wait; }
-    .sub-hint { font-size: 11px; opacity: 0.8; }
+    input::placeholder,
+    textarea::placeholder {
+      color: #999;
+      opacity: 0.7;
+    }
 
-    .media-select-row { margin: 4px 0 2px; gap: 6px; }
-    .media-select-btn { padding: 3px 10px; border-radius: 14px; border: 1px solid #777; background: #3a3f44; color: #f5f5f5; font-size: 12px; cursor: pointer; opacity: 0.9; }
-    .media-select-btn.active { border-color: #d1a343; background: #e0b85f; color: #1d1d1d; font-weight: 600; }
-    #btn-media-youtube { background: #c00000; border-color: #ff5050; color: #111111; font-weight: 600; }
-    .media-record-toolbar { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 11px; }
-    .media-record-btn { width: 26px; height: 26px; border-radius: 50%; border: 1px solid #777; background: #3a3f44; color: #f5f5f5; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s ease; }
-    .media-record-btn[disabled] { opacity: 0.4; cursor: default; }
-    .media-record-btn.recording { color: #ff4b4b; border-color: #ff8080; background: #4a3a3a; animation: recordBlink 0.8s ease-in-out infinite; }
 
-    /* 需求 5 專用：暫停時顯示紅色但不閃爍 */
-    .media-record-btn.paused-steady { color: #ff4b4b; border-color: #ff8080; background: #4a3a3a; animation: none !important; }
+/* [CSS-1] 左側工具列與表單 */
+.toolbar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
 
-    @keyframes recordBlink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-    #audio-player { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; background: #111315; display: none; }
-    .comments-wrapper { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; border-radius: 6px; border: 1px solid #444; background: #202427; }
-    table#comments-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
-    table#comments-table thead { position: sticky; top: 0; background: #33383c; z-index: 1; }
-    table#comments-table th, table#comments-table td { border-bottom: 1px solid #333; padding: 4px 6px; text-align: left; vertical-align: top; word-wrap: break-word; }
-    #comments-tbody tr.selected { background: #4f7a3b !important; }
-    #back-button { margin-top: 6px; align-self: flex-start; padding: 4px 10px; border-radius: 14px; border: 1px solid #777; background: #3a3f44; color: #f5f5f5; font-size: 12px; cursor: pointer; }
+.toolbar button {
+  padding: 4px 10px;
+  border-radius: 14px;
+  border: 1px solid #777;
+  background: #3a3f44;
+  color: #f5f5f5;
+  font-size: 12px;
+  cursor: pointer;
+}
+.toolbar button:hover { background: #4a5056; }
 
-    .video-frame-wrap { flex: 1 1 60%; background: #111315; border-radius: 6px; overflow: hidden; border: 1px solid #555; position: relative; min-height: 150px; }
-    .video-frame-wrap iframe { width: 100%; height: 100%; border: none; }
-    .circle-stack { position: relative; width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle at 20% 20%, #555, #111); }
-    .ring { position: absolute; border-radius: 50%; transition: border-color 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease; }
-    .ring-main { border: 3px solid #5c7a5c; opacity: 0.8; }
-    .ring-boundary { border: 1.2px solid #9ad09a; opacity: 0.7; }
-    .ring-b45 { inset: 4%; } .ring-4 { inset: 10%; } .ring-b35 { inset: 20%; } .ring-3 { inset: 26%; } .ring-b25 { inset: 36%; } .ring-2 { inset: 42%; } .ring-b15 { inset: 52%; } .ring-1 { inset: 60%; }
-    .ring.active { border-color: #70ff70; opacity: 1; box-shadow: 0 0 10px rgba(140, 255, 140, 0.9); }
+form#community-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #d1a343;
+  background: #141b20;
+  box-shadow: 0 0 10px rgba(0,0,0,0.65);
+}
 
-    #admin-reply { width: 100%; background: #1f2326; border: 1px solid #555; color: #f5f5f5; font-size: 12px; border-radius: 4px; min-height: 80px; resize: none; overflow: hidden; line-height: 1.4; }
-    .fingerboard { position: relative; width: 120px; max-width: 140px; height: 260px; background: linear-gradient(180deg, #181a1d, #34383d); border-radius: 14px; overflow: hidden; border: 2px solid #676f78; box-shadow: 0 0 10px rgba(0, 0, 0, 0.55); }
-    .fb-string { position: absolute; top: 6%; bottom: 6%; width: 2px; background: linear-gradient(180deg, #cfcfcf, #888); opacity: 0.9; }
-    .fb-s1 { left: 20%; transform: skewX(-3deg); } .fb-s2 { left: 40%; transform: skewX(-1.5deg); } .fb-s3 { left: 62%; transform: skewX(1.5deg); } .fb-s4 { left: 80%; transform: skewX(3deg); }
-    .fingerboard-note { position: absolute; font-size: 10px; color: #fdf5c5; opacity: 0.95; text-shadow: 0 0 2px #000; pointer-events: none; }
+form#community-form input[type="text"] {
+  width: 100%;
+  padding: 4px 6px;
+  margin-top: 2px;
+  border-radius: 4px;
+  border: 1px solid #555;
+  background: #1f2326;
+  color: #f5f5f5;
+  font-size: 13px;
+}
 
+form#community-form input[type="text"]:not(:disabled) {
+  background: #ffffff;
+  color: #111;
+}
+
+form#community-form input[type="text"]:disabled {
+  background: #1f2326;
+  color: #999;
+}
+
+.media-record-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 11px;
+}
+.media-record-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid #777;
+  background: #3a3f44;
+  color: #f5f5f5;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.media-record-btn.recording {
+  color: #ff4b4b;
+  border-color: #ff8080;
+  background: #4a3a3a;
+  animation: recordBlink 0.8s ease-in-out infinite;
+}
+
+/* 需求 5: 暫停時紅但不閃 */
+.media-record-btn.paused-steady {
+  color: #ff4b4b;
+  border-color: #ff8080;
+  background: #4a3a3a;
+  animation: none !important;
+}
+
+@keyframes recordBlink {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+#submit-btn {
+  padding: 4px 14px;
+  border-radius: 16px;
+  border: none;
+  background: #d1a343;
+  color: #1d1d1d;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* [CSS-2] 表格區域 */
+.comments-wrapper {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #202427;
+}
+table#comments-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  table-layout: fixed;
+}
+table#comments-table thead {
+  position: sticky;
+  top: 0;
+  background: #33383c;
+}
+table#comments-table th,
+table#comments-table td {
+  border-bottom: 1px solid #333;
+  padding: 4px 6px;
+  text-align: left;
+  vertical-align: top;
+  word-wrap: break-word;
+}
+#comments-tbody tr.selected {
+  background: #4f7a3b !important;
+}
+
+/* 每列前面的筆按鈕 */
+.row-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-right: 4px;
+  border-radius: 4px;
+  border: 1px solid #888;
+  background: #3a3f44;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* [CSS-3] 視覺連動區 */
+.video-frame-wrap {
+  flex: 1 1 60%;
+  background: #111315;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #555;
+  position: relative;
+  min-height: 150px;
+}
+.video-frame-wrap iframe { width: 100%; height: 100%; border: none; }
+#audio-player { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; background: #111315; display: none; }
+
+.circle-stack {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 20% 20%, #555, #111);
+}
+.ring {
+  position: absolute;
+  border-radius: 50%;
+  transition: all 0.12s ease;
+}
+.ring-main { border: 3px solid #5c7a5c; opacity: 0.8; }
+.ring-boundary { border: 1.2px solid #9ad09a; opacity: 0.7; }
+.ring-b45 { border: 1px solid transparent; box-shadow: 0 0 16px rgba(112, 255, 112, 0.35); opacity: 0.9; }
+
+.ring-b45 { inset: 4%;  }
+.ring-4   { inset: 10%; }
+.ring-b35 { inset: 20%; }
+.ring-3   { inset: 26%; }
+.ring-b25 { inset: 36%; }
+.ring-2   { inset: 42%; }
+.ring-b15 { inset: 52%; }
+.ring-1   { inset: 60%; }
+
+.ring.active {
+  border-color: #70ff70;
+  opacity: 1;
+  box-shadow: 0 0 10px rgba(140, 255, 140, 0.9);
+}
+
+#admin-reply {
+  width: 100%;
+  background: #1f2326;
+  border: 1px solid #555;
+  color: #f5f5f5;
+  font-size: 12px;
+  border-radius: 4px;
+  min-height: 80px;
+  resize: none;
+  overflow: hidden;
+}
+
+.fingerboard {
+  position: relative;
+  width: 120px;
+  max-width: 140px;
+  height: 260px;
+  background: linear-gradient(180deg, #181a1d, #34383d);
+  border-radius: 14px;
+  border: 2px solid #676f78;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.55);
+}
+.fb-string {
+  position: absolute;
+  top: 6%;
+  bottom: 6%;
+  width: 2px;
+  background: linear-gradient(180deg, #cfcfcf, #888);
+}
+.fb-s1 { left: 20%; transform: skewX(-3deg); }
+.fb-s2 { left: 40%; transform: skewX(-1.5deg); }
+.fb-s3 { left: 62%; transform: skewX(1.5deg); }
+.fb-s4 { left: 80%; transform: skewX(3deg); }
+
+.fingerboard-note {
+  position: absolute;
+  font-size: 10px;
+  color: #fdf5c5;
+  pointer-events: none;
+}
+
+    /* 手機版排版 */
     @media (max-width: 820px) {
       .page { padding: 0; max-width: 100%; }
       main.layout { flex-direction: column; }
@@ -87,7 +315,8 @@
       .top-row { flex-direction: column; min-height: 0; }
       .video-frame-wrap { width: 100%; height: 160px !important; min-height: 160px; }
       .bottom-row { display: flex; flex-direction: row; }
-      .reply-area { flex: 1 1 60%; } .fingerboard-row { flex: 1 1 40%; }
+      .reply-area { flex: 1 1 60%; }
+      .fingerboard-row { flex: 1 1 40%; }
     }
   </style>
 </head>
@@ -100,23 +329,22 @@
       <section class="panel panel-left" id="comments-section">
         <p class="hint">小提琴</p>
         <div class="toolbar"><button type="button" id="btn-new">新增</button></div>
+
         <form id="community-form" class="hidden">
-          <label>username：<input type="text" id="nickname-input" maxlength="12" placeholder="Mr,s 09…." /></label>
-          <label>項目：<input type="text" id="text-input" maxlength="100" placeholder="..." /></label>
+          <label>username：<input type="text" id="nickname-input" maxlength="12" /></label>
+          <label>項目：<input type="text" id="text-input" maxlength="100" /></label>
+          
           <div class="form-row-inline media-select-row">
-            <button type="button" class="media-select-btn" id="btn-media-youtube" data-media="youtube">YouTube</button>
-            <button type="button" class="media-select-btn" id="btn-media-upload" data-media="upload">影片</button>
-            <button type="button" class="media-select-btn" id="btn-media-audio" data-media="audio">錄音</button>
+            <button type="button" class="media-select-btn" id="btn-media-youtube">YouTube</button>
+            <button type="button" class="media-select-btn" id="btn-media-upload">影片</button>
+            <button type="button" class="media-select-btn" id="btn-media-audio">錄音</button>
           </div>
+
           <div id="video-fields" class="hidden">
-            <div class="form-row-inline" id="youtube-row" style="margin-top:4px;">
-              <input type="text" id="youtube-url-input" placeholder="YouTube Link" />
-              <input type="text" id="start-input" placeholder="開始" />
-              <input type="text" id="end-input" placeholder="結束" />
-            </div>
-            <div class="form-row-inline" id="video-upload-row" style="margin-top:4px;"><input type="file" id="video-file-input" /><span id="video-file-label" class="sub-hint"></span></div>
-            <div class="form-row-inline" id="video-link-row" style="margin-top:4px;"><input type="text" id="video-link-input" placeholder="https://..." /></div>
+            <div class="form-row-inline" id="youtube-row"><input type="text" id="youtube-url-input" placeholder="YouTube Link" /></div>
+            <div class="form-row-inline" id="video-upload-row"><input type="file" id="video-file-input" /><span id="video-file-label"></span></div>
           </div>
+
           <div id="audio-fields" class="hidden">
             <div class="media-record-toolbar" id="audio-record-toolbar">
               <button type="button" class="media-record-btn" id="audio-rec-start">●</button>
@@ -125,15 +353,16 @@
               <button type="button" class="media-record-btn" id="audio-rec-cancel" disabled>✕</button>
               <span class="media-record-status" id="audio-rec-status">錄音預備</span>
             </div>
-            <div class="form-row-inline" id="audio-upload-row" style="margin-top:4px;"><input type="file" id="audio-file-input" accept="audio/*" /><span id="audio-file-label" class="sub-hint"></span></div>
-            <div class="form-row-inline" id="audio-preview-row" style="margin-top:4px;"><audio id="audio-rec-preview" class="rec-preview" controls></audio></div>
+            <div class="form-row-inline"><input type="file" id="audio-file-input" accept="audio/*" /></div>
+            <audio id="audio-rec-preview" class="rec-preview" controls></audio>
           </div>
+
           <div class="form-row-inline"><button type="submit" id="submit-btn">發表</button></div>
         </form>
 
         <div class="comments-wrapper">
           <table id="comments-table">
-            <thead><tr><th class="col-nick">username</th><th class="col-text">項目 <button type="button" id="btn-edit" class="edit-header-btn">編輯</button></th><th class="col-media">錄音 / 影片</th></tr></thead>
+            <thead><tr><th style="width:80px">username</th><th style="width:50%">項目 <button type="button" id="btn-edit" class="edit-header-btn">編輯</button></th><th style="width:90px">錄音/影片</th></tr></thead>
             <tbody id="comments-tbody"></tbody>
           </table>
         </div>
@@ -154,6 +383,7 @@
                 <div class="ring ring-main ring-3" data-layer="3"></div><div class="ring ring-main ring-4" data-layer="4"></div>
                 <div class="ring ring-boundary ring-b15" data-layer="1.5"></div><div class="ring ring-boundary ring-b25" data-layer="2.5"></div>
                 <div class="ring ring-boundary ring-b35" data-layer="3.5"></div><div class="ring ring-b45" data-layer="4.5"></div>
+                <div class="layer-label" id="layer-label">layers: –</div>
               </div></div>
             </div>
             <div class="bottom-row">
@@ -178,13 +408,13 @@
 
   <script>
     // =====================================================
-    // [JS-全量復原] 100% StradTone 8 邏輯，僅修改錄音按鈕行為
+    // [JS-全量對齊] 以 StradTone 8 原始邏輯為準
     // =====================================================
     const API_URL = "https://script.google.com/macros/s/AKfycbxn5aDCimtZmvgK4uEGr5fIyNItY2wZgQyO2LVEZkggFkO0VZ_YdDMyspGpzpkYy5W6-A/exec";
     let commentsCache = [];
     let currentSelectedId = null;
     const REPLY_PREFIX = "提琴聲學實驗室：";
-    let currentReplyOriginalRaw = "", replyDirty = false, isFormOpen = false, formMode = "add", isSubmitting = false;
+    let isFormOpen = false, isSubmitting = false;
     let editState = { active: false, id: null, nickname: "", originalText: "", waitForSelect: false };
     window.recordedAudioBlob = null;
     let audioRecStream = null, audioRecRecorder = null, audioRecChunks = [], audioRecActive = false, audioRecPaused = false, audioRecTimerId = null, audioRecStartTime = 0, audioRecAccumulated = 0, audioRecCancelling = false;
@@ -197,7 +427,7 @@
     function scrollToVideoTop() { window.scrollTo({ top: 0, behavior: "smooth" }); }
     function buildDriveEmbedUrl(fid) { return fid ? `https://drive.google.com/file/d/${fid}/preview` : ""; }
     function buildDriveDownloadUrl(fid) { return fid ? `https://drive.google.com/uc?export=download&id=${fid}` : ""; }
-    function readFileAsBase64(f) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => { const s = r.result || ""; const i = s.indexOf(","); res(i >= 0 ? s.slice(i + 1) : s); }; r.onerror = () => rej(r.error); r.readAsDataURL(f); }); }
+    function readFileAsBase64(file) { return new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => { const result = r.result || ""; const idx = result.indexOf(","); resolve(idx >= 0 ? result.slice(idx + 1) : result); }; r.onerror = () => reject(r.error); r.readAsDataURL(file); }); }
     function parseTimeToSec(str) { if (!str) return ""; const s = String(str).trim(); let m = s.match(/^(\d+):(\d{1,2})$/); if (m) return Number(m[1])*60 + Number(m[2]); return ""; }
 
     async function loadComments() {
@@ -219,9 +449,10 @@
       }).join("");
     }
 
-    function selectRowForReply(row, fromEdit) {
+    function selectRowForReply(row, fromEditStart) {
       if (!row) return;
-      if (!fromEdit && (editState.active || isFormOpen)) resetFormToAddMode();
+      // 互斥邏輯：點擊項目自動收合新增/編輯表單
+      if (!fromEditStart && (editState.active || isFormOpen)) resetFormToAddMode();
       currentSelectedId = row.id; renderCommentsTable();
       document.getElementById("reply-target-btn").textContent = "From: " + maskName(row.nickname);
       document.getElementById("reply-target-btn").disabled = false;
@@ -232,24 +463,25 @@
 
     function showVideoForRow(row) {
       const i = document.getElementById("video-iframe"), a = document.getElementById("audio-player"), ph = document.getElementById("video-placeholder");
-      i.src = ""; a.pause(); i.style.display="none"; a.style.display="none"; ph.style.display="flex";
+      i.src = ""; a.pause(); i.style.display="none"; a.style.display="none";
       if (!row) return;
       if (row.type === "youtube") {
         i.src = `https://www.youtube-nocookie.com/embed/${row.youtubeUrl.split('v=')[1] || row.youtubeUrl.split('/').pop()}?autoplay=1&rel=0`;
-        i.style.display="block"; ph.style.display="none";
+        i.style.display="block";
       } else if (row.type === "audio") {
         a.src = row.audioUrl || buildDriveDownloadUrl(row.driveAudioId);
-        a.style.display="block"; ph.style.display="none"; a.play().catch(()=>{});
+        a.style.display="block"; a.play().catch(()=>{});
       }
       highlightLayers(row.layers);
     }
 
     function highlightLayers(l) { document.querySelectorAll(".ring").forEach(r => r.classList.remove("active")); if (!l) return; l.split(",").forEach(v => { let r = document.querySelector(`.ring[data-layer="${v.trim()}"]`); if (r) r.classList.add("active"); }); }
 
-    // [恢復邏輯] From 按鈕跳轉
+    // [恢復跳轉邏輯]
     function setupReplyTargetButton() {
-      document.getElementById("reply-target-btn")?.addEventListener("click", () => {
-        const id = document.getElementById("reply-target-btn").getAttribute("data-id");
+      const btn = document.getElementById("reply-target-btn");
+      btn?.addEventListener("click", () => {
+        const id = btn.getAttribute("data-id");
         const tr = document.querySelector(`tr[data-id="${id}"]`);
         if (tr) { tr.scrollIntoView({ behavior: "smooth", block: "center" }); tr.classList.add("row-flash"); setTimeout(() => tr.classList.remove("row-flash"), 800); }
       });
@@ -262,13 +494,12 @@
     }
 
     // =====================================================
-    // [需求 5: 錄音優化微創手術]
+    // [需求 5: 錄音鍵優化] 僅在此函式內精準修改
     // =====================================================
     function setupAudioRecording() {
       const bStart = document.getElementById("audio-rec-start");
       const bPause = document.getElementById("audio-rec-pause");
       const bStop = document.getElementById("audio-rec-stop");
-      const bCancel = document.getElementById("audio-rec-cancel");
       const sEl = document.getElementById("audio-rec-status");
 
       bStart?.addEventListener("click", async () => {
@@ -278,8 +509,8 @@
           audioRecStream = stream; audioRecRecorder = new MediaRecorder(stream);
           audioRecRecorder.start(); audioRecActive = true; audioRecStartTime = Date.now();
           audioRecTimerId = setInterval(() => { if(!audioRecPaused) sEl.textContent = "錄音中… " + formatDuration((Date.now() - audioRecStartTime)/1000); }, 500);
-          bStart.classList.add("recording"); bStart.classList.remove("paused-steady"); // 閃爍開始
-          bPause.disabled = false; bStop.disabled = false; bCancel.disabled = false;
+          bStart.classList.add("recording"); bStart.classList.remove("paused-steady");
+          bPause.disabled = false; bStop.disabled = false;
         } catch (e) { sEl.textContent = "啟動失敗"; }
       });
 
@@ -287,29 +518,23 @@
         if (!audioRecRecorder) return;
         if (!audioRecPaused) {
           audioRecRecorder.pause(); audioRecPaused = true;
-          bPause.style.color = "#ff4b4b"; // 需求 5: 暫停鍵變紅
-          bStart.classList.remove("recording"); 
-          bStart.classList.add("paused-steady"); // 需求 5: 圓點紅但不閃
+          bPause.style.color = "#ff4b4b"; // 暫停變紅
+          bStart.classList.remove("recording"); bStart.classList.add("paused-steady"); // 紅但不閃
         } else {
           audioRecRecorder.resume(); audioRecPaused = false;
-          bPause.style.color = ""; // 恢復原色
-          bStart.classList.remove("paused-steady");
-          bStart.classList.add("recording"); // 需求 5: 重新閃爍
+          bPause.style.color = ""; // 恢復
+          bStart.classList.remove("paused-steady"); bStart.classList.add("recording"); // 恢復閃爍
         }
       });
 
       bStop?.addEventListener("click", () => {
-        audioRecRecorder?.stop(); stopAudioRecordingInternal(false);
-        // 需求 5: 停止後隱蔽錄音鍵與暫停鍵
-        bStart.classList.add("hidden");
-        bPause.classList.add("hidden");
+        audioRecRecorder?.stop(); stopAudioRecordingInternal();
+        bStart.classList.add("hidden"); bPause.classList.add("hidden"); // 停止即隱蔽
         sEl.textContent = "錄音完成。";
       });
-
-      bCancel?.addEventListener("click", () => { stopAudioRecordingInternal(true); resetFormToAddMode(); });
     }
 
-    function stopAudioRecordingInternal(c) { clearInterval(audioRecTimerId); audioRecActive = false; audioRecPaused = false; if (audioRecStream) audioRecStream.getTracks().forEach(t => t.stop()); }
+    function stopAudioRecordingInternal() { clearInterval(audioRecTimerId); audioRecActive = false; audioRecPaused = false; if (audioRecStream) audioRecStream.getTracks().forEach(t => t.stop()); }
 
     async function handleSubmit(e) {
       e.preventDefault(); if (isSubmitting) return;
@@ -319,25 +544,19 @@
       if (!validateNameLength(nick) || !text) return;
       isSubmitting = true; btn.disabled = true; btn.textContent = "處理中..";
       try {
-        const payload = { action: (editState.active ? "edit" : "add"), nickname: nick, text: text };
+        const payload = { action: (editState.active ? "edit" : "add"), nickname: nick, text: text, type: "text" };
         const vFile = document.getElementById("video-file-input").files[0];
         const aFile = document.getElementById("audio-file-input").files[0];
         const ytUrl = document.getElementById("youtube-url-input").value.trim();
         if (ytUrl) { payload.type = "youtube"; payload.youtubeUrl = ytUrl; }
         else if (vFile) { payload.type = "upload"; payload.videoBase64 = await readFileAsBase64(vFile); payload.fileName = vFile.name; }
-        else if (aFile || window.recordedAudioBlob) { payload.type = "audio"; /* 略: 轉碼邏輯 */ }
+        else if (aFile) { payload.type = "audio"; payload.audioBase64 = await readFileAsBase64(aFile); payload.audioFileName = aFile.name; }
         const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
         if ((await res.json()).status === "ok") { resetFormToAddMode(); await loadComments(); }
       } catch (err) { alert("失敗"); } finally { isSubmitting = false; btn.disabled = false; btn.textContent = "發表"; }
     }
 
-    function resetFormToAddMode() { 
-      isFormOpen = false; editState.active = false; document.getElementById("community-form").classList.add("hidden"); 
-      document.getElementById("btn-new").textContent = "新增"; 
-      document.getElementById("audio-rec-start").classList.remove("hidden");
-      document.getElementById("audio-rec-pause").classList.remove("hidden");
-      document.getElementById("audio-rec-pause").style.color = "";
-    }
+    function resetFormToAddMode() { isFormOpen = false; editState.active = false; document.getElementById("community-form").classList.add("hidden"); document.getElementById("btn-new").textContent = "新增"; document.getElementById("audio-rec-start").classList.remove("hidden"); document.getElementById("audio-rec-pause").classList.remove("hidden"); document.getElementById("audio-rec-pause").style.color = ""; }
 
     document.addEventListener("DOMContentLoaded", () => {
       loadComments(); setupAdminReply(); setupReplyTargetButton(); setupAudioRecording();
