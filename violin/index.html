@@ -212,25 +212,27 @@ form#community-form input[type="text"]:disabled {
   font-weight: 600;
 }
 
-/* [需求 6 修改點] 編輯時禁用狀態再淺一階 */
 .media-select-btn:disabled {
   opacity: 0.2;
   filter: grayscale(0.8);
   cursor: default;
 }
+
+/* [需求 6 補強] YouTube 官方色卡校正 */
 #btn-media-youtube {
-  background: #c00000;
-  border-color: #ff5050;
-  color: #111111;
+  background: #FF0000;           /* 官方標誌紅 */
+  border-color: #FF4D4D;        /* 亮色邊框 */
+  color: #FFFFFF;               /* 改為白字更顯眼 */
   font-weight: 600;
 }
 #btn-media-youtube:hover:not(:disabled) {
-  background: #e00000;
+  background: #CC0000;           /* 懸停時深紅 */
 }
 #btn-media-youtube.active {
-  background: #ff0000;
-  border-color: #ff8080;
-  color: #000000;
+  background: #FF0000;
+  border-color: #FFFFFF;
+  color: #FFFFFF;
+  box-shadow: 0 0 8px rgba(255, 0, 0, 0.6);
 }
 #btn-media-youtube:disabled {
   background: #4a2a2a;
@@ -2782,4 +2784,5 @@ table#comments-table tbody tr:nth-child(even) {
   </script>
 </body>
 </html>
+
 
