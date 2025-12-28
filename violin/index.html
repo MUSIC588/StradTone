@@ -971,10 +971,7 @@ table#comments-table tbody tr:nth-child(even) {
                   <div class="ring ring-boundary ring-b25" data-layer="2.5"></div>
                   <div class="ring ring-boundary ring-b35" data-layer="3.5"></div>
                   <div class="ring ring-b45" data-layer="4.5"></div>
-
-                  <div class="layer-label" id="layer-label">
-                    layers: –
-                  </div>
+                  <div class="layer-label" id="layer-label">layers: –</div>
                 </div>
               </div>
             </div>
@@ -982,20 +979,9 @@ table#comments-table tbody tr:nth-child(even) {
             <div class="bottom-row">
               <div class="reply-area">
                 <div class="reply-target" id="reply-target">
-                  <button
-                    type="button"
-                    id="reply-target-btn"
-                    class="reply-target-btn"
-                    disabled
-                  >
-                    From: —
-                  </button>
+                  <button type="button" id="reply-target-btn" class="reply-target-btn" disabled>From: —</button>
                 </div>
-                <p class="reply-note"></p>
-                <textarea
-                  id="admin-reply"
-                  placeholder="提琴聲學實驗室："
-                ></textarea>
+                <textarea id="admin-reply" placeholder="提琴聲學實驗室："></textarea>
 
                 <div class="reply-actions hidden" id="reply-actions">
                   <button type="button" id="reply-save-btn" class="reply-action-btn">儲存</button>
@@ -1039,8 +1025,10 @@ table#comments-table tbody tr:nth-child(even) {
     let formMode = "add";
     let isSubmitting = false;
     let editState = { active: false, id: null, nickname: "", originalText: "", waitForSelect: false };
+
     window.recordedAudioBlob = null;
     window.recordedVideoBlob = null;
+
     let audioRecStream = null;
     let audioRecRecorder = null;
     let audioRecChunks = [];
@@ -1050,6 +1038,7 @@ table#comments-table tbody tr:nth-child(even) {
     let audioRecStartTime = 0;
     let audioRecAccumulated = 0;
     let audioRecCancelling = false;
+
     let carouselActive = false; 
     let carouselTimerId = null;
     let carouselUserStopped = true; 
@@ -1057,10 +1046,10 @@ table#comments-table tbody tr:nth-child(even) {
     let carouselIndex = 0;
     const CAROUSEL_INTERVAL_MS = 15000;
 
-    // ===== [JS-1] 小工具 (100% 原始保留) =====
+    // ===== [JS-1] 小工具 (100% 保留) =====
     function normalizeName(name) { return String(name || "").replace(/\u200B/g, "").trim(); }
     function maskName(name) { const s = normalizeName(name); if (!s) return "匿名"; if (s.length <= 2) return s[0] + "*"; return s[0] + "*".repeat(s.length - 2) + s[s.length - 1]; }
-    function validateNameLength(name) { const s = normalizeName(name); if (s.length < 5 || s.length > 12) return false; if (!/^[A-Za-z0-9\u4E00-\u9FFF]+$/.test(s)) return false; return true; }
+    function validateNameLength(name) { const s = normalizeName(name); return s.length >= 5 && s.length <= 12 && /^[A-Za-z0-9\u4E00-\u9FFF]+$/.test(s); }
     function parseTimeToSec(str) { if (!str) return ""; const s = String(str).trim(); let m = s.match(/^(\d+):(\d{1,2})$/); if (m) return Number(m[1]) * 60 + Number(m[2]); m = s.match(/^(\d{3,4})$/); if (m) { const digits = m[1]; return Number(digits.slice(0, -2)) * 60 + Number(digits.slice(-2)); } return ""; }
     function escapeHtml(str) { return String(str || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
     function extractYoutubeId(url) { if (!url) return ""; const m1 = url.match(/youtu\.be\/([^?]+)/); if (m1) return m1[1]; const m2 = url.match(/[?&]v=([^&]+)/); if (m2) return m2[1]; return ""; }
@@ -1073,7 +1062,7 @@ table#comments-table tbody tr:nth-child(even) {
     function formatDuration(sec) { const s = Math.max(0, sec | 0); const m = (s / 60) | 0; const r = s % 60; return (m < 10 ? "0" + m : m) + ":" + (r < 10 ? "0" + r : r); }
     function clearAudioRecTimer() { if (audioRecTimerId) { clearInterval(audioRecTimerId); audioRecTimerId = null; } }
 
-    // ===== [JS-2] 載入列表 (需求 2: 啟動即播最新媒體) =====
+    // ===== [JS-2] 載入與列表 (需求 2: 自動播最新) =====
     async function loadComments() {
       const res = await fetch(API_URL + "?action=list", { cache: "no-cache" });
       const data = await res.json();
@@ -1126,9 +1115,9 @@ table#comments-table tbody tr:nth-child(even) {
         let url = row.driveAudioId ? buildDriveDownloadUrl(row.driveAudioId) : (row.audioUrl || "");
         if (url) { audio.src = url; audio.style.display = "block"; ph.style.display = "none"; try { audio.play().catch(()=>{}); } catch(e){} }
       }
+      highlightLayers(row.layers); // 恢復多層圓亮點
     }
 
-    // ===== [JS-5] 多層圓連動 (不准精簡) =====
     function highlightLayers(layerStr) {
       document.querySelectorAll(".ring").forEach(r => r.classList.remove("active"));
       if (!layerStr) return;
@@ -1139,23 +1128,31 @@ table#comments-table tbody tr:nth-child(even) {
     function findRowById(id) { return commentsCache.find(r => String(r.id) === String(id)); }
     function stopCarousel(fromUser) { if (carouselTimerId) clearTimeout(carouselTimerId); carouselActive = false; if (fromUser === "user") carouselUserStopped = true; }
 
-    // ===== [JS-7] 管理員回覆保護 (核心規則) =====
+    // ===== [JS-7] 回覆保護與從作者跳回邏輯 =====
     function setupAdminReply() {
       const box = document.getElementById("admin-reply");
       if (!box) return;
       box.addEventListener("keydown", (ev) => {
         const prefixLen = REPLY_PREFIX.length;
-        const pos = box.selectionStart || 0;
-        if (pos <= prefixLen) {
-          if (["Backspace", "Delete", "ArrowLeft"].includes(ev.key) || ev.key.length === 1) {
-            ev.preventDefault(); box.setSelectionRange(prefixLen + 1, prefixLen + 1);
-          }
-        }
+        if (box.selectionStart <= prefixLen && ["Backspace", "Delete", "ArrowLeft"].includes(ev.key)) ev.preventDefault();
       });
       box.addEventListener("input", () => {
         if (!box.value.startsWith(REPLY_PREFIX)) box.value = REPLY_PREFIX + "\n" + box.value.replace(new RegExp(REPLY_PREFIX, "g"), "").trim();
         document.getElementById("reply-actions")?.classList.remove("hidden");
-        box.style.height = "auto"; box.style.height = Math.min(box.scrollHeight, 260) + "px";
+        autoResizeReply();
+      });
+    }
+
+    // [JS-重要修復] 影片作者跳回表格
+    function setupReplyTargetButton() {
+      const btn = document.getElementById("reply-target-btn");
+      btn?.addEventListener("click", () => {
+        const id = btn.getAttribute("data-id");
+        const tr = document.querySelector(`tr[data-id="${id}"]`);
+        if (tr) {
+          tr.scrollIntoView({ behavior: "smooth", block: "center" });
+          tr.classList.add("row-flash"); setTimeout(() => tr.classList.remove("row-flash"), 800);
+        }
       });
     }
 
@@ -1164,29 +1161,24 @@ table#comments-table tbody tr:nth-child(even) {
       if (typeof stopAudioRecordingInternal === "function") stopAudioRecordingInternal(true);
       if (!fromEditStart && (editState.active || isFormOpen)) resetFormToAddMode();
       currentSelectedId = row.id; renderCommentsTable();
-      document.getElementById("reply-target-btn").textContent = "From: " + maskName(row.nickname);
-      document.getElementById("reply-target-btn").disabled = false;
+      const btn = document.getElementById("reply-target-btn");
+      if (btn) { btn.textContent = "From: " + maskName(row.nickname); btn.disabled = false; btn.setAttribute("data-id", row.id); btn.classList.add("linked"); }
       const box = document.getElementById("admin-reply");
       box.value = row.reply ? (row.reply.startsWith(REPLY_PREFIX) ? row.reply : REPLY_PREFIX + "\n" + row.reply) : REPLY_PREFIX + "\n";
-      showVideoForRow(row);
-      highlightLayers(row.layers);
-      scrollToVideoTop();
+      showVideoForRow(row); scrollToVideoTop();
     }
 
-    // ===== [JS-9] 儲存回覆 (需求 3) ======
+    // ===== [JS-提交] 需求 3 處理中文字 =====
     async function saveAdminReply() {
-      const box = document.getElementById("admin-reply");
-      const btnSave = document.getElementById("reply-save-btn");
-      if (!box || !currentSelectedId) return;
-      btnSave.disabled = true; btnSave.textContent = "處理中..";
+      const btn = document.getElementById("reply-save-btn");
+      if (!currentSelectedId || isSubmitting) return;
+      isSubmitting = true; btn.disabled = true; btn.textContent = "處理中..";
       try {
-        const params = new URLSearchParams({ action: "reply", id: String(currentSelectedId), reply: box.value.trim() });
-        const res = await fetch(API_URL + "?" + params.toString());
+        const res = await fetch(API_URL + "?action=reply&id=" + currentSelectedId + "&reply=" + encodeURIComponent(document.getElementById("admin-reply").value.trim()));
         if ((await res.json()).status === "ok") { await loadComments(); document.getElementById("reply-actions").classList.add("hidden"); }
-      } catch (err) { alert("失敗"); } finally { btnSave.disabled = false; btnSave.textContent = "儲存"; }
+      } catch (err) { alert("儲存失敗"); } finally { isSubmitting = false; btn.disabled = false; btn.textContent = "儲存"; }
     }
 
-    // ===== [JS-18] 送出處理 (100% 原始邏輯) =====
     async function handleSubmit(e) {
       e.preventDefault(); if (isSubmitting) return;
       const submitBtn = document.getElementById("submit-btn");
@@ -1203,7 +1195,11 @@ table#comments-table tbody tr:nth-child(even) {
       } catch (err) { alert("失敗"); } finally { isSubmitting = false; submitBtn.disabled = false; submitBtn.textContent = "發表"; }
     }
 
-    // ===== [需求 4: 切換分頁聲音暫停] 僅獨立疊加，不破壞結構 =====
+    function resetFormToAddMode() { isFormOpen = false; document.getElementById("community-form").classList.add("hidden"); document.getElementById("btn-new").textContent = "新增"; document.getElementById("nickname-input").value = ""; document.getElementById("text-input").value = ""; }
+
+    // =====================================================
+    // [需求 4: 切換分頁自動暫停錄音]
+    // =====================================================
     function setupVisibilityPause() {
       document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "hidden") {
@@ -1224,13 +1220,14 @@ table#comments-table tbody tr:nth-child(even) {
           audioRecStream = stream; audioRecRecorder = new MediaRecorder(stream);
           audioRecRecorder.start(); audioRecActive = true; audioRecStartTime = Date.now();
           audioRecTimerId = setInterval(() => { sEl.textContent = "錄音中… " + formatDuration((Date.now() - audioRecStartTime)/1000); }, 500);
-          bStart.classList.add("recording"); document.getElementById("audio-rec-pause").disabled = false; document.getElementById("audio-rec-stop").disabled = false;
+          bStart.classList.add("recording");
+          document.getElementById("audio-record-toolbar").querySelectorAll("button").forEach(b => b.disabled = false);
         } catch (e) { sEl.textContent = "啟動失敗"; }
       });
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-      loadComments(); setupAdminReply(); setupAudioRecording(); setupVisibilityPause(); // 啟動需求 4
+      loadComments(); setupAdminReply(); setupReplyTargetButton(); setupAudioRecording(); setupVisibilityPause();
       document.getElementById("btn-new").addEventListener("click", () => {
         isFormOpen = !isFormOpen; document.getElementById("community-form").classList.toggle("hidden", !isFormOpen);
         document.getElementById("btn-new").textContent = isFormOpen ? "取消新增" : "新增";
@@ -1239,7 +1236,7 @@ table#comments-table tbody tr:nth-child(even) {
       document.getElementById("community-form").addEventListener("submit", handleSubmit);
       document.getElementById("reply-save-btn").addEventListener("click", saveAdminReply);
       document.getElementById("back-button").addEventListener("click", () => scrollToVideoTop());
-      document.getElementById("comments-tbody").addEventListener("click", (e) => {
+      document.getElementById("comments-tbody").addEventListener("click", e => {
         const tr = e.target.closest("tr"); if (!tr) return;
         const row = findRowById(tr.dataset.id);
         if (e.target.classList.contains("row-edit-btn")) { startEditForRow(row); } else { selectRowForReply(row, false); }
