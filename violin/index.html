@@ -1120,9 +1120,9 @@ table#comments-table tbody tr:nth-child(even) {
     let audioRecCancelling = false;
 
     // 項目輪播（自動播放）用
-    let carouselActive = false; // 1. 修改點：預設設為 false
+    let carouselActive = false; // 1. 修改點：預設取消輪播
     let carouselTimerId = null;
-    let carouselUserStopped = true; // 1. 修改點：預設設為 true (取消輪播)
+    let carouselUserStopped = true; // 1. 修改點：設為 true
     let carouselIds = [];
     let carouselIndex = 0;
     const CAROUSEL_INTERVAL_MS = 15000; // 每 15 秒換下一筆
@@ -1294,7 +1294,21 @@ table#comments-table tbody tr:nth-child(even) {
       const data = await res.json();
       commentsCache = data.posts || [];
       renderCommentsTable();
-      // startCarouselIfPossible(); // 1. 修改點：註解掉自動輪播
+      
+      // 2. 修改點：載入後自動開啟最新一筆帶影片或錄音的項目
+      const newestWithMedia = commentsCache.slice().reverse().find(row => {
+        const type = row.type || "text";
+        return (type === "youtube" && row.youtubeUrl) || 
+               (type === "upload" && (row.driveFileId || row.externalUrl || row.linkUrl)) ||
+               (type === "audio");
+      });
+      
+      if (newestWithMedia) {
+        selectRowForReply(newestWithMedia, false);
+      }
+      
+      // 1. 修改點：不自動輪播
+      // startCarouselIfPossible();
     }
 
     // ===== [JS-3] 渲染表格 ======
@@ -1372,10 +1386,10 @@ table#comments-table tbody tr:nth-child(even) {
               <td class="col-nick">${escapeHtml(nick)}</td>
               <td class="col-text" data-long="${long ? "1" : "0"}">
                 ${editBtnHtml}${shortText}${
-            long
-              ? `<span class="expand-arrow" title="展開">▼</span>`
-              : ""
-          }
+        long
+          ? `<span class="expand-arrow" title="展開">▼</span>`
+          : ""
+      }
               </td>
               <td class="col-media">${mediaHtml}</td>
             </tr>
@@ -2505,7 +2519,7 @@ table#comments-table tbody tr:nth-child(even) {
         }
 
         if (text.length > 100) {
-          alert("說明請控制在 100 字內。");
+          alert("說明請控制在 100 字以內。");
           if (textEl) textEl.focus();
           return;
         }
