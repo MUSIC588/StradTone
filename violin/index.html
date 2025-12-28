@@ -204,25 +204,12 @@ form#community-form input[type="text"]:disabled {
   font-size: 12px;
   cursor: pointer;
   opacity: 0.9;
-  transition: all 0.2s;
 }
-
-/* [媒體變色邏輯] 被選中的變亮紅 */
-.media-select-btn.active-bright-red {
-  background: #FF0000 !important;
-  border-color: #FF8080;
-  color: #FFFFFF !important;
+.media-select-btn.active {
+  border-color: #d1a343;
+  background: #e0b85f;
+  color: #1d1d1d;
   font-weight: 600;
-  box-shadow: 0 0 8px rgba(255, 0, 0, 0.5);
-}
-
-/* [媒體變色邏輯] 未選中的變暗灰色 */
-.media-select-btn.dimmed-gray {
-  background: #3a3f44 !important;
-  border-color: #777 !important;
-  color: #f5f5f5 !important;
-  font-weight: normal !important;
-  box-shadow: none !important;
 }
 
 .media-select-btn:disabled {
@@ -2305,18 +2292,13 @@ table#comments-table tbody tr:nth-child(even) {
       });
     }
 
-    // ===== [JS-14] Back 鍵：回到初始畫面 ======
+    // ===== [JS-14] Back 鍵：回到初始畫面 (需求 10 修改點) ======
     function setupBackButton() {
       const btn = document.getElementById("back-button");
       if (!btn) return;
-      btn.addEventListener("click", () => {
-        stopCarousel("user");
-        resetFormToAddMode();
-        currentSelectedId = null;
-        renderCommentsTable();
-        resetReplyTargetButton();
-        cancelAdminReply();
-        stopAllPlayback();
+      btn.addEventListener("click", (ev) => {
+        // [需求 10] 禁止重載行為，僅跳轉回表頭
+        ev.preventDefault();
         scrollToVideoTop();
       });
     }
