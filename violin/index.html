@@ -724,6 +724,7 @@ table#comments-table tbody tr:nth-child(even) {
     @media (max-width: 820px) {
       .page {
         padding: 0;         /* 手機版滿版 */
+        max-width: 100%;
       }
 
       main.layout {
@@ -1303,8 +1304,7 @@ table#comments-table tbody tr:nth-child(even) {
       commentsCache = data.posts || [];
       renderCommentsTable();
       
-      // [需求 12 修正邏輯]
-      // 只有在還沒有選中任何項目的時候，才預設開啟最新一筆
+      // 2. 修改點：載入後自動開啟最新一筆帶影片或錄音的項目
       const newestWithMedia = commentsCache.slice().reverse().find(row => {
         const type = row.type || "text";
         return (type === "youtube" && row.youtubeUrl) || 
@@ -1312,9 +1312,12 @@ table#comments-table tbody tr:nth-child(even) {
                (type === "audio");
       });
       
-      if (newestWithMedia && !currentSelectedId) {
+      if (newestWithMedia) {
         selectRowForReply(newestWithMedia, false);
       }
+      
+      // 1. 修改點：不自動輪播
+      // startCarouselIfPossible();
     }
 
     // ===== [JS-3] 渲染表格 ======
@@ -1476,7 +1479,6 @@ table#comments-table tbody tr:nth-child(even) {
           } catch (e) {}
         }
       }
-      highlightLayers(row.layers);
     }
 
     // ===== [JS-5] 多層圓（預留） ======
@@ -1715,13 +1717,14 @@ table#comments-table tbody tr:nth-child(even) {
       scrollToVideoTop();
     }
 
-    // ===== [JS-9] 儲存回覆 (需求 12 修改點) ======
+    // ===== [JS-9] 儲存回覆 (需求 3 修改點) ======
     async function saveAdminReply() {
       const box = document.getElementById("admin-reply");
       const btnSave = document.getElementById("reply-save-btn");
       if (!box || !currentSelectedId) return;
 
-      const originalBtnText = btnSave.textContent;
+      // 需求 3: 按下儲存後顯示處理中
+      const originalText = btnSave.textContent;
       btnSave.disabled = true;
       btnSave.textContent = "處理中..";
 
@@ -1730,11 +1733,22 @@ table#comments-table tbody tr:nth-child(even) {
 
       const full = String(box.value || "").trim();
 
+      let toSend = "";
+      if (full) {
+        let afterPrefix = full;
+        if (full.startsWith(REPLY_PREFIX)) {
+          afterPrefix = full.slice(REPLY_PREFIX.length);
+        }
+        if (afterPrefix.trim()) {
+          toSend = full;
+        }
+      }
+
       try {
         const params = new URLSearchParams({
           action: "reply",
           id: String(currentSelectedId),
-          reply: full,
+          reply: toSend,
         });
 
         const res = await fetch(API_URL + "?" + params.toString());
@@ -1744,24 +1758,27 @@ table#comments-table tbody tr:nth-child(even) {
           throw new Error(data.error || "reply 失敗");
         }
 
-        // [需求 12] 儲存成功後保持選取狀態
-        const targetId = currentSelectedId;
+        const r = findRowById(currentSelectedId);
+        if (r) r.reply = toSend;
+
         await loadComments();
-        const row = findRowById(targetId);
+        const row = findRowById(currentSelectedId);
         if (row) {
-          selectRowForReply(row, true);
+          selectRowForReply(row);
         }
 
         hideReplyActions();
         try {
           box.blur(); 
         } catch (e) {}
+        scrollToVideoTop();
       } catch (err) {
         console.error(err);
         alert("儲存回覆失敗：" + err.message);
       } finally {
+        // 需求 3: 恢復狀態
         btnSave.disabled = false;
-        btnSave.textContent = originalBtnText;
+        btnSave.textContent = "儲存";
       }
     }
 
@@ -1804,49 +1821,6 @@ table#comments-table tbody tr:nth-child(even) {
           previewEl.removeAttribute("src");
           previewEl.load();
         }
-      }
-    }
-
-    function setMediaMode(mode) {
-      window.currentMediaMode = mode || null;
-
-      const btnYoutube = document.getElementById("btn-media-youtube");
-      const btnUpload = document.getElementById("btn-media-upload");
-      const btnAudio = document.getElementById("btn-media-audio");
-
-      const videoFields = document.getElementById("video-fields");
-      const audioFields = document.getElementById("audio-fields");
-      const youtubeRow = document.getElementById("youtube-row");
-      const videoUploadRow = document.getElementById("video-upload-row");
-      const videoLinkRow = document.getElementById("video-link-row");
-
-      [btnYoutube, btnUpload, btnAudio].forEach((b) => {
-        if (b) b.classList.remove("active");
-      });
-
-      if (videoFields) videoFields.classList.add("hidden");
-      if (audioFields) audioFields.classList.add("hidden");
-      if (youtubeRow) youtubeRow.style.display = "none";
-      if (videoUploadRow) videoUploadRow.style.display = "none";
-      if (videoLinkRow) videoLinkRow.style.display = "none";
-
-      if (!mode || mode === "youtube") {
-        if (btnYoutube) btnYoutube.classList.add("active");
-      } else if (mode === "upload") {
-        if (btnUpload) btnUpload.classList.add("active");
-      } else if (mode === "audio") {
-        if (btnAudio) btnAudio.classList.add("active");
-      }
-
-      if (mode === "youtube") {
-        if (videoFields) videoFields.classList.remove("hidden");
-        if (youtubeRow) youtubeRow.style.display = "flex";
-      } else if (mode === "upload") {
-        if (videoFields) videoFields.classList.remove("hidden");
-        if (videoUploadRow) videoUploadRow.style.display = "flex";
-        if (videoLinkRow) videoLinkRow.style.display = "flex";
-      } else if (mode === "audio") {
-        if (audioFields) audioFields.classList.remove("hidden");
       }
     }
 
@@ -1894,6 +1868,7 @@ table#comments-table tbody tr:nth-child(even) {
       if (btnCancel) btnCancel.disabled = false;
       if (btnPause) {
         btnPause.disabled = true;
+        btnPause.classList.remove("recording");
         btnPause.textContent = "⏸";
       }
 
@@ -1915,61 +1890,222 @@ table#comments-table tbody tr:nth-child(even) {
         return;
       }
 
+      btnStart.disabled = false;
+      btnStop.disabled = true;
+      btnPause.disabled = true;
+      btnCancel.disabled = true;
+
       btnStart.addEventListener("click", async () => {
         if (audioRecActive) return;
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          statusEl.textContent = "不支援錄音。";
+          statusEl.textContent = "此瀏覽器不支援麥克風錄音。";
           return;
         }
 
         try {
           stopAudioRecordingInternal(true);
+
+          btnStart.disabled = true;
+          btnStop.disabled = true;
+          btnPause.disabled = true;
+          btnCancel.disabled = true;
+          statusEl.textContent = "正在啟用麥克風…";
+
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
           audioRecStream = stream;
           audioRecChunks = [];
-          audioRecRecorder = new MediaRecorder(stream);
+          window.recordedAudioBlob = null;
+
+          const mimeType =
+            MediaRecorder.isTypeSupported &&
+            MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+              ? "audio/webm;codecs=opus"
+              : "audio/webm";
+
+          const recorder = new MediaRecorder(stream, { mimeType });
+          audioRecRecorder = recorder;
           audioRecActive = true;
           audioRecPaused = false;
           audioRecAccumulated = 0;
           audioRecCancelling = false;
 
-          audioRecRecorder.ondataavailable = (ev) => {
-            if (ev.data && ev.data.size > 0) audioRecChunks.push(ev.data);
-          };
+          recorder.addEventListener("dataavailable", (ev) => {
+            if (ev.data && ev.data.size > 0) {
+              audioRecChunks.push(ev.data);
+            }
+          });
 
-          audioRecRecorder.onstop = () => {
-            if (audioRecCancelling) return;
-            window.recordedAudioBlob = new Blob(audioRecChunks, { type: 'audio/webm' });
-            previewEl.src = URL.createObjectURL(window.recordedAudioBlob);
-            statusEl.textContent = "錄音完成。";
-          };
+          recorder.addEventListener("stop", () => {
+            clearAudioRecTimer();
+            audioRecActive = false;
 
-          audioRecRecorder.start();
+            if (audioRecStream) {
+              audioRecStream.getTracks().forEach((t) => t.stop());
+            }
+            audioRecStream = null;
+
+            if (audioRecCancelling) {
+              audioRecCancelling = false;
+              audioRecChunks = [];
+              window.recordedAudioBlob = null;
+              if (previewEl) {
+                previewEl.removeAttribute("src");
+                previewEl.load();
+              }
+              if (statusEl) statusEl.textContent = "錄音已取消。";
+              btnStart.disabled = false;
+              btnStop.disabled = true;
+              btnPause.disabled = true;
+              btnPause.classList.remove("recording");
+              btnPause.textContent = "⏸";
+              btnCancel.disabled = false;
+              btnStart.classList.remove("recording");
+              return;
+            }
+
+            if (!audioRecChunks.length) return;
+
+            const blob = new Blob(audioRecChunks, { type: mimeType });
+            window.recordedAudioBlob = blob;
+
+            const url = URL.createObjectURL(blob);
+            previewEl.src = url;
+            previewEl.play().catch(() => {});
+
+            statusEl.textContent = "錄音完成，可按「發表」儲存。";
+
+            btnStart.disabled = false;
+            btnStop.disabled = true;
+            btnPause.disabled = true;
+            btnPause.classList.remove("recording");
+            btnPause.textContent = "⏸";
+            btnCancel.disabled = false;
+
+            btnStart.classList.remove("recording");
+          });
+
           audioRecStartTime = Date.now();
+          clearAudioRecTimer();
+          statusEl.textContent = "錄音中… 00:00";
           audioRecTimerId = setInterval(() => {
             if (!audioRecActive || audioRecPaused) return;
-            const elapsed = audioRecAccumulated + (Date.now() - audioRecStartTime) / 1000;
-            statusEl.textContent = "錄音中… " + formatDuration(elapsed);
+            const elapsedSec =
+              audioRecAccumulated + (Date.now() - audioRecStartTime) / 1000;
+            statusEl.textContent = "錄音中… " + formatDuration(elapsedSec);
           }, 500);
 
           btnStart.classList.add("recording");
           btnStop.disabled = false;
           btnPause.disabled = false;
           btnCancel.disabled = false;
+
+          recorder.start();
         } catch (err) {
-          statusEl.textContent = "麥克風授權失敗";
+          console.error(err);
+          statusEl.textContent = "無法啟用麥克風（可能被拒絕或裝置不支援）。";
+          btnStart.disabled = false;
+          btnStop.disabled = true;
+          btnPause.disabled = true;
+          btnCancel.disabled = false;
+          btnStart.classList.remove("recording");
         }
       });
 
       btnStop.addEventListener("click", () => {
         if (!audioRecActive || !audioRecRecorder) return;
-        audioRecRecorder.stop();
+        audioRecPaused = false;
+        audioRecAccumulated = 0;
         clearAudioRecTimer();
-        audioRecActive = false;
-        btnStart.classList.remove("recording");
+        statusEl.textContent = "處理錄音中…";
+        btnStop.disabled = true;
+        if (btnPause) {
+          btnPause.disabled = true;
+          btnPause.classList.remove("recording");
+          btnPause.textContent = "⏸";
+        }
+        audioRecRecorder.stop();
       });
 
-      btnCancel.addEventListener("click", () => stopAudioRecordingInternal(true));
+      btnPause.addEventListener("click", () => {
+        if (!audioRecRecorder || !audioRecActive) return;
+
+        if (typeof audioRecRecorder.pause !== "function" ||
+            typeof audioRecRecorder.resume !== "function") {
+          statusEl.textContent = "此瀏覽器不支援暫停功能。";
+          btnPause.disabled = true;
+          return;
+        }
+
+        if (!audioRecPaused) {
+          audioRecPaused = true;
+          audioRecAccumulated += (Date.now() - audioRecStartTime) / 1000;
+          clearAudioRecTimer();
+          audioRecRecorder.pause();
+          statusEl.textContent = "錄音已暫停 " + formatDuration(audioRecAccumulated);
+          btnPause.textContent = "▶︎";
+        } else {
+          audioRecPaused = false;
+          audioRecStartTime = Date.now();
+          audioRecRecorder.resume();
+          statusEl.textContent = "錄音中… " + formatDuration(audioRecAccumulated);
+          clearAudioRecTimer();
+          audioRecTimerId = setInterval(() => {
+            if (!audioRecActive || audioRecPaused) return;
+            const elapsedSec =
+              audioRecAccumulated + (Date.now() - audioRecStartTime) / 1000;
+            statusEl.textContent = "錄音中… " + formatDuration(elapsedSec);
+          }, 500);
+          btnPause.textContent = "⏸";
+        }
+      });
+
+      btnCancel.addEventListener("click", () => {
+        if (audioRecActive && audioRecRecorder) {
+          stopAudioRecordingInternal(true);
+        } else {
+          stopAudioRecordingInternal(true);
+        }
+      });
+    }
+
+    function setMediaMode(mode) {
+      window.currentMediaMode = mode || null;
+
+      const btnYoutube = document.getElementById("btn-media-youtube");
+      const btnUpload = document.getElementById("btn-media-upload");
+      const btnAudio = document.getElementById("btn-media-audio");
+
+      const videoFields = document.getElementById("video-fields");
+      const audioFields = document.getElementById("audio-fields");
+      const youtubeRow = document.getElementById("youtube-row");
+      const videoUploadRow = document.getElementById("video-upload-row");
+      const videoLinkRow = document.getElementById("video-link-row");
+
+      [btnYoutube, btnUpload, btnAudio].forEach((b) => {
+        if (b) b.classList.remove("active");
+      });
+
+      if (videoFields) videoFields.classList.add("hidden");
+      if (audioFields) audioFields.classList.add("hidden");
+      if (youtubeRow) youtubeRow.style.display = "none";
+      if (videoUploadRow) videoUploadRow.style.display = "none";
+      if (videoLinkRow) videoLinkRow.style.display = "none";
+
+      if (!mode) return;
+
+      if (mode === "youtube") {
+        if (btnYoutube) btnYoutube.classList.add("active");
+        if (videoFields) videoFields.classList.remove("hidden");
+        if (youtubeRow) youtubeRow.style.display = "flex";
+      } else if (mode === "upload") {
+        if (btnUpload) btnUpload.classList.add("active");
+        if (videoFields) videoFields.classList.remove("hidden");
+        if (videoUploadRow) videoUploadRow.style.display = "flex";
+        if (videoLinkRow) videoLinkRow.style.display = "flex";
+      } else if (mode === "audio") {
+        if (btnAudio) btnAudio.classList.add("active");
+        if (audioFields) audioFields.classList.remove("hidden");
+      }
     }
 
     // ===== [JS-11] 從「新增/編輯」復原成初始狀態 ======
@@ -1978,18 +2114,60 @@ table#comments-table tbody tr:nth-child(even) {
       const btnNew = document.getElementById("btn-new");
       const nickEl = document.getElementById("nickname-input");
       const textEl = document.getElementById("text-input");
+      const ytEl = document.getElementById("youtube-url-input");
+      const startEl = document.getElementById("start-input");
+      const endEl = document.getElementById("end-input");
+      const videoFile = document.getElementById("video-file-input");
+      const videoLabel = document.getElementById("video-file-label");
+      const audioFile = document.getElementById("audio-file-input");
+      const audioLabel = document.getElementById("audio-file-label");
+      const videoLinkEl = document.getElementById("video-link-input");
       const submitBtn = document.getElementById("submit-btn");
 
-      if (nickEl) { nickEl.value = ""; nickEl.disabled = false; }
-      if (textEl) { textEl.value = ""; textEl.disabled = false; textEl.style.opacity = "1"; }
+      if (nickEl) {
+        nickEl.value = "";
+        nickEl.placeholder = "Mr,s 09….";
+        nickEl.disabled = false;
+      }
+      if (textEl) {
+        textEl.value = "";
+        textEl.disabled = false;
+        textEl.style.opacity = "1";
+      }
+      if (ytEl) ytEl.value = "";
+      if (startEl) startEl.value = "";
+      if (endEl) endEl.value = "";
+      if (videoLinkEl) videoLinkEl.value = "";
 
-      document.querySelectorAll(".media-select-btn").forEach(b => b.disabled = false);
+      if (videoFile) {
+        videoFile.disabled = false;
+        videoFile.value = "";
+      }
+      if (videoLabel) videoLabel.textContent = "";
+
+      if (audioFile) {
+        audioFile.disabled = false;
+        audioFile.value = "";
+      }
+      if (audioLabel) audioLabel.textContent = "";
+
+      const btnYoutube = document.getElementById("btn-media-youtube");
+      const btnUpload = document.getElementById("btn-media-upload");
+      const btnAudio = document.getElementById("btn-media-audio");
+      [btnYoutube, btnUpload, btnAudio].forEach((b) => {
+        if (b) b.disabled = false;
+      });
 
       setMediaMode(null);
       clearRecordedMediaState();
 
-      if (form) { form.classList.add("hidden"); form.style.display = "none"; }
-      if (btnNew) { btnNew.textContent = "新增"; }
+      if (form) {
+        form.classList.add("hidden");
+        form.style.display = "none";
+      }
+      if (btnNew) {
+        btnNew.textContent = "新增";
+      }
 
       if (submitBtn) {
         submitBtn.disabled = false;
@@ -2008,9 +2186,10 @@ table#comments-table tbody tr:nth-child(even) {
       resetReplyTargetButton();
     }
 
-    // ===== [JS-12] 編輯流程 ======
+    // ===== [JS-12] 編輯流程：按「編輯」→ 選列 → 輸入原 username ======
     function startEditForRow(row) {
       if (!row) return;
+
       stopCarousel("user");
 
       editState.active = true;
@@ -2023,8 +2202,13 @@ table#comments-table tbody tr:nth-child(even) {
       const nickEl = document.getElementById("nickname-input");
       const textEl = document.getElementById("text-input");
 
-      if (form) { form.classList.remove("hidden"); form.style.display = "block"; }
-      if (btnNew) btnNew.textContent = "取消編輯";
+      if (form) {
+        form.classList.remove("hidden");
+        form.style.display = "block";
+      }
+      if (btnNew) {
+        btnNew.textContent = "取消編輯";
+      }
       isFormOpen = true;
       formMode = "edit";
 
@@ -2040,7 +2224,13 @@ table#comments-table tbody tr:nth-child(even) {
         textEl.style.opacity = "0.6";
       }
 
-      document.querySelectorAll(".media-select-btn").forEach(b => b.disabled = true);
+      const btnYoutube = document.getElementById("btn-media-youtube");
+      const btnUpload = document.getElementById("btn-media-upload");
+      const btnAudio = document.getElementById("btn-media-audio");
+      [btnYoutube, btnUpload, btnAudio].forEach((b) => {
+        if (b) b.disabled = true;
+      });
+
       setMediaMode(null);
     }
 
@@ -2072,6 +2262,19 @@ table#comments-table tbody tr:nth-child(even) {
 
         const editBtn = e.target.closest("button.row-edit-btn");
 
+        if (e.target.classList.contains("expand-arrow")) {
+          const cell = e.target.closest("td.col-text");
+          if (cell && cell.getAttribute("data-expanded") === "1") {
+            renderCommentsTable();
+            const tbody2 = document.getElementById("comments-tbody");
+            if (tbody2) {
+              const tr2 = tbody2.querySelector(`tr[data-id="${id}"]`);
+              if (tr2) tr2.classList.add("selected");
+            }
+            return;
+          }
+        }
+
         if (editState.waitForSelect) {
           if (editBtn) {
             editState.waitForSelect = false;
@@ -2089,31 +2292,29 @@ table#comments-table tbody tr:nth-child(even) {
       });
     }
 
-    // ===== [JS-14] Back 鍵需求實作 ======
+    // ===== [JS-14] Back 鍵：回到初始畫面 (需求 10 修改點) ======
     function setupBackButton() {
       const btn = document.getElementById("back-button");
       if (!btn) return;
       btn.addEventListener("click", (ev) => {
+        // [需求 10] 禁止重載行為，僅跳轉回表頭
         ev.preventDefault();
         scrollToVideoTop();
       });
     }
 
-    // ===== [JS-15] 管理員回覆區 (前綴保護核心邏輯) ======
+    // ===== [JS-15] 管理員回覆區 ======
     function setupAdminReply() {
       const box = document.getElementById("admin-reply");
       if (!box) return;
 
-      box.addEventListener("keydown", (ev) => {
-        const prefixLen = REPLY_PREFIX.length;
-        const pos = box.selectionStart || 0;
+      ensureReplyPrefix();
+      autoResizeReply();
+      hideReplyActions();
 
-        if (pos <= prefixLen) {
-          const blockedKeys = ["Backspace", "Delete", "ArrowLeft"];
-          if (blockedKeys.includes(ev.key)) {
-            ev.preventDefault();
-          }
-        }
+      box.addEventListener("focus", () => {
+        ensureReplyPrefix();
+        autoResizeReply();
       });
 
       box.addEventListener("input", () => {
@@ -2121,85 +2322,299 @@ table#comments-table tbody tr:nth-child(even) {
         autoResizeReply();
 
         const val = box.value || "";
-        const contentPart = val.replace(REPLY_PREFIX, "").trim();
-        if (contentPart) showReplyActions(); else hideReplyActions();
+        let contentPart = val;
+        if (val.startsWith(REPLY_PREFIX)) {
+          contentPart = val.slice(REPLY_PREFIX.length);
+        }
+        if (contentPart.trim()) {
+          showReplyActions();
+        } else {
+          hideReplyActions();
+        }
       });
+
+      box.addEventListener("keydown", (ev) => {
+        const prefixLen = REPLY_PREFIX.length;
+        const pos = box.selectionStart || 0;
+
+        if (pos <= prefixLen) {
+          const blockedKeys = [
+            "Backspace",
+            "Delete",
+            "ArrowLeft",
+          ];
+          const allowKeys = [
+            "ArrowRight",
+            "ArrowDown",
+            "ArrowUp",
+            "Tab",
+          ];
+          if (ev.ctrlKey || ev.metaKey || allowKeys.includes(ev.key)) {
+            return;
+          }
+          if (blockedKeys.includes(ev.key) || ev.key.length === 1) {
+            ev.preventDefault();
+            const safePos = prefixLen + 1;
+            try {
+              box.setSelectionRange(safePos, safePos);
+            } catch (e) {}
+          }
+        }
+      });
+
+      const btnSave = document.getElementById("reply-save-btn");
+      const btnCancel = document.getElementById("reply-cancel-btn");
+      if (btnSave) {
+        btnSave.addEventListener("click", () => {
+          saveAdminReply();
+        });
+      }
+      if (btnCancel) {
+        btnCancel.addEventListener("click", () => {
+          cancelAdminReply();
+          try {
+            box.blur();
+          } catch (e) {}
+        });
+      }
     }
 
-    // ===== [JS-16] From: 按鈕跳轉 ======
+    // ===== [JS-16] From: 按鈕 → 回到該列並展開文字 ======
     function setupReplyTargetButton() {
       const btn = document.getElementById("reply-target-btn");
       if (!btn) return;
 
       btn.addEventListener("click", () => {
         const id = btn.getAttribute("data-id");
-        const tr = document.querySelector(`tr[data-id="${id}"]`);
-        if (tr) {
-          tr.scrollIntoView({ behavior: "smooth", block: "center" });
-          tr.classList.add("row-flash");
-          setTimeout(() => tr.classList.remove("row-flash"), 800);
+        if (!id) return;
+
+        const tbody = document.getElementById("comments-tbody");
+        if (!tbody) return;
+
+        const tr = tbody.querySelector(`tr[data-id="${id}"]`);
+        if (!tr) return;
+
+        const row = findRowById(id);
+        if (!row) return;
+
+        tr.scrollIntoView({ behavior: "smooth", block: "center" });
+        tr.classList.add("row-flash");
+        setTimeout(() => tr.classList.remove("row-flash"), 800);
+
+        const cell = tr.querySelector("td.col-text");
+        if (cell && String(row.text || "").length > 30) {
+          cell.innerHTML =
+            escapeHtml(row.text) +
+            '<span class="expand-arrow" title="收合">▲</span>';
+          cell.setAttribute("data-expanded", "1");
         }
       });
     }
 
-    // ===== [JS-17] 名稱驗證保護 ======
+    // ===== [JS-17] username 注音保護 + Enter 防送出 ======
+    let isComposingName = false;
+
+    function tryUnlockEditByName() {
+      if (!editState.active) return;
+      if (isComposingName) return;
+
+      const nickEl = document.getElementById("nickname-input");
+      const textEl = document.getElementById("text-input");
+      if (!nickEl || !textEl) return;
+
+      const typedRaw = String(nickEl.value || "");
+      const typed = normalizeName(typedRaw);
+      const target = normalizeName(editState.nickname);
+      if (!typed || !target) return;
+
+      if (!validateNameLength(typed)) return;
+      if (typed !== target) return;
+
+      nickEl.disabled = true;
+      textEl.disabled = false;
+      textEl.style.opacity = "1";
+      textEl.focus();
+      const len = textEl.value.length;
+      try {
+        textEl.setSelectionRange(len, len);
+      } catch (e) {}
+    }
+
     function setupEditNameGuard() {
       const nickEl = document.getElementById("nickname-input");
       if (!nickEl) return;
 
-      nickEl.addEventListener("input", () => {
-        if (!editState.active) return;
-        if (normalizeName(nickEl.value) === editState.nickname) {
-          nickEl.disabled = true;
-          const textEl = document.getElementById("text-input");
-          textEl.disabled = false; textEl.style.opacity = "1"; textEl.focus();
+      nickEl.addEventListener("compositionstart", () => {
+        isComposingName = true;
+      });
+      nickEl.addEventListener("compositionend", () => {
+        isComposingName = false;
+        tryUnlockEditByName();
+      });
+      nickEl.addEventListener("input", tryUnlockEditByName);
+      nickEl.addEventListener("change", tryUnlockEditByName);
+      nickEl.addEventListener("blur", tryUnlockEditByName);
+
+      nickEl.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          tryUnlockEditByName();
         }
       });
     }
 
+    // 項目欄位 Enter 防誤送出
     function setupTextInputEnterGuard() {
       const textEl = document.getElementById("text-input");
-      if (textEl) textEl.addEventListener("keydown", (ev) => { if (ev.key === "Enter") ev.preventDefault(); });
+      if (!textEl) return;
+
+      textEl.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+        }
+      });
     }
 
-    // ===== [JS-18] 送出處理 (需求 12 核心發表引擎) ======
+    // ===== [JS-18] 送出處理 (需求 3 修改點) ======
     async function handleSubmit(e) {
       e.preventDefault();
+
       if (isSubmitting) return;
 
       const submitBtn = document.getElementById("submit-btn");
       const nickEl = document.getElementById("nickname-input");
       const textEl = document.getElementById("text-input");
-      const nickname = normalizeName(nickEl?.value || "");
+      const ytEl = document.getElementById("youtube-url-input");
+      const startEl = document.getElementById("start-input");
+      const endEl = document.getElementById("end-input");
+      const videoFile = document.getElementById("video-file-input");
+      const audioFile = document.getElementById("audio-file-input");
+      const videoLinkEl = document.getElementById("video-link-input");
+
+      const nicknameInput = nickEl ? nickEl.value : "";
+      const nickname = normalizeName(nicknameInput);
       const text = (textEl?.value || "").trim();
+      const youtubeUrl = (ytEl?.value || "").trim();
+      const startSec = parseTimeToSec(startEl?.value);
+      const endSec = parseTimeToSec(endEl?.value);
+      const vFile = videoFile && videoFile.files[0];
+      const aFile = audioFile && audioFile.files[0];
+      const videoLink = (videoLinkEl?.value || "").trim();
 
-      if (!validateNameLength(nickname) || !text) return;
-
-      isSubmitting = true;
-      submitBtn.disabled = true; submitBtn.textContent = "處理中..";
+      const isEditing = editState.active && editState.id;
 
       try {
-        const isEditing = editState.active && editState.id;
-        let payload = {
-          action: isEditing ? "edit" : "add",
-          nickname: nickname,
-          text: text,
-          id: editState.id
+        if (!validateNameLength(nickname)) {
+          alert("username 請使用 5–12 個中英文或數字（不含空白與符號）。");
+          if (nickEl) nickEl.focus();
+          return;
+        }
+
+        if (isEditing) {
+          const target = normalizeName(editState.nickname);
+          if (nickname !== target) {
+            alert("請輸入當初填寫的 username（需與原始紀錄完全一致）。");
+            if (nickEl) nickEl.focus();
+            return;
+          }
+        }
+
+        if (!text) {
+          alert("請先輸入「項目」說明（100 字內）。");
+          if (textEl) textEl.focus();
+          return;
+        }
+
+        if (text.length > 100) {
+          alert("說明請控制在 100 字以內。");
+          if (textEl) textEl.focus();
+          return;
+        }
+
+        // 需求 3: 立即啟動處理中文字並禁用
+        isSubmitting = true;
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = "處理中..";
+        }
+
+        stopCarousel("user");
+
+        // ===== 編輯模式：只改文字 =====
+        if (isEditing) {
+          const editingId = editState.id;
+          let textToSend = text;
+          if (/^[0-9]+$/.test(text)) {
+            textToSend = "\u200B" + text;
+          }
+
+          const params = new URLSearchParams({
+            action: "edit",
+            id: String(editingId),
+            text: textToSend,
+          });
+
+          const res = await fetch(API_URL + "?" + params.toString());
+          const data = await res.json();
+
+          if (!data || data.status !== "ok") {
+            throw new Error(data.error || "edit 失敗");
+          }
+
+          resetFormToAddMode();
+          await loadComments();
+
+          const row = findRowById(editingId);
+          if (row) {
+            selectRowForReply(row);
+          }
+          return;
+        }
+
+        // ===== 新增模式 =====
+        let type = "text";
+        let nicknameToSend = nickname;
+        if (/^[0-9]+$/.test(nickname)) {
+          nicknameToSend = "\u200B" + nickname;
+        }
+        let textToSend = text;
+        if (/^[0-9]+$/.test(text)) {
+          textToSend = "\u200B" + text;
+        }
+
+        const payload = {
+          action: "add",
+          nickname: nicknameToSend,
+          text: textToSend,
+          startSec: startSec === "" ? "" : String(startSec),
+          endSec: endSec === "" ? "" : String(endSec),
         };
 
-        if (!isEditing) {
-          const yt = document.getElementById("youtube-url-input")?.value.trim();
-          const vFile = document.getElementById("video-file-input")?.files[0];
-          const aFile = document.getElementById("audio-file-input")?.files[0];
-
-          if (yt) { payload.type = "youtube"; payload.youtubeUrl = yt; }
-          else if (vFile) { payload.type = "upload"; payload.videoBase64 = await readFileAsBase64(vFile); payload.fileName = vFile.name; }
-          else if (aFile || window.recordedAudioBlob) {
-            payload.type = "audio";
-            const blob = aFile || window.recordedAudioBlob;
-            payload.audioBase64 = await readFileAsBase64(blob);
-            payload.audioFileName = aFile ? aFile.name : "recorded.webm";
-          }
+        if (youtubeUrl) {
+          type = "youtube";
+          payload.type = type;
+          payload.youtubeUrl = youtubeUrl;
+        } else if (videoLink) {
+          type = "upload";
+          payload.type = type;
+          payload.externalUrl = videoLink;
+        } else if (vFile) {
+          type = "upload";
+          payload.type = type;
+          const base64 = await readFileAsBase64(vFile);
+          payload.videoBase64 = base64;
+          payload.mimeType = vFile.type || "application/octet-stream";
+          payload.fileName = vFile.name || "video_" + Date.now();
+        } else if (aFile || window.recordedAudioBlob) {
+          type = "audio";
+          payload.type = type;
+          let blobToUse = aFile || window.recordedAudioBlob;
+          const base64 = await readFileAsBase64(blobToUse);
+          payload.audioBase64 = base64;
+          payload.audioMimeType = blobToUse.type || "audio/webm";
+          payload.audioFileName = aFile ? aFile.name : "audio_" + Date.now() + ".webm";
+        } else {
+          payload.type = "text";
         }
 
         const res = await fetch(API_URL, {
@@ -2207,47 +2622,159 @@ table#comments-table tbody tr:nth-child(even) {
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(payload),
         });
+
         const data = await res.json();
 
-        if (data.status === "ok") {
-          // [需求 12] 成功後保持選取
-          const targetId = isEditing ? editState.id : data.id;
-          resetFormToAddMode();
-          await loadComments();
-          const rowToSelect = findRowById(targetId);
-          if (rowToSelect) selectRowForReply(rowToSelect, true);
+        if (!data || data.status !== "ok") {
+          throw new Error(data.error || "add 失敗");
         }
+
+        resetFormToAddMode();
+        await loadComments();
       } catch (err) {
-        alert("失敗");
+        console.error(err);
+        alert("失敗：" + err.message);
       } finally {
+        // 需求 3: 無論成功失敗都恢復文字
         isSubmitting = false;
-        submitBtn.disabled = false; submitBtn.textContent = "發表";
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "發表";
+        }
       }
     }
 
-    // ===== [JS-18-1] 表單與工具列綁定 ======
+    // ===== [JS-18-1] 工具列 & 表單綁定 ======
     function bindToolbarAndForm() {
-      const btnNew = document.getElementById("btn-new");
       const form = document.getElementById("community-form");
-      if (btnNew && form) {
+      const btnNew = document.getElementById("btn-new");
+      const btnYoutube = document.getElementById("btn-media-youtube");
+      const btnUpload = document.getElementById("btn-media-upload");
+      const btnAudio = document.getElementById("btn-media-audio");
+      const videoFile = document.getElementById("video-file-input");
+      const videoLabel = document.getElementById("video-file-label");
+      const audioFile = document.getElementById("audio-file-input");
+      const audioLabel = document.getElementById("audio-file-label");
+      const ytEl = document.getElementById("youtube-url-input");
+      const startEl = document.getElementById("start-input");
+      const endEl = document.getElementById("end-input");
+      const videoLinkEl = document.getElementById("video-link-input");
+
+      if (!form) return;
+
+      form.classList.add("hidden");
+      form.style.display = "none";
+      setMediaMode(null);
+      isFormOpen = false;
+
+      if (btnNew) {
         btnNew.addEventListener("click", () => {
+          stopCarousel("user");
           if (!isFormOpen) {
-            form.classList.remove("hidden"); form.style.display = "block";
-            btnNew.textContent = "取消新增"; isFormOpen = true;
-          } else { resetFormToAddMode(); }
+            editState.active = false;
+            editState.id = null;
+            editState.nickname = "";
+            editState.originalText = "";
+            editState.waitForSelect = false;
+
+            form.classList.remove("hidden");
+            form.style.display = "block";
+            btnNew.textContent = "取消新增";
+            isFormOpen = true;
+            formMode = "add";
+
+            setMediaMode(null);
+            clearRecordedMediaState();
+          } else {
+            resetFormToAddMode();
+          }
         });
       }
-      document.querySelectorAll(".media-select-btn").forEach(b => {
-        b.addEventListener("click", () => { if (!editState.active) setMediaMode(b.dataset.media); });
-      });
+
+      function bindMediaButton(btn, modeName) {
+        if (!btn) return;
+        btn.addEventListener("click", () => {
+          if (editState.active || btn.disabled) return;
+          if (window.currentMediaMode === modeName) {
+            setMediaMode(null);
+          } else {
+            setMediaMode(modeName);
+          }
+          clearRecordedMediaState();
+
+          if (modeName === "youtube") {
+            if (videoFile) videoFile.value = "";
+            if (videoLabel) videoLabel.textContent = "";
+            if (audioFile) audioFile.value = "";
+            if (audioLabel) audioLabel.textContent = "";
+            if (videoLinkEl) videoLinkEl.value = "";
+          } else if (modeName === "upload") {
+            if (ytEl) ytEl.value = "";
+            if (startEl) startEl.value = "";
+            if (endEl) endEl.value = "";
+            if (audioFile) audioFile.value = "";
+            if (audioLabel) audioLabel.textContent = "";
+          } else if (modeName === "audio") {
+            if (ytEl) ytEl.value = "";
+            if (startEl) startEl.value = "";
+            if (endEl) endEl.value = "";
+            if (videoFile) videoFile.value = "";
+            if (videoLabel) videoLabel.textContent = "";
+            if (videoLinkEl) videoLinkEl.value = "";
+          }
+        });
+      }
+
+      bindMediaButton(btnYoutube, "youtube");
+      bindMediaButton(btnUpload, "upload");
+      bindMediaButton(btnAudio, "audio");
+
+      if (videoFile && videoLabel) {
+        videoFile.addEventListener("change", () => {
+          if (videoFile.files && videoFile.files[0]) {
+            videoLabel.textContent = "已選擇：" + videoFile.files[0].name;
+          } else {
+            videoLabel.textContent = "";
+          }
+        });
+      }
+
+      if (audioFile && audioLabel) {
+        audioFile.addEventListener("change", () => {
+          if (audioFile.files && audioFile.files[0]) {
+            audioLabel.textContent = "已選擇：" + audioFile.files[0].name;
+          } else {
+            audioLabel.textContent = "";
+          }
+        });
+      }
+
       form.addEventListener("submit", handleSubmit);
     }
 
-    // ===== [JS-19] 全部啟動 ======
+    // ===== [JS-19] DOMContentLoaded：全部啟動 ======
     document.addEventListener("DOMContentLoaded", () => {
-      loadComments(); bindToolbarAndForm(); setupTableClicks(); setupBackButton();
-      setupAdminReply(); setupEditHeaderButton(); setupReplyTargetButton();
-      setupAudioRecording(); setupEditNameGuard(); setupTextInputEnterGuard();
+      window.currentMediaMode = null;
+
+      bindToolbarAndForm();
+      setupTableClicks();
+      setupBackButton();
+      setupAdminReply();
+      setupEditHeaderButton();
+      setupReplyTargetButton();
+      setupAudioRecording();
+      setupEditNameGuard();
+      setupTextInputEnterGuard();
+
+      clearVideo();
+
+      document.addEventListener("pointerdown", () => {
+        stopCarousel("user");
+      });
+
+      loadComments().catch((err) => {
+        console.error(err);
+      });
     });
   </script>
 </body>
