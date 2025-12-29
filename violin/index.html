@@ -674,6 +674,13 @@ table#comments-table tbody tr:nth-child(even) {
       resize: none;           /* 先由 JS 控制拖拉 */
       overflow: hidden;       /* 由 JS 控制出現卷軸 */
       line-height: 1.4;
+      transition: background-color 0.2s ease;
+    }
+
+    /* 防呆閃動提示背景 */
+    #admin-reply.reply-force-focus {
+      background-color: #3e4449 !important;
+      outline: 2px solid #d1a343;
     }
 
     .fingerboard-row {
@@ -2335,7 +2342,8 @@ table#comments-table tbody tr:nth-child(even) {
       });
 
       box.addEventListener("keydown", (ev) => {
-        const prefixLen = REPLY_PREFIX.length;
+        const prefix = REPLY_PREFIX;
+        const prefixLen = prefix.length;
         const pos = box.selectionStart || 0;
 
         if (pos <= prefixLen) {
@@ -2350,15 +2358,26 @@ table#comments-table tbody tr:nth-child(even) {
             "ArrowUp",
             "Tab",
           ];
-          if (ev.ctrlKey || ev.metaKey || allowKeys.includes(ev.key)) {
-            return;
-          }
-          if (blockedKeys.includes(ev.key) || ev.key.length === 1) {
-            ev.preventDefault();
-            const safePos = prefixLen + 1;
-            try {
-              box.setSelectionRange(safePos, safePos);
-            } catch (e) {}
+
+          // 補強：防止在前綴字中間介入並換行
+          if (ev.key === "Enter" || (!ev.ctrlKey && !ev.metaKey && !allowKeys.includes(ev.key))) {
+              if (ev.key === "Enter") {
+                  ev.preventDefault();
+                  if (!box.value.slice(prefixLen).startsWith("\n")) {
+                      box.value = prefix + "\n" + box.value.slice(prefixLen).replace(/^\s+/, "");
+                  }
+                  const startOfContent = prefixLen + 1;
+                  box.setSelectionRange(startOfContent, startOfContent);
+                  return;
+              }
+
+              if (blockedKeys.includes(ev.key) || ev.key.length === 1) {
+                  ev.preventDefault();
+                  const safePos = prefixLen + 1;
+                  try {
+                      box.setSelectionRange(safePos, safePos);
+                  } catch (e) {}
+              }
           }
         }
       });
@@ -2766,9 +2785,26 @@ table#comments-table tbody tr:nth-child(even) {
 
       clearVideo();
 
-      document.addEventListener("pointerdown", () => {
+      const replyBox = document.getElementById("admin-reply");
+
+      // 防呆機制：如果正在編輯中卻點擊其他地方，跳回並閃爍
+      document.addEventListener("mousedown", (ev) => {
         stopCarousel("user");
-      });
+
+        // 如果 replyDirty 代表有改過東西且未按儲存/取消
+        if (replyDirty && ev.target !== replyBox) {
+            const actionsWrap = document.getElementById("reply-actions");
+            // 排除點擊儲存與取消按鈕本身
+            if (actionsWrap && !actionsWrap.contains(ev.target)) {
+                ev.preventDefault();
+                replyBox.focus();
+
+                // 視覺閃動提示
+                replyBox.classList.add("reply-force-focus");
+                setTimeout(() => replyBox.classList.remove("reply-force-focus"), 500);
+            }
+        }
+      }, true);
 
       loadComments().catch((err) => {
         console.error(err);
