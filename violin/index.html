@@ -1312,8 +1312,13 @@ table#comments-table tbody tr:nth-child(even) {
                (type === "audio");
       });
       
+      // [需求 12 修正] 只有在沒有當前選取項目的情況下才選取最新一筆
       if (newestWithMedia && !currentSelectedId) {
         selectRowForReply(newestWithMedia, false);
+      } else if (currentSelectedId) {
+        // 如果已有選取項目，確保重新整理後焦點還在
+        const target = findRowById(currentSelectedId);
+        if (target) selectRowForReply(target, true);
       }
     }
 
@@ -1476,7 +1481,6 @@ table#comments-table tbody tr:nth-child(even) {
           } catch (e) {}
         }
       }
-      highlightLayers(row.layers);
     }
 
     // ===== [JS-5] 多層圓（預留） ======
@@ -1721,31 +1725,58 @@ table#comments-table tbody tr:nth-child(even) {
       const btnSave = document.getElementById("reply-save-btn");
       if (!box || !currentSelectedId) return;
 
+      // 需求 3: 按下儲存後顯示處理中
       const originalText = btnSave.textContent;
       btnSave.disabled = true;
       btnSave.textContent = "處理中..";
+
+      ensureReplyPrefix();
+      autoResizeReply();
+
+      const full = String(box.value || "").trim();
+
+      let toSend = "";
+      if (full) {
+        let afterPrefix = full;
+        if (full.startsWith(REPLY_PREFIX)) {
+          afterPrefix = full.slice(REPLY_PREFIX.length);
+        }
+        if (afterPrefix.trim()) {
+          toSend = full;
+        }
+      }
 
       try {
         const params = new URLSearchParams({
           action: "reply",
           id: String(currentSelectedId),
-          reply: box.value.trim(),
+          reply: toSend,
         });
 
         const res = await fetch(API_URL + "?" + params.toString());
         const data = await res.json();
 
-        if (data.status === "ok") {
-          // [需求 12] 儲存後保持選取
-          const targetId = currentSelectedId;
-          await loadComments();
-          const row = findRowById(targetId);
-          if (row) selectRowForReply(row);
-          hideReplyActions();
+        if (!data || data.status !== "ok") {
+          throw new Error(data.error || "reply 失敗");
         }
+
+        // [需求 12] 儲存後重新載入並保持焦點
+        const targetId = currentSelectedId;
+        await loadComments();
+        const row = findRowById(targetId);
+        if (row) {
+          selectRowForReply(row, true);
+        }
+
+        hideReplyActions();
+        try {
+          box.blur(); 
+        } catch (e) {}
       } catch (err) {
-        alert("儲存回覆失敗");
+        console.error(err);
+        alert("儲存回覆失敗：" + err.message);
       } finally {
+        // 需求 3: 恢復狀態
         btnSave.disabled = false;
         btnSave.textContent = "儲存";
       }
@@ -1806,23 +1837,38 @@ table#comments-table tbody tr:nth-child(even) {
       const videoUploadRow = document.getElementById("video-upload-row");
       const videoLinkRow = document.getElementById("video-link-row");
 
+      // 先重置所有按鈕樣式
       [btnYoutube, btnUpload, btnAudio].forEach((b) => {
-        if (b) b.classList.remove("active");
+        if (b) {
+          b.classList.remove("active");
+          // [需求 6 補強] 互斥變色邏輯：未選中變暗色
+          if (mode) b.classList.add("dimmed-gray");
+          else b.classList.remove("dimmed-gray");
+        }
       });
-
-      if (!mode || mode === "youtube") {
-        if (btnYoutube) btnYoutube.classList.add("active");
-      } else if (mode === "upload") {
-        if (btnUpload) btnUpload.classList.add("active");
-      } else if (mode === "audio") {
-        if (btnAudio) btnAudio.classList.add("active");
-      }
 
       if (videoFields) videoFields.classList.add("hidden");
       if (audioFields) audioFields.classList.add("hidden");
       if (youtubeRow) youtubeRow.style.display = "none";
       if (videoUploadRow) videoUploadRow.style.display = "none";
       if (videoLinkRow) videoLinkRow.style.display = "none";
+
+      if (!mode || mode === "youtube") {
+        if (btnYoutube) {
+           btnYoutube.classList.add("active");
+           btnYoutube.classList.remove("dimmed-gray"); // 恢復 YouTube 紅
+        }
+      } else if (mode === "upload") {
+        if (btnUpload) {
+           btnUpload.classList.add("active");
+           btnUpload.classList.remove("dimmed-gray"); // 影片鈕變紅
+        }
+      } else if (mode === "audio") {
+        if (btnAudio) {
+           btnAudio.classList.add("active");
+           btnAudio.classList.remove("dimmed-gray"); // 錄音鈕變紅
+        }
+      }
 
       if (mode === "youtube") {
         if (videoFields) videoFields.classList.remove("hidden");
@@ -1901,178 +1947,43 @@ table#comments-table tbody tr:nth-child(even) {
         return;
       }
 
-      btnStart.disabled = false;
-      btnStop.disabled = true;
-      btnPause.disabled = true;
-      btnCancel.disabled = true;
-
       btnStart.addEventListener("click", async () => {
         if (audioRecActive) return;
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          statusEl.textContent = "此瀏覽器不支援麥克風錄音。";
-          return;
-        }
-
         try {
           stopAudioRecordingInternal(true);
-
-          btnStart.disabled = true;
-          btnStop.disabled = true;
-          btnPause.disabled = true;
-          btnCancel.disabled = true;
-          statusEl.textContent = "正在啟用麥克風…";
-
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          audioRecStream = stream;
-          audioRecChunks = [];
-          window.recordedAudioBlob = null;
-
-          const mimeType =
-            MediaRecorder.isTypeSupported &&
-            MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-              ? "audio/webm;codecs=opus"
-              : "audio/webm";
-
-          const recorder = new MediaRecorder(stream, { mimeType });
-          audioRecRecorder = recorder;
-          audioRecActive = true;
-          audioRecPaused = false;
-          audioRecAccumulated = 0;
-          audioRecCancelling = false;
-
-          recorder.addEventListener("dataavailable", (ev) => {
-            if (ev.data && ev.data.size > 0) {
-              audioRecChunks.push(ev.data);
-            }
-          });
-
-          recorder.addEventListener("stop", () => {
-            clearAudioRecTimer();
-            audioRecActive = false;
-
-            if (audioRecStream) {
-              audioRecStream.getTracks().forEach((t) => t.stop());
-            }
-            audioRecStream = null;
-
-            if (audioRecCancelling) {
-              audioRecCancelling = false;
-              audioRecChunks = [];
-              window.recordedAudioBlob = null;
-              if (previewEl) {
-                previewEl.removeAttribute("src");
-                previewEl.load();
-              }
-              if (statusEl) statusEl.textContent = "錄音已取消。";
-              btnStart.disabled = false;
-              btnStop.disabled = true;
-              btnPause.disabled = true;
-              btnPause.textContent = "⏸";
-              btnCancel.disabled = false;
-              btnStart.classList.remove("recording");
-              return;
-            }
-
-            if (!audioRecChunks.length) return;
-
-            const blob = new Blob(audioRecChunks, { type: mimeType });
-            window.recordedAudioBlob = blob;
-
-            const url = URL.createObjectURL(blob);
-            previewEl.src = url;
-            previewEl.play().catch(() => {});
-
-            statusEl.textContent = "錄音完成，可按「發表」儲存。";
-
-            btnStart.disabled = false;
-            btnStop.disabled = true;
-            btnPause.disabled = true;
-            btnPause.textContent = "⏸";
-            btnCancel.disabled = false;
-
-            btnStart.classList.remove("recording");
-          });
-
+          audioRecStream = stream; audioRecChunks = [];
+          audioRecRecorder = new MediaRecorder(stream);
+          audioRecActive = true; audioRecPaused = false; audioRecAccumulated = 0;
+          audioRecRecorder.ondataavailable = (ev) => { if (ev.data.size > 0) audioRecChunks.push(ev.data); };
+          audioRecRecorder.onstop = () => {
+             if (audioRecCancelling) return;
+             window.recordedAudioBlob = new Blob(audioRecChunks, { type: 'audio/webm' });
+             previewEl.src = URL.createObjectURL(window.recordedAudioBlob);
+             statusEl.textContent = "錄音完成。";
+          };
+          audioRecRecorder.start();
           audioRecStartTime = Date.now();
-          clearAudioRecTimer();
-          statusEl.textContent = "錄音中… 00:00";
           audioRecTimerId = setInterval(() => {
-            if (!audioRecActive || audioRecPaused) return;
-            const elapsedSec =
-              audioRecAccumulated + (Date.now() - audioRecStartTime) / 1000;
-            statusEl.textContent = "錄音中… " + formatDuration(elapsedSec);
+            const elapsed = audioRecAccumulated + (Date.now() - audioRecStartTime) / 1000;
+            statusEl.textContent = "錄音中… " + formatDuration(elapsed);
           }, 500);
-
           btnStart.classList.add("recording");
-          btnStop.disabled = false;
-          btnPause.disabled = false;
-          btnCancel.disabled = false;
-
-          recorder.start();
-        } catch (err) {
-          console.error(err);
-          statusEl.textContent = "無法啟用麥克風（可能被拒絕或裝置不支援）。";
-          btnStart.disabled = false;
-          btnStop.disabled = true;
-          btnPause.disabled = true;
-          btnCancel.disabled = false;
-          btnStart.classList.remove("recording");
-        }
+          btnStop.disabled = false; btnPause.disabled = false; btnCancel.disabled = false;
+        } catch (err) { statusEl.textContent = "麥克風啟動失敗"; }
       });
 
       btnStop.addEventListener("click", () => {
-        if (!audioRecActive || !audioRecRecorder) return;
-        audioRecPaused = false;
-        audioRecAccumulated = 0;
-        clearAudioRecTimer();
-        statusEl.textContent = "處理錄音中…";
-        btnStop.disabled = true;
-        if (btnPause) {
-          btnPause.disabled = true;
-          btnPause.textContent = "⏸";
-        }
         audioRecRecorder.stop();
+        clearAudioRecTimer();
+        audioRecActive = false;
+        btnStart.classList.remove("recording");
       });
 
-      btnPause.addEventListener("click", () => {
-        if (!audioRecRecorder || !audioRecActive) return;
-
-        if (typeof audioRecRecorder.pause !== "function" ||
-            typeof audioRecRecorder.resume !== "function") {
-          statusEl.textContent = "此瀏覽器不支援暫停功能。";
-          btnPause.disabled = true;
-          return;
-        }
-
-        if (!audioRecPaused) {
-          audioRecPaused = true;
-          audioRecAccumulated += (Date.now() - audioRecStartTime) / 1000;
-          clearAudioRecTimer();
-          audioRecRecorder.pause();
-          statusEl.textContent = "錄音已暫停 " + formatDuration(audioRecAccumulated);
-          btnPause.textContent = "▶︎";
-        } else {
-          audioRecPaused = false;
-          audioRecStartTime = Date.now();
-          audioRecRecorder.resume();
-          statusEl.textContent = "錄音中… " + formatDuration(audioRecAccumulated);
-          clearAudioRecTimer();
-          audioRecTimerId = setInterval(() => {
-            if (!audioRecActive || audioRecPaused) return;
-            const elapsedSec =
-              audioRecAccumulated + (Date.now() - audioRecStartTime) / 1000;
-            statusEl.textContent = "錄音中… " + formatDuration(elapsedSec);
-          }, 500);
-          btnPause.textContent = "⏸";
-        }
-      });
-
-      btnCancel.addEventListener("click", () => {
-        stopAudioRecordingInternal(true);
-      });
+      btnCancel.addEventListener("click", () => stopAudioRecordingInternal(true));
     }
 
-    // ===== [JS-11] 重置表單 ======
+    // ===== [JS-11] 從「新增/編輯」復原成初始狀態 ======
     function resetFormToAddMode() {
       const form = document.getElementById("community-form");
       const btnNew = document.getElementById("btn-new");
@@ -2083,7 +1994,10 @@ table#comments-table tbody tr:nth-child(even) {
       if (nickEl) { nickEl.value = ""; nickEl.disabled = false; }
       if (textEl) { textEl.value = ""; textEl.disabled = false; textEl.style.opacity = "1"; }
 
-      document.querySelectorAll(".media-select-btn").forEach(b => b.disabled = false);
+      document.querySelectorAll(".media-select-btn").forEach(b => {
+         b.disabled = false;
+         b.classList.remove("dimmed-gray");
+      });
 
       setMediaMode(null);
       clearRecordedMediaState();
@@ -2101,6 +2015,7 @@ table#comments-table tbody tr:nth-child(even) {
 
       editState.active = false;
       editState.id = null;
+      editState.nickname = "";
       editState.originalText = "";
       editState.waitForSelect = false;
 
@@ -2127,17 +2042,18 @@ table#comments-table tbody tr:nth-child(even) {
       isFormOpen = true;
       formMode = "edit";
 
-      if (nickEl) { nickEl.disabled = false; nickEl.value = ""; nickEl.placeholder = "請輸入原 username"; }
+      if (nickEl) { nickEl.disabled = false; nickEl.value = ""; nickEl.placeholder = "請輸入原 username 以解鎖編輯"; }
       if (textEl) { textEl.value = editState.originalText; textEl.disabled = true; textEl.style.opacity = "0.6"; }
 
       document.querySelectorAll(".media-select-btn").forEach(b => b.disabled = true);
       setMediaMode(null);
     }
 
-    // ===== [JS-12-1] 表頭編輯按鈕 ======
+    // ===== [JS-12-1] 表頭「編輯」按鈕 ======
     function setupEditHeaderButton() {
       const btn = document.getElementById("btn-edit");
       if (!btn) return;
+
       btn.addEventListener("click", () => {
         const willEnter = !editState.waitForSelect;
         resetFormToAddMode();
@@ -2146,7 +2062,7 @@ table#comments-table tbody tr:nth-child(even) {
       });
     }
 
-    // ===== [JS-13] 表格點擊監聽 ======
+    // ===== [JS-13] 表格點擊：選取 / 進入編輯 / 展開收合 ======
     function setupTableClicks() {
       const tbody = document.getElementById("comments-tbody");
       if (!tbody) return;
@@ -2177,7 +2093,7 @@ table#comments-table tbody tr:nth-child(even) {
       });
     }
 
-    // ===== [JS-14] Back 鍵需求實作 ======
+    // ===== [JS-14] Back 鍵：回到初始畫面 (需求 10 修改點) ======
     function setupBackButton() {
       const btn = document.getElementById("back-button");
       if (!btn) return;
@@ -2195,20 +2111,18 @@ table#comments-table tbody tr:nth-child(even) {
       box.addEventListener("input", () => {
         ensureReplyPrefix();
         autoResizeReply();
-        const content = box.value.replace(REPLY_PREFIX, "").trim();
-        if (content) showReplyActions(); else hideReplyActions();
+        const contentPart = box.value.replace(REPLY_PREFIX, "").trim();
+        if (contentPart) showReplyActions(); else hideReplyActions();
       });
     }
 
-    // ===== [JS-16] From: 作者鈕跳轉 ======
+    // ===== [JS-16] From: 按鈕 → 跳轉回項目列 ======
     function setupReplyTargetButton() {
       const btn = document.getElementById("reply-target-btn");
       if (!btn) return;
 
       btn.addEventListener("click", () => {
         const id = btn.getAttribute("data-id");
-        if (!id) return;
-
         const tr = document.querySelector(`tr[data-id="${id}"]`);
         if (tr) {
           tr.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -2222,12 +2136,9 @@ table#comments-table tbody tr:nth-child(even) {
     function setupEditNameGuard() {
       const nickEl = document.getElementById("nickname-input");
       if (!nickEl) return;
-
       nickEl.addEventListener("input", () => {
         if (!editState.active) return;
-        const typed = normalizeName(nickEl.value);
-        const target = normalizeName(editState.nickname);
-        if (typed === target) {
+        if (normalizeName(nickEl.value) === editState.nickname) {
           nickEl.disabled = true;
           const textEl = document.getElementById("text-input");
           textEl.disabled = false; textEl.style.opacity = "1"; textEl.focus();
@@ -2246,24 +2157,17 @@ table#comments-table tbody tr:nth-child(even) {
       if (isSubmitting) return;
 
       const submitBtn = document.getElementById("submit-btn");
-      const nickEl = document.getElementById("nickname-input");
-      const textEl = document.getElementById("text-input");
-      const nickname = normalizeName(nickEl?.value || "");
-      const text = (textEl?.value || "").trim();
+      const nickname = normalizeName(document.getElementById("nickname-input")?.value || "");
+      const text = (document.getElementById("text-input")?.value || "").trim();
 
-      if (!validateNameLength(nickname) || !text) return;
+      if (!validateNameLength(nickname) || !text) { alert("請填寫正確資料"); return; }
 
       isSubmitting = true;
-      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "處理中.."; }
+      submitBtn.disabled = true; submitBtn.textContent = "處理中..";
 
       try {
         const isEditing = editState.active && editState.id;
-        let payload = {
-          action: isEditing ? "edit" : "add",
-          nickname: nickname,
-          text: text,
-          id: editState.id
-        };
+        let payload = { action: isEditing ? "edit" : "add", nickname: nickname, text: text, id: editState.id };
 
         if (!isEditing) {
           const yt = document.getElementById("youtube-url-input")?.value.trim();
@@ -2273,35 +2177,23 @@ table#comments-table tbody tr:nth-child(even) {
           if (yt) { payload.type = "youtube"; payload.youtubeUrl = yt; }
           else if (vFile) { payload.type = "upload"; payload.videoBase64 = await readFileAsBase64(vFile); payload.fileName = vFile.name; }
           else if (aFile || window.recordedAudioBlob) {
-            payload.type = "audio";
             const blob = aFile || window.recordedAudioBlob;
-            payload.audioBase64 = await readFileAsBase64(blob);
-            payload.audioFileName = aFile ? aFile.name : "recorded.webm";
+            payload.type = "audio"; payload.audioBase64 = await readFileAsBase64(blob); payload.audioFileName = aFile ? aFile.name : "recorded.webm";
           }
         }
 
-        const res = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload),
-        });
+        const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
         const data = await res.json();
 
         if (data.status === "ok") {
-          // [需求 12] 新增/編輯後保持選取當前項目
-          const targetId = isEditing ? editState.id : data.id; 
+          // [需求 12] 發表後鎖定該筆項目
+          const targetId = isEditing ? editState.id : data.id;
           resetFormToAddMode();
           await loadComments();
-          // 如果後端回傳了 ID，或者我們本來就知道 ID，就進行選取
-          const rowToSelect = targetId ? findRowById(targetId) : commentsCache.slice().reverse()[0];
-          if (rowToSelect) selectRowForReply(rowToSelect);
+          const rowToSelect = findRowById(targetId);
+          if (rowToSelect) selectRowForReply(rowToSelect, true);
         }
-      } catch (err) {
-        alert("發表失敗");
-      } finally {
-        isSubmitting = false;
-        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = "發表"; }
-      }
+      } catch (err) { alert("失敗"); } finally { isSubmitting = false; submitBtn.disabled = false; submitBtn.textContent = "發表"; }
     }
 
     // ===== [JS-18-1] 表單與工具列綁定 ======
@@ -2313,31 +2205,18 @@ table#comments-table tbody tr:nth-child(even) {
           if (!isFormOpen) {
             form.classList.remove("hidden"); form.style.display = "block";
             btnNew.textContent = "取消新增"; isFormOpen = true;
-          } else {
-            resetFormToAddMode();
-          }
+          } else { resetFormToAddMode(); }
         });
       }
-      document.querySelectorAll(".media-select-btn").forEach(b => {
-        b.addEventListener("click", () => {
-          if (!editState.active) setMediaMode(b.dataset.media);
-        });
-      });
+      document.querySelectorAll(".media-select-btn").forEach(b => b.addEventListener("click", () => { if (!editState.active) setMediaMode(b.dataset.media); }));
       form.addEventListener("submit", handleSubmit);
     }
 
     // ===== [JS-19] 全部啟動 ======
     document.addEventListener("DOMContentLoaded", () => {
-      loadComments();
-      bindToolbarAndForm();
-      setupTableClicks();
-      setupBackButton();
-      setupAdminReply();
-      setupEditHeaderButton();
-      setupReplyTargetButton();
-      setupAudioRecording();
-      setupEditNameGuard();
-      setupTextInputEnterGuard();
+      loadComments(); bindToolbarAndForm(); setupTableClicks(); setupBackButton();
+      setupAdminReply(); setupEditHeaderButton(); setupReplyTargetButton();
+      setupAudioRecording(); setupEditNameGuard(); setupTextInputEnterGuard();
     });
   </script>
 </body>
