@@ -2292,25 +2292,28 @@ table#comments-table tbody tr:nth-child(even) {
             "Tab",
           ];
 
-          // 補強：防止在前綴字中間介入並換行
+          // 絕對保護：防止在前綴字中間介入、換行或插入字元
           if (ev.key === "Enter" || (!ev.ctrlKey && !ev.metaKey && !allowKeys.includes(ev.key))) {
+              ev.preventDefault(); // 阻斷包含換行與字元插入的所有行為
+
+              // 補強：如果是按 Enter 且前綴後沒換行，先修復結構
               if (ev.key === "Enter") {
-                  ev.preventDefault();
                   if (!box.value.slice(prefixLen).startsWith("\n")) {
                       box.value = prefix + "\n" + box.value.slice(prefixLen).replace(/^\s+/, "");
                   }
-                  const startOfContent = prefixLen + 1;
-                  box.setSelectionRange(startOfContent, startOfContent);
-                  return;
               }
 
-              if (blockedKeys.includes(ev.key) || ev.key.length === 1) {
-                  ev.preventDefault();
-                  const safePos = prefixLen + 1;
-                  try {
-                      box.setSelectionRange(safePos, safePos);
-                  } catch (e) {}
-              }
+              // 無論按下什麼（字元或 Enter），將游標導向內容區
+              const startOfContent = box.value.length;
+              box.setSelectionRange(startOfContent, startOfContent);
+              return;
+          }
+          
+          // 阻斷刪除與左移鍵
+          if (blockedKeys.includes(ev.key)) {
+              ev.preventDefault();
+              const safePos = prefixLen + 1;
+              try { box.setSelectionRange(safePos, safePos); } catch (e) {}
           }
         }
       });
@@ -2717,15 +2720,30 @@ table#comments-table tbody tr:nth-child(even) {
 
       const replyBox = document.getElementById("admin-reply");
 
-      // [處理中防呆 + 編輯防呆] 全域監聽
-      // 使用捕獲階段（true）來確保第一時間攔截事件
-      document.addEventListener("mousedown", (ev) => {
-        // 1. 如果正在「處理中..」，阻斷所有頁面點擊動作
+      // [處理中防呆] 全域鍵盤阻斷
+      document.addEventListener("keydown", (ev) => {
+          if (isSubmitting) {
+              // 阻斷所有非組合鍵的按鍵（排除 Ctrl/Meta/Alt 以免影響瀏覽器功能）
+              if (!ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+                  ev.stopPropagation();
+                  ev.preventDefault();
+              }
+          }
+      }, true);
+
+      // [處理中防呆 + 編輯防呆] 全域滑鼠監聽
+      // 使用捕獲階段（true）來確保第一時間攔截所有事件（包含表格點擊、按鈕點擊）
+      const blockEvent = (ev) => {
         if (isSubmitting) {
             ev.stopPropagation();
             ev.preventDefault();
-            return;
+            return true;
         }
+        return false;
+      };
+
+      document.addEventListener("mousedown", (ev) => {
+        if (blockEvent(ev)) return;
 
         // 2. 原有的回覆區編輯防呆
         if (replyDirty && ev.target !== replyBox) {
@@ -2741,7 +2759,10 @@ table#comments-table tbody tr:nth-child(even) {
         }
       }, true);
 
-      // 載入資料（內部已包含展示最新一筆影音項目的邏輯）
+      document.addEventListener("click", blockEvent, true);
+      document.addEventListener("pointerdown", blockEvent, true);
+
+      // 載入資料
       loadComments().catch((err) => {
         console.error(err);
       });
