@@ -1135,14 +1135,6 @@ table#comments-table tbody tr:nth-child(even) {
     let audioRecAccumulated = 0;
     let audioRecCancelling = false;
 
-    // 項目輪播（自動播放）用
-    let carouselActive = false; // 1. 修改點：預設取消輪播
-    let carouselTimerId = null;
-    let carouselUserStopped = true; // 1. 修改點：設為 true
-    let carouselIds = [];
-    let carouselIndex = 0;
-    const CAROUSEL_INTERVAL_MS = 15000; // 每 15 秒換下一筆
-
     // ===== [JS-1] 小工具 =====
 
     // 統一處理名稱字串（去掉零寬字元、前後空白）
@@ -1320,7 +1312,7 @@ table#comments-table tbody tr:nth-child(even) {
         }
       }
 
-      // 2. 修改點：載入後自動開啟最新一筆帶影片或錄音的項目
+      // 2. 修改點：載入後自動開啟最新一筆帶影音或錄音項目（此處不屬於輪播功能，僅供首次進入展示用）
       const newestWithMedia = commentsCache.slice().reverse().find(row => {
         const type = row.type || "text";
         return (type === "youtube" && row.youtubeUrl) || 
@@ -1512,65 +1504,6 @@ table#comments-table tbody tr:nth-child(even) {
       });
     }
 
-    // ===== [JS-5.5] 輪播候選計算 & 控制 ======
-    function computeCarouselCandidates() {
-      return commentsCache.filter((row) => {
-        const type = row.type || "text";
-        if (type === "youtube" && row.youtubeUrl) return true;
-        if (type === "upload" && (row.driveFileId || row.externalUrl || row.linkUrl)) return true;
-        return false;
-      });
-    }
-
-    function runCarouselStep() {
-      if (!carouselActive) return;
-
-      const candidates = computeCarouselCandidates();
-      if (!candidates.length) {
-        stopCarousel();
-        return;
-      }
-
-      if (!carouselIds.length) {
-        carouselIds = candidates.map((r) => r.id);
-        carouselIndex = 0;
-      }
-      if (carouselIndex >= carouselIds.length) {
-        carouselIndex = 0;
-      }
-
-      const id = carouselIds[carouselIndex++];
-      const row = findRowById(id) || candidates[0];
-      if (row) {
-        selectRowForReply(row, false);
-      }
-
-      if (!carouselActive) return;
-      carouselTimerId = setTimeout(runCarouselStep, CAROUSEL_INTERVAL_MS);
-    }
-
-    function startCarouselIfPossible() {
-      if (carouselUserStopped || carouselActive) return;
-      const candidates = computeCarouselCandidates();
-      if (!candidates.length) return;
-
-      carouselIds = candidates.map((r) => r.id);
-      carouselIndex = 0;
-      carouselActive = true;
-      runCarouselStep();
-    }
-
-    function stopCarousel(fromUser) {
-      if (carouselTimerId) {
-        clearTimeout(carouselTimerId);
-        carouselTimerId = null;
-      }
-      carouselActive = false;
-      if (fromUser === "user") {
-        carouselUserStopped = true;
-      }
-    }
-
     // ===== [JS-6] 查找 row ======
     function findRowById(id) {
       return commentsCache.find((r) => String(r.id) === String(id));
@@ -1650,7 +1583,7 @@ table#comments-table tbody tr:nth-child(even) {
       replyDirty = false;
     }
 
-    // ===== [JS-8] 選取項目（自動展開 + 自動播放 + 回覆連動） ======
+    // ===== [JS-8] 選取項目（自動展開 + 回覆連動） ======
     function resetReplyTargetButton() {
       const btn = document.getElementById("reply-target-btn");
       if (!btn) return;
@@ -1740,6 +1673,7 @@ table#comments-table tbody tr:nth-child(even) {
       const originalText = btnSave.textContent;
       btnSave.disabled = true;
       btnSave.textContent = "處理中..";
+      isSubmitting = true; // [處理中防呆] 啟動旗標
 
       ensureReplyPrefix();
       autoResizeReply();
@@ -1784,9 +1718,10 @@ table#comments-table tbody tr:nth-child(even) {
         console.error(err);
         alert("儲存回覆失敗：" + err.message);
       } finally {
-        // 需求 3: 恢復狀態
+        // 恢復狀態
         btnSave.disabled = false;
         btnSave.textContent = "儲存";
+        isSubmitting = false; // [處理中防呆] 解除旗標
       }
     }
 
@@ -2198,8 +2133,6 @@ table#comments-table tbody tr:nth-child(even) {
     function startEditForRow(row) {
       if (!row) return;
 
-      stopCarousel("user");
-
       editState.active = true;
       editState.id = row.id;
       editState.nickname = normalizeName(row.nickname);
@@ -2558,8 +2491,6 @@ table#comments-table tbody tr:nth-child(even) {
           submitBtn.textContent = "處理中..";
         }
 
-        stopCarousel("user");
-
         // ===== 編輯模式：只改文字 =====
         if (isEditing) {
           const editingId = editState.id;
@@ -2652,7 +2583,7 @@ table#comments-table tbody tr:nth-child(even) {
         console.error(err);
         alert("失敗：" + err.message);
       } finally {
-        // 需求 3: 無論成功失敗都恢復文字
+        // 恢復文字
         isSubmitting = false;
         if (submitBtn) {
           submitBtn.disabled = false;
@@ -2686,7 +2617,6 @@ table#comments-table tbody tr:nth-child(even) {
 
       if (btnNew) {
         btnNew.addEventListener("click", () => {
-          stopCarousel("user");
           if (!isFormOpen) {
             editState.active = false;
             editState.id = null;
@@ -2787,14 +2717,19 @@ table#comments-table tbody tr:nth-child(even) {
 
       const replyBox = document.getElementById("admin-reply");
 
-      // 防呆機制：如果正在編輯中卻點擊其他地方，跳回並閃爍
+      // [處理中防呆 + 編輯防呆] 全域監聽
+      // 使用捕獲階段（true）來確保第一時間攔截事件
       document.addEventListener("mousedown", (ev) => {
-        stopCarousel("user");
+        // 1. 如果正在「處理中..」，阻斷所有頁面點擊動作
+        if (isSubmitting) {
+            ev.stopPropagation();
+            ev.preventDefault();
+            return;
+        }
 
-        // 如果 replyDirty 代表有改過東西且未按儲存/取消
+        // 2. 原有的回覆區編輯防呆
         if (replyDirty && ev.target !== replyBox) {
             const actionsWrap = document.getElementById("reply-actions");
-            // 排除點擊儲存與取消按鈕本身
             if (actionsWrap && !actionsWrap.contains(ev.target)) {
                 ev.preventDefault();
                 replyBox.focus();
@@ -2806,6 +2741,7 @@ table#comments-table tbody tr:nth-child(even) {
         }
       }, true);
 
+      // 載入資料（內部已包含展示最新一筆影音項目的邏輯）
       loadComments().catch((err) => {
         console.error(err);
       });
