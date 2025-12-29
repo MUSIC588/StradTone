@@ -672,7 +672,7 @@ table#comments-table tbody tr:nth-child(even) {
       border-radius: 4px;
       min-height: 80px;
       resize: none;           /* 先由 JS 控制拖拉 */
-      overflow: hidden;       /* 由 JS 控制出現卷軸 */
+      overflow: hidden;       /* 由 JS 控制是否出現卷軸 */
       line-height: 1.4;
     }
 
@@ -2292,13 +2292,18 @@ table#comments-table tbody tr:nth-child(even) {
       });
     }
 
-    // ===== [JS-14] Back 鍵：回到初始畫面 (需求 10 修改點) ======
+    // ===== [JS-14] Back 鍵：回到初始畫面 ======
     function setupBackButton() {
       const btn = document.getElementById("back-button");
       if (!btn) return;
-      btn.addEventListener("click", (ev) => {
-        // [需求 10] 禁止重載行為，僅跳轉回表頭
-        ev.preventDefault();
+      btn.addEventListener("click", () => {
+        stopCarousel("user");
+        resetFormToAddMode();
+        currentSelectedId = null;
+        renderCommentsTable();
+        resetReplyTargetButton();
+        cancelAdminReply();
+        stopAllPlayback();
         scrollToVideoTop();
       });
     }
@@ -2779,4 +2784,5 @@ table#comments-table tbody tr:nth-child(even) {
   </script>
 </body>
 </html>
+
 
