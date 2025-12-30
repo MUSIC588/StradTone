@@ -1088,7 +1088,7 @@ table#comments-table tbody tr:nth-child(even) {
   <script>
     // ===== [JS-0] 全域狀態 =====
     const API_URL =
-      "https://script.google.com/macros/s/AKfycbzIY9AiWaC2zDWb9YT8dLUQwf8Ysb1qVUv8Xfoac8b8GCv2DMo6icIFUsOSzWUg2tCPHA/exec";
+      "https://script.google.com/macros/s/AKfycbwOvC-xgFVh4kESS4sKkL9p3SAuAVD0S5ToGmnsapuo8jI-e-OM1lORS1JhYwizwlTExg/exec";
 
     let commentsCache = [];
     let currentSelectedId = null;
@@ -1297,7 +1297,6 @@ table#comments-table tbody tr:nth-child(even) {
         const res = await fetch(API_URL + "?action=list", { cache: "no-cache" });
         const data = await res.json();
         
-        // 此處加入原始資料檢查，若出錯可在瀏覽器 Console 查看
         console.log("GAS Response:", data);
         
         commentsCache = data.posts || [];
@@ -1754,7 +1753,7 @@ table#comments-table tbody tr:nth-child(even) {
       [btnYoutube, btnUpload, btnAudio].forEach(b => b.classList.remove("active"));
       videoFields.classList.add("hidden"); audioFields.classList.add("hidden");
       
-      // 完全還原隔離設計：YouTube 與 影片上傳 分開顯示標籤邏輯
+      // 完全恢復原本 UI 的獨立區塊切換邏輯
       if (mode === "youtube") { 
           btnYoutube.classList.add("active"); 
           videoFields.classList.remove("hidden"); 
@@ -1781,6 +1780,11 @@ table#comments-table tbody tr:nth-child(even) {
       const btnNew = document.getElementById("btn-new");
       document.getElementById("nickname-input").value = "";
       document.getElementById("text-input").value = "";
+      // 關鍵加固：重置輸入框狀態
+      document.getElementById("nickname-input").disabled = false;
+      document.getElementById("text-input").disabled = false;
+      document.getElementById("text-input").style.opacity = "1";
+
       setMediaMode(null); clearRecordedMediaState();
       form.classList.add("hidden"); form.style.display = "none";
       btnNew.textContent = "新增"; isSubmitting = false; isFormOpen = false; formMode = "add";
@@ -1796,7 +1800,13 @@ table#comments-table tbody tr:nth-child(even) {
       form.classList.remove("hidden"); form.style.display = "block";
       document.getElementById("btn-new").textContent = "取消編輯";
       isFormOpen = true; formMode = "edit";
+
+      // 還原編輯防護邏輯：鎖定項目直到名稱驗證成功
+      document.getElementById("nickname-input").value = "";
+      document.getElementById("nickname-input").placeholder = "請輸入原 username 以解鎖";
       document.getElementById("text-input").value = row.text || "";
+      document.getElementById("text-input").disabled = true;
+      document.getElementById("text-input").style.opacity = "0.6";
     }
 
     function setupEditHeaderButton() {
@@ -1852,13 +1862,18 @@ table#comments-table tbody tr:nth-child(even) {
       };
     }
 
-    // ===== [JS-17] 保護機制 ======
+    // ===== [JS-17] 還原 username 驗證保護邏輯 ======
     function setupEditNameGuard() {
       const nickEl = document.getElementById("nickname-input");
-      nickEl.oninput = () => { if (editState.active && normalizeName(nickEl.value) === editState.nickname) { document.getElementById("text-input").disabled = false; } };
+      nickEl.oninput = () => { 
+          if (editState.active && normalizeName(nickEl.value) === editState.nickname) { 
+              document.getElementById("text-input").disabled = false; 
+              document.getElementById("text-input").style.opacity = "1";
+          } 
+      };
     }
 
-    // ===== [JS-18] 修理寫入邏輯 ======
+    // ===== [JS-18] 修理組裝與發送邏輯 ======
     async function handleSubmit(e) {
       e.preventDefault();
       if (isSubmitting) return;
@@ -1874,14 +1889,14 @@ table#comments-table tbody tr:nth-child(even) {
           type: window.currentMediaMode || "text"
         };
         
-        // 修正錄音資料落實寫入邏輯
+        // 修正錄音落實寫入邏輯
         if (window.recordedAudioBlob) {
           payload.audioBase64 = await readFileAsBase64(window.recordedAudioBlob);
           payload.audioMimeType = window.recordedAudioBlob.type || "audio/webm";
           payload.audioFileName = "audio_" + Date.now() + ".webm";
         }
         
-        // YouTube 或 影片網址 處理
+        // 修理影片寫入機制：正確抓取 UI 各欄位數據
         if (window.currentMediaMode === "youtube") {
             payload.youtubeUrl = document.getElementById("youtube-url-input").value;
             payload.startSec = parseTimeToSec(document.getElementById("start-input").value);
