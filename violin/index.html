@@ -1093,7 +1093,7 @@ table#comments-table tbody tr:nth-child(even) {
   <script>
     // ===== [JS-0] 全域狀態 =====
     const API_URL =
-      "https://script.google.com/macros/s/AKfycbxn5aDCimtZmvgK4uEGr5fIyNItY2wZgQyO2LVEZkggFkO0VZ_YdDMyspGpzpkYy5W6-A/exec";
+      "https://script.google.com/macros/s/AKfycbwOjKEFt6594bWuMGSIvKD-qM8tEgWBZiNigESC4CjkU3L0bZ9-lejrGmTWWpTTq97Ufg/exec";
 
     let commentsCache = [];
     let currentSelectedId = null;
@@ -1245,7 +1245,7 @@ table#comments-table tbody tr:nth-child(even) {
       });
     }
 
-    // Base64
+    // Base64 轉換優化
     function readFileAsBase64(file) {
       return new Promise((resolve, reject) => {
         const r = new FileReader();
@@ -1317,7 +1317,7 @@ table#comments-table tbody tr:nth-child(even) {
         const type = row.type || "text";
         return (type === "youtube" && row.youtubeUrl) || 
                (type === "upload" && (row.driveFileId || row.externalUrl || row.linkUrl)) ||
-               (type === "audio");
+               (type === "audio") || row.driveAudioId;
       });
       
       if (newestWithMedia) {
@@ -1349,11 +1349,11 @@ table#comments-table tbody tr:nth-child(even) {
 
           const type = row.type || "text";
 
-          const hasYoutube = type === "youtube" && row.youtubeUrl;
-          const hasDrive = type === "upload" && row.driveFileId;
-          const hasExternal = type === "upload" && (row.externalUrl || row.linkUrl);
-          const hasAudio =
-            type === "audio" || row.hasAudio || row.driveAudioId;
+          // 修正媒體判定邏輯
+          const hasYoutube = (type === "youtube" && row.youtubeUrl);
+          const hasDriveVideo = (type === "upload" && row.driveFileId);
+          const hasExternal = (type === "upload" && (row.externalUrl || row.linkUrl));
+          const hasAudio = (type === "audio" || row.driveAudioId || row.audioUrl);
 
           let mediaHtml = `<span style="opacity:.5">—</span>`;
           const icons = [];
@@ -1364,7 +1364,7 @@ table#comments-table tbody tr:nth-child(even) {
             );
           }
 
-          if (hasYoutube || hasDrive || hasExternal) {
+          if (hasYoutube || hasDriveVideo || hasExternal) {
             icons.push(
               `<span class="media-flag" title="影片 / 網頁">🎬</span>`
             );
@@ -1445,7 +1445,6 @@ table#comments-table tbody tr:nth-child(even) {
       }
 
       if (row.type === "upload") {
-        // 先看是否有一般網址（非 Drive）
         if (row.externalUrl || row.linkUrl) {
           url = row.externalUrl || row.linkUrl;
           if (url) {
@@ -1669,11 +1668,11 @@ table#comments-table tbody tr:nth-child(even) {
       const btnSave = document.getElementById("reply-save-btn");
       if (!box || !currentSelectedId) return;
 
-      // 需求 3: 按下儲存後顯示處理中
+      // 按下儲存後顯示處理中
       const originalText = btnSave.textContent;
       btnSave.disabled = true;
       btnSave.textContent = "處理中..";
-      isSubmitting = true; // [處理中防呆] 啟動旗標
+      isSubmitting = true; 
 
       ensureReplyPrefix();
       autoResizeReply();
@@ -1692,7 +1691,7 @@ table#comments-table tbody tr:nth-child(even) {
       }
 
       try {
-        const targetId = currentSelectedId; // 12. 鎖定當前 ID
+        const targetId = currentSelectedId; 
         const params = new URLSearchParams({
           action: "reply",
           id: String(targetId),
@@ -1706,7 +1705,6 @@ table#comments-table tbody tr:nth-child(even) {
           throw new Error(data.error || "reply 失敗");
         }
 
-        // 12. 修改點：儲存後帶入 targetId 重新載入並跳轉
         await loadComments(targetId);
 
         hideReplyActions();
@@ -1718,10 +1716,9 @@ table#comments-table tbody tr:nth-child(even) {
         console.error(err);
         alert("儲存回覆失敗：" + err.message);
       } finally {
-        // 恢復狀態
         btnSave.disabled = false;
         btnSave.textContent = "儲存";
-        isSubmitting = false; // [處理中防呆] 解除旗標
+        isSubmitting = false; 
       }
     }
 
@@ -2233,12 +2230,11 @@ table#comments-table tbody tr:nth-child(even) {
       });
     }
 
-    // ===== [JS-14] Back 鍵：回到初始畫面 (需求 10 修改點) ======
+    // ===== [JS-14] Back 鍵 ======
     function setupBackButton() {
       const btn = document.getElementById("back-button");
       if (!btn) return;
       btn.addEventListener("click", (ev) => {
-        // [需求 10] 禁止重載行為，僅跳轉回表頭
         ev.preventDefault();
         scrollToVideoTop();
       });
@@ -2280,36 +2276,23 @@ table#comments-table tbody tr:nth-child(even) {
         const pos = box.selectionStart || 0;
 
         if (pos <= prefixLen) {
-          const blockedKeys = [
-            "Backspace",
-            "Delete",
-            "ArrowLeft",
-          ];
-          const allowKeys = [
-            "ArrowRight",
-            "ArrowDown",
-            "ArrowUp",
-            "Tab",
-          ];
+          const blockedKeys = ["Backspace", "Delete", "ArrowLeft"];
+          const allowKeys = ["ArrowRight", "ArrowDown", "ArrowUp", "Tab"];
 
-          // 絕對保護：防止在前綴字中間介入、換行或插入字元
           if (ev.key === "Enter" || (!ev.ctrlKey && !ev.metaKey && !allowKeys.includes(ev.key))) {
-              ev.preventDefault(); // 阻斷包含換行與字元插入的所有行為
+              ev.preventDefault(); 
 
-              // 補強：如果是按 Enter 且前綴後沒換行，先修復結構
               if (ev.key === "Enter") {
                   if (!box.value.slice(prefixLen).startsWith("\n")) {
                       box.value = prefix + "\n" + box.value.slice(prefixLen).replace(/^\s+/, "");
                   }
               }
 
-              // 無論按下什麼（字元或 Enter），將游標導向內容區
               const startOfContent = box.value.length;
               box.setSelectionRange(startOfContent, startOfContent);
               return;
           }
           
-          // 阻斷刪除與左移鍵
           if (blockedKeys.includes(ev.key)) {
               ev.preventDefault();
               const safePos = prefixLen + 1;
@@ -2367,7 +2350,7 @@ table#comments-table tbody tr:nth-child(even) {
       });
     }
 
-    // ===== [JS-17] username 注音保護 + Enter 防送出 ======
+    // ===== [JS-17] username 保護 ======
     let isComposingName = false;
 
     function tryUnlockEditByName() {
@@ -2419,7 +2402,6 @@ table#comments-table tbody tr:nth-child(even) {
       });
     }
 
-    // 項目欄位 Enter 防誤送出
     function setupTextInputEnterGuard() {
       const textEl = document.getElementById("text-input");
       if (!textEl) return;
@@ -2431,7 +2413,7 @@ table#comments-table tbody tr:nth-child(even) {
       });
     }
 
-    // ===== [JS-18] 送出處理 (需求 3 修改點) ======
+    // ===== [JS-18] 送出處理 (錄音儲存修正點) ======
     async function handleSubmit(e) {
       e.preventDefault();
 
@@ -2461,7 +2443,7 @@ table#comments-table tbody tr:nth-child(even) {
 
       try {
         if (!validateNameLength(nickname)) {
-          alert("username 請使用 5–12 個中英文或數字（不含空白與符號）。");
+          alert("username 請使用 5–12 個中英文或數字。");
           if (nickEl) nickEl.focus();
           return;
         }
@@ -2469,38 +2451,29 @@ table#comments-table tbody tr:nth-child(even) {
         if (isEditing) {
           const target = normalizeName(editState.nickname);
           if (nickname !== target) {
-            alert("請輸入當初填寫的 username（需與原始紀錄完全一致）。");
+            alert("請輸入原本的 username。");
             if (nickEl) nickEl.focus();
             return;
           }
         }
 
         if (!text) {
-          alert("請先輸入「項目」說明（100 字內）。");
+          alert("請先輸入「項目」說明。");
           if (textEl) textEl.focus();
           return;
         }
 
-        if (text.length > 100) {
-          alert("說明請控制在 100 字以內。");
-          if (textEl) textEl.focus();
-          return;
-        }
-
-        // 需求 3: 立即啟動處理中文字並禁用
         isSubmitting = true;
         if (submitBtn) {
           submitBtn.disabled = true;
           submitBtn.textContent = "處理中..";
         }
 
-        // ===== 編輯模式：只改文字 =====
+        // ===== 編輯模式 =====
         if (isEditing) {
           const editingId = editState.id;
           let textToSend = text;
-          if (/^[0-9]+$/.test(text)) {
-            textToSend = "\u200B" + text;
-          }
+          if (/^[0-9]+$/.test(text)) textToSend = "\u200B" + text;
 
           const params = new URLSearchParams({
             action: "edit",
@@ -2510,27 +2483,18 @@ table#comments-table tbody tr:nth-child(even) {
 
           const res = await fetch(API_URL + "?" + params.toString());
           const data = await res.json();
-
-          if (!data || data.status !== "ok") {
-            throw new Error(data.error || "edit 失敗");
-          }
+          if (!data || data.status !== "ok") throw new Error(data.error || "edit 失敗");
 
           resetFormToAddMode();
-          // 12. 修改點：編輯後跳轉回該項目
           await loadComments(editingId);
           return;
         }
 
-        // ===== 新增模式 =====
-        let type = "text";
+        // ===== 新增模式 (修正上傳與錄音邏輯) =====
         let nicknameToSend = nickname;
-        if (/^[0-9]+$/.test(nickname)) {
-          nicknameToSend = "\u200B" + nickname;
-        }
+        if (/^[0-9]+$/.test(nickname)) nicknameToSend = "\u200B" + nickname;
         let textToSend = text;
-        if (/^[0-9]+$/.test(text)) {
-          textToSend = "\u200B" + text;
-        }
+        if (/^[0-9]+$/.test(text)) textToSend = "\u200B" + text;
 
         const payload = {
           action: "add",
@@ -2540,29 +2504,26 @@ table#comments-table tbody tr:nth-child(even) {
           endSec: endSec === "" ? "" : String(endSec),
         };
 
+        // 媒體處理優先權：YouTube -> 影片上傳 -> 錄音
         if (youtubeUrl) {
-          type = "youtube";
-          payload.type = type;
+          payload.type = "youtube";
           payload.youtubeUrl = youtubeUrl;
-        } else if (videoLink) {
-          type = "upload";
-          payload.type = type;
-          payload.externalUrl = videoLink;
         } else if (vFile) {
-          type = "upload";
-          payload.type = type;
+          payload.type = "upload";
           const base64 = await readFileAsBase64(vFile);
           payload.videoBase64 = base64;
-          payload.mimeType = vFile.type || "application/octet-stream";
-          payload.fileName = vFile.name || "video_" + Date.now();
+          payload.mimeType = vFile.type;
+          payload.fileName = vFile.name;
+        } else if (videoLink) {
+          payload.type = "upload";
+          payload.externalUrl = videoLink;
         } else if (aFile || window.recordedAudioBlob) {
-          type = "audio";
-          payload.type = type;
+          payload.type = "audio"; // 明確標記 type 為 audio
           let blobToUse = aFile || window.recordedAudioBlob;
           const base64 = await readFileAsBase64(blobToUse);
           payload.audioBase64 = base64;
           payload.audioMimeType = blobToUse.type || "audio/webm";
-          payload.audioFileName = aFile ? aFile.name : "audio_" + Date.now() + ".webm";
+          payload.audioFileName = aFile ? aFile.name : ("audio_" + Date.now() + ".webm");
         } else {
           payload.type = "text";
         }
@@ -2574,19 +2535,14 @@ table#comments-table tbody tr:nth-child(even) {
         });
 
         const data = await res.json();
-
-        if (!data || data.status !== "ok") {
-          throw new Error(data.error || "add 失敗");
-        }
+        if (!data || data.status !== "ok") throw new Error(data.error || "add 失敗");
 
         resetFormToAddMode();
-        // 12. 修改點：新增後跳轉到剛生成的項目 (data.id)
         await loadComments(data.id);
       } catch (err) {
         console.error(err);
         alert("失敗：" + err.message);
       } finally {
-        // 恢復文字
         isSubmitting = false;
         if (submitBtn) {
           submitBtn.disabled = false;
@@ -2607,8 +2563,6 @@ table#comments-table tbody tr:nth-child(even) {
       const audioFile = document.getElementById("audio-file-input");
       const audioLabel = document.getElementById("audio-file-label");
       const ytEl = document.getElementById("youtube-url-input");
-      const startEl = document.getElementById("start-input");
-      const endEl = document.getElementById("end-input");
       const videoLinkEl = document.getElementById("video-link-input");
 
       if (!form) return;
@@ -2621,18 +2575,12 @@ table#comments-table tbody tr:nth-child(even) {
       if (btnNew) {
         btnNew.addEventListener("click", () => {
           if (!isFormOpen) {
-            editState.active = false;
-            editState.id = null;
-            editState.nickname = "";
-            editState.originalText = "";
             editState.waitForSelect = false;
-
             form.classList.remove("hidden");
             form.style.display = "block";
             btnNew.textContent = "取消新增";
             isFormOpen = true;
             formMode = "add";
-
             setMediaMode(null);
             clearRecordedMediaState();
           } else {
@@ -2645,31 +2593,21 @@ table#comments-table tbody tr:nth-child(even) {
         if (!btn) return;
         btn.addEventListener("click", () => {
           if (editState.active || btn.disabled) return;
-          if (window.currentMediaMode === modeName) {
-            setMediaMode(null);
-          } else {
-            setMediaMode(modeName);
-          }
+          if (window.currentMediaMode === modeName) setMediaMode(null);
+          else setMediaMode(modeName);
           clearRecordedMediaState();
-
+          
+          // 清除其他欄位內容
           if (modeName === "youtube") {
             if (videoFile) videoFile.value = "";
-            if (videoLabel) videoLabel.textContent = "";
             if (audioFile) audioFile.value = "";
-            if (audioLabel) audioLabel.textContent = "";
             if (videoLinkEl) videoLinkEl.value = "";
           } else if (modeName === "upload") {
             if (ytEl) ytEl.value = "";
-            if (startEl) startEl.value = "";
-            if (endEl) endEl.value = "";
             if (audioFile) audioFile.value = "";
-            if (audioLabel) audioLabel.textContent = "";
           } else if (modeName === "audio") {
             if (ytEl) ytEl.value = "";
-            if (startEl) startEl.value = "";
-            if (endEl) endEl.value = "";
             if (videoFile) videoFile.value = "";
-            if (videoLabel) videoLabel.textContent = "";
             if (videoLinkEl) videoLinkEl.value = "";
           }
         });
@@ -2681,21 +2619,15 @@ table#comments-table tbody tr:nth-child(even) {
 
       if (videoFile && videoLabel) {
         videoFile.addEventListener("change", () => {
-          if (videoFile.files && videoFile.files[0]) {
-            videoLabel.textContent = "已選擇：" + videoFile.files[0].name;
-          } else {
-            videoLabel.textContent = "";
-          }
+          if (videoFile.files && videoFile.files[0]) videoLabel.textContent = "已選擇：" + videoFile.files[0].name;
+          else videoLabel.textContent = "";
         });
       }
 
       if (audioFile && audioLabel) {
         audioFile.addEventListener("change", () => {
-          if (audioFile.files && audioFile.files[0]) {
-            audioLabel.textContent = "已選擇：" + audioFile.files[0].name;
-          } else {
-            audioLabel.textContent = "";
-          }
+          if (audioFile.files && audioFile.files[0]) audioLabel.textContent = "已選擇：" + audioFile.files[0].name;
+          else audioLabel.textContent = "";
         });
       }
 
@@ -2720,10 +2652,8 @@ table#comments-table tbody tr:nth-child(even) {
 
       const replyBox = document.getElementById("admin-reply");
 
-      // [處理中防呆] 全域鍵盤阻斷
       document.addEventListener("keydown", (ev) => {
           if (isSubmitting) {
-              // 阻斷所有非組合鍵的按鍵（排除 Ctrl/Meta/Alt 以免影響瀏覽器功能）
               if (!ev.ctrlKey && !ev.metaKey && !ev.altKey) {
                   ev.stopPropagation();
                   ev.preventDefault();
@@ -2731,8 +2661,6 @@ table#comments-table tbody tr:nth-child(even) {
           }
       }, true);
 
-      // [處理中防呆 + 編輯防呆] 全域滑鼠監聽
-      // 使用捕獲階段（true）來確保第一時間攔截所有事件（包含表格點擊、按鈕點擊）
       const blockEvent = (ev) => {
         if (isSubmitting) {
             ev.stopPropagation();
@@ -2744,15 +2672,11 @@ table#comments-table tbody tr:nth-child(even) {
 
       document.addEventListener("mousedown", (ev) => {
         if (blockEvent(ev)) return;
-
-        // 2. 原有的回覆區編輯防呆
         if (replyDirty && ev.target !== replyBox) {
             const actionsWrap = document.getElementById("reply-actions");
             if (actionsWrap && !actionsWrap.contains(ev.target)) {
                 ev.preventDefault();
                 replyBox.focus();
-
-                // 視覺閃動提示
                 replyBox.classList.add("reply-force-focus");
                 setTimeout(() => replyBox.classList.remove("reply-force-focus"), 500);
             }
@@ -2762,7 +2686,6 @@ table#comments-table tbody tr:nth-child(even) {
       document.addEventListener("click", blockEvent, true);
       document.addEventListener("pointerdown", blockEvent, true);
 
-      // 載入資料
       loadComments().catch((err) => {
         console.error(err);
       });
