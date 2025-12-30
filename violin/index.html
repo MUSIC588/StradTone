@@ -1088,7 +1088,7 @@ table#comments-table tbody tr:nth-child(even) {
   <script>
     // ===== [JS-0] 全域狀態 =====
     const API_URL =
-      "https://script.google.com/macros/s/AKfycbxn5aDCimtZmvgK4uEGr5fIyNItY2wZgQyO2LVEZkggFkO0VZ_YdDMyspGpzpkYy5W6-A/exec";
+      "https://script.google.com/macros/s/AKfycbwOvC-xgFVh4kESS4sKkL9p3SAuAVD0S5ToGmnsapuo8jI-e-OM1lORS1JhYwizwlTExg/exec";
 
     let commentsCache = [];
     let currentSelectedId = null;
@@ -2084,10 +2084,10 @@ table#comments-table tbody tr:nth-child(even) {
       if (videoLabel) videoLabel.textContent = "";
 
       if (audioFile) {
-        // audioFile 可能已移除，故加入判斷
+        // audioFile 已從 HTML 移除，保持邏輯相容性
         if (audioFile) {
-            audioFile.disabled = false;
-            audioFile.value = "";
+           audioFile.disabled = false;
+           audioFile.value = "";
         }
       }
       if (audioLabel) audioLabel.textContent = "";
@@ -2556,7 +2556,7 @@ table#comments-table tbody tr:nth-child(even) {
         } else if (aFile || window.recordedAudioBlob) {
           type = "audio";
           payload.type = type;
-          // 修正點：優先使用網頁錄音的 Blob
+          // 加固點：優先取用網頁錄音 Blob，並明確 MIME 類型
           let blobToUse = window.recordedAudioBlob || aFile;
           const base64 = await readFileAsBase64(blobToUse);
           payload.audioBase64 = base64;
@@ -2689,13 +2689,16 @@ table#comments-table tbody tr:nth-child(even) {
       }
 
       if (audioFile && audioLabel) {
-        audioFile.addEventListener("change", () => {
-          if (audioFile.files && audioFile.files[0]) {
-            audioLabel.textContent = "已選擇：" + audioFile.files[0].name;
-          } else {
-            audioLabel.textContent = "";
-          }
-        });
+        // audioFile 已從 HTML 移除，保留事件綁定邏輯以防萬一
+        if (audioFile) {
+          audioFile.addEventListener("change", () => {
+            if (audioFile.files && audioFile.files[0]) {
+              audioLabel.textContent = "已選擇：" + audioFile.files[0].name;
+            } else {
+              audioLabel.textContent = "";
+            }
+          });
+        }
       }
 
       form.addEventListener("submit", handleSubmit);
