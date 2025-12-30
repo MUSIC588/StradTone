@@ -1293,28 +1293,36 @@ table#comments-table tbody tr:nth-child(even) {
     // ===== [JS-2] 載入與表格列表 ======
 
     async function loadComments(targetId) {
-      const res = await fetch(API_URL + "?action=list", { cache: "no-cache" });
-      const data = await res.json();
-      commentsCache = data.posts || [];
-      renderCommentsTable();
-      
-      if (targetId) {
-        const row = findRowById(targetId);
-        if (row) {
-          selectRowForReply(row, false);
-          return;
+      try {
+        const res = await fetch(API_URL + "?action=list", { cache: "no-cache" });
+        const data = await res.json();
+        
+        // 此處加入原始資料檢查，若出錯可在瀏覽器 Console 查看
+        console.log("GAS Response:", data);
+        
+        commentsCache = data.posts || [];
+        renderCommentsTable();
+        
+        if (targetId) {
+          const row = findRowById(targetId);
+          if (row) {
+            selectRowForReply(row, false);
+            return;
+          }
         }
-      }
 
-      const newestWithMedia = commentsCache.slice().reverse().find(row => {
-        const type = row.type || "text";
-        return (type === "youtube" && row.youtubeUrl) || 
-               (type === "upload" && (row.driveFileId || row.externalUrl || row.linkUrl)) ||
-               (type === "audio" || row.driveAudioId);
-      });
-      
-      if (newestWithMedia) {
-        selectRowForReply(newestWithMedia, false);
+        const newestWithMedia = commentsCache.slice().reverse().find(row => {
+          const type = row.type || "text";
+          return (type === "youtube" && row.youtubeUrl) || 
+                 (type === "upload" && (row.driveFileId || row.externalUrl || row.linkUrl)) ||
+                 (type === "audio" || row.driveAudioId);
+        });
+        
+        if (newestWithMedia) {
+          selectRowForReply(newestWithMedia, false);
+        }
+      } catch (err) {
+        console.error("Load Failed:", err);
       }
     }
 
@@ -1605,7 +1613,7 @@ table#comments-table tbody tr:nth-child(even) {
       scrollToVideoTop();
     }
 
-    // ===== [JS-9] 儲存回覆 (需求 3 修改點) ======
+    // ===== [JS-9] 儲存回覆 ======
     async function saveAdminReply() {
       const box = document.getElementById("admin-reply");
       const btnSave = document.getElementById("reply-save-btn");
@@ -1742,11 +1750,29 @@ table#comments-table tbody tr:nth-child(even) {
       const btnAudio = document.getElementById("btn-media-audio");
       const videoFields = document.getElementById("video-fields");
       const audioFields = document.getElementById("audio-fields");
+      
       [btnYoutube, btnUpload, btnAudio].forEach(b => b.classList.remove("active"));
       videoFields.classList.add("hidden"); audioFields.classList.add("hidden");
-      if (mode === "youtube") { btnYoutube.classList.add("active"); videoFields.classList.remove("hidden"); document.getElementById("youtube-row").style.display = "flex"; }
-      else if (mode === "upload") { btnUpload.classList.add("active"); videoFields.classList.remove("hidden"); document.getElementById("video-upload-row").style.display = "flex"; }
-      else if (mode === "audio") { btnAudio.classList.add("active"); audioFields.classList.remove("hidden"); }
+      
+      // 完全還原隔離設計：YouTube 與 影片上傳 分開顯示標籤邏輯
+      if (mode === "youtube") { 
+          btnYoutube.classList.add("active"); 
+          videoFields.classList.remove("hidden"); 
+          document.getElementById("youtube-row").style.display = "flex"; 
+          document.getElementById("video-upload-row").style.display = "none";
+          document.getElementById("video-link-row").style.display = "none";
+      }
+      else if (mode === "upload") { 
+          btnUpload.classList.add("active"); 
+          videoFields.classList.remove("hidden"); 
+          document.getElementById("youtube-row").style.display = "none";
+          document.getElementById("video-upload-row").style.display = "flex"; 
+          document.getElementById("video-link-row").style.display = "flex";
+      }
+      else if (mode === "audio") { 
+          btnAudio.classList.add("active"); 
+          audioFields.classList.remove("hidden"); 
+      }
     }
 
     // ===== [JS-11] 復原初始狀態 ======
@@ -1847,12 +1873,29 @@ table#comments-table tbody tr:nth-child(even) {
           text: document.getElementById("text-input").value,
           type: window.currentMediaMode || "text"
         };
-        // 修理項：優先落實網頁面板錄音寫入
+        
+        // 修正錄音資料落實寫入邏輯
         if (window.recordedAudioBlob) {
           payload.audioBase64 = await readFileAsBase64(window.recordedAudioBlob);
           payload.audioMimeType = window.recordedAudioBlob.type || "audio/webm";
           payload.audioFileName = "audio_" + Date.now() + ".webm";
         }
+        
+        // YouTube 或 影片網址 處理
+        if (window.currentMediaMode === "youtube") {
+            payload.youtubeUrl = document.getElementById("youtube-url-input").value;
+            payload.startSec = parseTimeToSec(document.getElementById("start-input").value);
+            payload.endSec = parseTimeToSec(document.getElementById("end-input").value);
+        } else if (window.currentMediaMode === "upload") {
+            const vFile = document.getElementById("video-file-input").files[0];
+            if (vFile) {
+                payload.videoBase64 = await readFileAsBase64(vFile);
+                payload.mimeType = vFile.type;
+                payload.fileName = vFile.name;
+            }
+            payload.externalUrl = document.getElementById("video-link-input").value;
+        }
+
         const res = await fetch(API_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -1860,7 +1903,8 @@ table#comments-table tbody tr:nth-child(even) {
         });
         const data = await res.json();
         if (data.status === "ok") { resetFormToAddMode(); await loadComments(data.id); }
-      } catch (err) { alert("提交失敗"); }
+        else { alert("寫入失敗：" + data.error); }
+      } catch (err) { console.error("Submit error", err); }
       finally { submitBtn.disabled = false; submitBtn.textContent = "發表"; isSubmitting = false; }
     }
 
