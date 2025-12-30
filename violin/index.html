@@ -1092,8 +1092,9 @@ table#comments-table tbody tr:nth-child(even) {
 
   <script>
     // ===== [JS-0] 全域狀態 =====
+    // 請將下方的 API_URL 替換為您部署後獲得的網址
     const API_URL =
-      "https://script.google.com/macros/s/AKfycbzIY9AiWaC2zDWb9YT8dLUQwf8Ysb1qVUv8Xfoac8b8GCv2DMo6icIFUsOSzWUg2tCPHA/exec";
+      "https://script.google.com/macros/s/AKfycbwwS-lqkLu3m-4467NPuoV0zUAl0cuhg6GoaWkjkP3fwFGmP2UyZt1GkSqXkEWzvK-UiQ/exec";
 
     let commentsCache = [];
     let currentSelectedId = null;
@@ -1414,7 +1415,7 @@ table#comments-table tbody tr:nth-child(even) {
       tbody.innerHTML = html;
     }
 
-    // ===== [JS-4] 顯示影片、音訊 ======
+    // ===== [JS-4] 顯示影片、音訊 (優化版融合) ======
 
     function clearVideo() {
       stopAllPlayback();
@@ -1445,7 +1446,6 @@ table#comments-table tbody tr:nth-child(even) {
       }
 
       if (row.type === "upload") {
-        // 先看是否有一般網址（非 Drive）
         if (row.externalUrl || row.linkUrl) {
           url = row.externalUrl || row.linkUrl;
           if (url) {
@@ -1456,20 +1456,19 @@ table#comments-table tbody tr:nth-child(even) {
           }
         }
 
+        // 頂級工程師融合修正：使用 preview 連結呈現，穩定且不轉圈圈
         if (row.driveFileId) {
-          url = buildDriveEmbedUrl(row.driveFileId);
-          if (url) {
-            iframe.src = url;
-            iframe.style.display = "block";
-            ph.style.display = "none";
-          }
+          iframe.src = "https://drive.google.com/file/d/" + row.driveFileId + "/preview";
+          iframe.style.display = "block";
+          ph.style.display = "none";
           return;
         }
       }
 
       if (row.type === "audio") {
         if (row.driveAudioId) {
-          url = buildDriveDownloadUrl(row.driveAudioId);
+          // 頂級工程師融合修正：使用直連下載網址，播放最順暢
+          url = "https://drive.google.com/uc?export=download&id=" + row.driveAudioId;
         } else if (row.audioUrl) {
           url = row.audioUrl;
         }
@@ -2431,7 +2430,7 @@ table#comments-table tbody tr:nth-child(even) {
       });
     }
 
-    // ===== [JS-18] 送出處理 (需求 3 修改點) ======
+    // ===== [JS-18] 送出處理 (需求 3 修改點融合) ======
     async function handleSubmit(e) {
       e.preventDefault();
 
@@ -2482,19 +2481,17 @@ table#comments-table tbody tr:nth-child(even) {
         }
 
         if (text.length > 100) {
-          alert("說明請控制在 100 字以內。");
+          alert("說明請控制在 100 字內。");
           if (textEl) textEl.focus();
           return;
         }
 
-        // 需求 3: 立即啟動處理中文字並禁用
         isSubmitting = true;
         if (submitBtn) {
           submitBtn.disabled = true;
           submitBtn.textContent = "處理中..";
         }
 
-        // ===== 編輯模式：只改文字 =====
         if (isEditing) {
           const editingId = editState.id;
           let textToSend = text;
@@ -2516,12 +2513,10 @@ table#comments-table tbody tr:nth-child(even) {
           }
 
           resetFormToAddMode();
-          // 12. 修改點：編輯後跳轉回該項目
           await loadComments(editingId);
           return;
         }
 
-        // ===== 新增模式 =====
         let type = "text";
         let nicknameToSend = nickname;
         if (/^[0-9]+$/.test(nickname)) {
@@ -2552,6 +2547,7 @@ table#comments-table tbody tr:nth-child(even) {
           type = "upload";
           payload.type = type;
           const base64 = await readFileAsBase64(vFile);
+          // 融合補強：確保傳送影片 Base64 給後端
           payload.videoBase64 = base64;
           payload.mimeType = vFile.type || "application/octet-stream";
           payload.fileName = vFile.name || "video_" + Date.now();
@@ -2580,13 +2576,11 @@ table#comments-table tbody tr:nth-child(even) {
         }
 
         resetFormToAddMode();
-        // 12. 修改點：新增後跳轉到剛生成的項目 (data.id)
         await loadComments(data.id);
       } catch (err) {
         console.error(err);
         alert("失敗：" + err.message);
       } finally {
-        // 恢復文字
         isSubmitting = false;
         if (submitBtn) {
           submitBtn.disabled = false;
@@ -2720,10 +2714,8 @@ table#comments-table tbody tr:nth-child(even) {
 
       const replyBox = document.getElementById("admin-reply");
 
-      // [處理中防呆] 全域鍵盤阻斷
       document.addEventListener("keydown", (ev) => {
           if (isSubmitting) {
-              // 阻斷所有非組合鍵的按鍵（排除 Ctrl/Meta/Alt 以免影響瀏覽器功能）
               if (!ev.ctrlKey && !ev.metaKey && !ev.altKey) {
                   ev.stopPropagation();
                   ev.preventDefault();
@@ -2731,8 +2723,6 @@ table#comments-table tbody tr:nth-child(even) {
           }
       }, true);
 
-      // [處理中防呆 + 編輯防呆] 全域滑鼠監聽
-      // 使用捕獲階段（true）來確保第一時間攔截所有事件（包含表格點擊、按鈕點擊）
       const blockEvent = (ev) => {
         if (isSubmitting) {
             ev.stopPropagation();
@@ -2745,14 +2735,12 @@ table#comments-table tbody tr:nth-child(even) {
       document.addEventListener("mousedown", (ev) => {
         if (blockEvent(ev)) return;
 
-        // 2. 原有的回覆區編輯防呆
         if (replyDirty && ev.target !== replyBox) {
             const actionsWrap = document.getElementById("reply-actions");
             if (actionsWrap && !actionsWrap.contains(ev.target)) {
                 ev.preventDefault();
                 replyBox.focus();
 
-                // 視覺閃動提示
                 replyBox.classList.add("reply-force-focus");
                 setTimeout(() => replyBox.classList.remove("reply-force-focus"), 500);
             }
@@ -2762,7 +2750,6 @@ table#comments-table tbody tr:nth-child(even) {
       document.addEventListener("click", blockEvent, true);
       document.addEventListener("pointerdown", blockEvent, true);
 
-      // 載入資料
       loadComments().catch((err) => {
         console.error(err);
       });
@@ -2770,4 +2757,5 @@ table#comments-table tbody tr:nth-child(even) {
   </script>
 </body>
 </html>
+
 
