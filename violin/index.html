@@ -904,11 +904,6 @@ table#comments-table tbody tr:nth-child(even) {
               <span class="media-record-status" id="audio-rec-status">錄音預備</span>
             </div>
 
-            <div class="form-row-inline" id="audio-upload-row" style="margin-top:4px;">
-              <input type="file" id="audio-file-input" accept="audio/*" />
-              <span id="audio-file-label" class="sub-hint"></span>
-            </div>
-
             <div class="form-row-inline" id="audio-preview-row" style="margin-top:4px;">
               <audio id="audio-rec-preview" class="rec-preview" controls></audio>
             </div>
@@ -964,7 +959,7 @@ table#comments-table tbody tr:nth-child(even) {
                   allowfullscreen
                 ></iframe>
 
-                <audio id="audio-player" controls></audio>
+                <audio id="audio-player" controls preload="metadata"></audio>
 
                 <div class="video-placeholder" id="video-placeholder">
                   請從左側表格選取一筆帶有影片或錄音的項目
@@ -2761,6 +2756,7 @@ table#comments-table tbody tr:nth-child(even) {
 
       document.addEventListener("click", blockEvent, true);
       document.addEventListener("pointerdown", blockEvent, true);
+
       // 載入資料
       loadComments().catch((err) => {
         console.error(err);
