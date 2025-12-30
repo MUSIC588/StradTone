@@ -1115,7 +1115,7 @@ table#comments-table tbody tr:nth-child(even) {
       waitForSelect: false,
     };
 
-    // 錄音 / 錄影 blob（預留）
+    // 錄音 / 錄影 blob
     window.recordedAudioBlob = null;
     window.recordedVideoBlob = null;
 
@@ -2084,8 +2084,11 @@ table#comments-table tbody tr:nth-child(even) {
       if (videoLabel) videoLabel.textContent = "";
 
       if (audioFile) {
-        audioFile.disabled = false;
-        audioFile.value = "";
+        // audioFile 可能已移除，故加入判斷
+        if (audioFile) {
+            audioFile.disabled = false;
+            audioFile.value = "";
+        }
       }
       if (audioLabel) audioLabel.textContent = "";
 
@@ -2553,7 +2556,8 @@ table#comments-table tbody tr:nth-child(even) {
         } else if (aFile || window.recordedAudioBlob) {
           type = "audio";
           payload.type = type;
-          let blobToUse = aFile || window.recordedAudioBlob;
+          // 修正點：優先使用網頁錄音的 Blob
+          let blobToUse = window.recordedAudioBlob || aFile;
           const base64 = await readFileAsBase64(blobToUse);
           payload.audioBase64 = base64;
           payload.audioMimeType = blobToUse.type || "audio/webm";
