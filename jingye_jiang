@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;900&family=Noto+Sans+TC:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    :root { --cafe-bg: #3d3430; --forest-green: #2e4a3e; --gold: #b08d57; --paper: #dcd0c0; --text: #e3dcd2; --dim-placeholder: #6a5e56; --warn: #a64d4d; }
+    
+    html { overflow-y: scroll !important; -webkit-overflow-scrolling: touch; background-color: var(--cafe-bg); height: 100%; }
+    body { font-family: 'Noto Sans TC', sans-serif; background-color: var(--cafe-bg); color: var(--text); padding: 20px; max-width: 800px; margin: auto; line-height: 1.8; display: flex; flex-direction: column; min-height: 100%; box-sizing: border-box; }
+
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--cafe-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--forest-green); border-radius: 10px; border: 2px solid var(--cafe-bg); }
+    
+    /* 表頭 */
+    .header-group { margin-bottom: 10px; cursor: pointer; }
+    .title-row-1 { font-family: 'Noto Serif TC', serif; font-size: 1.8em; font-weight: 900; color: var(--gold); margin: 0; }
+    .title-row-2 { display: flex; justify-content: space-between; align-items: flex-end; font-family: 'Noto Serif TC', serif; font-size: 1.5em; font-weight: 900; color: var(--gold); margin-top: 5px; }
+    .hr-green { border: none; border-top: 2px solid var(--forest-green); margin: 15px 0 25px 0; opacity: 0.6; }
+    
+    /* 按鍵樣式 */
+    .admin-btn-tag { background-color: #4a3a35; color: var(--gold); border: 1.5px solid var(--forest-green); padding: 5px 12px; font-size: 12px; line-height: 1.2; text-align: center; cursor: pointer; box-shadow: 3px 3px 0px rgba(0,0,0,0.3); transition: all 0.2s; white-space: nowrap; }
+    .admin-btn-tag.cancel-mode { background-color: var(--forest-green); color: #fff; border-color: var(--gold); }
+    
+    /* 導航區 */
+    .nav-box { margin-bottom: 25px; color: var(--gold); font-weight: bold; display: flex; align-items: center; }
+    select { background: transparent; border: none; border-bottom: 1px dashed var(--forest-green); color: var(--paper); padding: 5px; outline: none; font-size: 1em; min-width: 140px; margin-left: 10px; }
+    
+    /* 編輯器 */
+    .chapter-logic select { width: 100%; margin-bottom: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--forest-green); padding: 12px; color: var(--paper); }
+    @keyframes hintBlink { 0% { border-color: var(--forest-green); box-shadow: 0 0 2px var(--forest-green); } 50% { border-color: var(--gold); box-shadow: 0 0 10px var(--gold); } 100% { border-color: var(--forest-green); box-shadow: 0 0 2px var(--forest-green); } }
+    .input-hint { animation: hintBlink 2s infinite ease-in-out; border-width: 1.5px !important; }
+
+    .post-item { padding: 12px 0; border-bottom: 1px solid rgba(46, 74, 62, 0.3); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    .post-item .title { font-size: 1.25em; font-family: 'Noto Serif TC', serif; flex: 1; }
+    .post-item .date { font-size: 0.85em; color: var(--gold); opacity: 0.7; }
+    
+    .article-view h2 { color: var(--gold); font-family: 'Noto Serif TC', serif; margin-bottom: 20px; font-size: 1.8em; }
+    .article-view .body { font-size: 1.1em; white-space: pre-wrap; color: var(--paper); padding-top: 20px; border-top: 1px solid var(--forest-green); }
+    
+    .back-btn { cursor: pointer; color: var(--gold); margin-bottom: 20px; display: inline-block; text-decoration: underline; font-size: 0.95em; }
+    .tab-btn { padding: 8px 15px; border: 1px solid var(--forest-green); background: transparent; color: var(--paper); cursor: pointer; font-size: 13px; margin-right: 8px; margin-bottom: 10px; }
+    .tab-btn.active { background: var(--forest-green); color: #fff; }
+    .btn-delete { border-color: var(--warn); color: var(--warn); margin-left: auto; }
+    
+    .editor-box { background: rgba(0,0,0,0.25); padding: 20px; border: 2px solid var(--forest-green); margin-bottom: 30px; display: none; }
+    input, textarea { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--forest-green); color: #fff; padding: 12px; margin-bottom: 15px; box-sizing: border-box; font-size: 16px; border-radius: 0; }
+    
+    /* 底部連結：隨版面自動伸縮 */
+    .footer-section { margin-top: 40px; padding-bottom: 40px; text-align: left; }
+    .home-link { color: var(--gold); font-size: 0.95em; text-decoration: underline; cursor: pointer; opacity: 0.7; }
+  </style>
+</head>
+<body>
+
+<div class="header-group" onclick="goHome()">
+  <div class="title-row-1">教學論文_江敬業</div>
+  <div class="title-row-2"><span>小提琴</span><div id="admin-trigger" class="admin-btn-tag" onclick="event.stopPropagation(); handleAdminClick();">論文<br>主持人</div></div>
+</div>
+
+<hr class="hr-green">
+
+<div id="auth-section" style="display:none; text-align:right; margin-bottom:20px;">
+  <input type="password" id="pwd" placeholder="身份碼" style="width:100px; background:transparent; border:none; border-bottom:1px solid var(--gold); color:white;">
+  <button class="admin-btn-tag" style="padding:4px 8px;" onclick="verify()">驗證</button>
+</div>
+
+<div id="admin-panel" style="display:none;">
+  <div id="admin-tabs" style="margin-bottom:10px;">
+    <button id="btn-add" class="tab-btn" onclick="switchMode('ADD')">新增論文</button>
+    <button id="btn-edit" class="tab-btn" onclick="switchMode('EDIT')" style="display:none;">編輯此論文</button>
+    <button id="btn-preface" class="tab-btn" onclick="switchMode('PREFACE')">編輯自序</button>
+  </div>
+  <div id="editor-container" class="editor-box">
+    <div id="fields-normal">
+      <div class="chapter-logic">
+        <select id="p-cat-select" onchange="toggleNewCatField(this.value)">
+          <option value="NEW_CAT">新增章節</option>
+        </select>
+        <input type="text" id="p-cat-input" class="input-hint" placeholder="請在此新增 或 繼續上面選項">
+      </div>
+      <input type="text" id="p-title" placeholder="標題">
+    </div>
+    <textarea id="p-content" rows="12" placeholder="內容..."></textarea>
+    <div style="display:flex; align-items:center;">
+      <button id="final-save-btn" class="tab-btn" style="flex:1; font-weight:bold; border-color:var(--gold); color:var(--gold);" onclick="submit()">發表</button>
+      <button id="del-btn" class="tab-btn btn-delete" style="display:none;" onclick="confirmDelete()">刪除</button>
+    </div>
+  </div>
+</div>
+
+<div id="content-navigator">
+  <div class="nav-box"> 研究探索 ： <select id="cat-select" onchange="onCatChange()"><option value="none">------</option></select></div>
+</div>
+
+<div id="main-display">
+  <div id="preface-area" class="preface-text">典藏載入中...</div>
+  <div id="list-area" style="display:none;"></div>
+  <div id="view-area" class="article-view" style="display:none;"></div>
+</div>
+
+<div class="footer-section">
+  <span class="home-link" onclick="goHome()">← 翻到封面</span>
+</div>
+
+<script>
+  const API = 'https://script.google.com/macros/s/AKfycbwkm3Od1HgKEn5H6yNCA9hnhKdPm_0-8fIp8p-kaZ65UOnL7LlE6fihyLwwSFdZccOk/exec';
+  let allPosts = [], currentMode = 'ADD', editingPost = null, isAdmin = false, currentPwd = "", isEditorOpen = false;
+
+  window.onload = function() {
+    load();
+    const savedPwd = sessionStorage.getItem('adminPwd');
+    if (savedPwd === '0831988') { isAdmin = true; currentPwd = savedPwd; }
+  };
+
+  function load() {
+    fetch(API + '?action=getPosts').then(r => r.json()).then(data => {
+      let dateCounts = {};
+      allPosts = (data.posts || []).map(p => {
+        let d = p.date.split(' ')[0]; dateCounts[d] = (dateCounts[d] || 0) + 1;
+        p.displayDate = dateCounts[d] > 1 ? `${d}/${dateCounts[d]}` : d; return p;
+      });
+      document.getElementById('preface-area').innerText = data.preface || "";
+      const cats = data.categories || [];
+      document.getElementById('cat-select').innerHTML = '<option value="none">------</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
+      document.getElementById('p-cat-select').innerHTML = '<option value="NEW_CAT">新增章節</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
+    });
+  }
+
+  function toggleNewCatField(val) {
+    const input = document.getElementById('p-cat-input');
+    if (val === 'NEW_CAT') { input.style.display = 'block'; input.classList.add('input-hint'); }
+    else { input.style.display = 'none'; input.classList.remove('input-hint'); }
+  }
+
+  function handleAdminClick() {
+    if (isEditorOpen) { cancelEdit(); return; }
+    if (isAdmin) { 
+      const p = document.getElementById('admin-panel'); 
+      p.style.display = p.style.display === 'none' ? 'block' : 'none';
+      if (p.style.display === 'block' && document.getElementById('view-area').style.display === 'block') document.getElementById('btn-edit').style.display = 'inline-block';
+    } else { toggleAuth(); }
+  }
+
+  function cancelEdit() {
+    isEditorOpen = false; 
+    const trigger = document.getElementById('admin-trigger');
+    trigger.innerHTML = "論文<br>主持人";
+    trigger.classList.remove('cancel-mode');
+    document.getElementById('editor-container').style.display = 'none';
+    // 邏輯：回到上一層（文章或目錄）
+    if (editingPost && currentMode === 'EDIT') {
+      showPost(editingPost);
+    } else {
+      onCatChange();
+    }
+  }
+
+  function goHome() {
+    cancelEdit();
+    document.getElementById('cat-select').value = 'none';
+    document.getElementById('admin-panel').style.display = 'none';
+    onCatChange();
+  }
+
+  function onCatChange() {
+    isEditorOpen = false; document.getElementById('editor-container').style.display = 'none';
+    document.getElementById('view-area').style.display = 'none';
+    document.getElementById('content-navigator').style.display = 'block';
+    const cat = document.getElementById('cat-select').value;
+    if (cat === 'none') {
+      document.getElementById('preface-area').style.display = 'block';
+      document.getElementById('list-area').style.display = 'none';
+    } else {
+      document.getElementById('preface-area').style.display = 'none';
+      const listArea = document.getElementById('list-area');
+      listArea.style.display = 'block';
+      listArea.innerHTML = allPosts.filter(p => p.category === cat).map(p => `<div class="post-item" onclick='showPost(${JSON.stringify(p).replace(/'/g, "&apos;")})'><span class="title">${p.title}</span><span class="date">${p.displayDate}</span></div>`).join('');
+    }
+  }
+
+  function showPost(p) {
+    editingPost = p; document.getElementById('list-area').style.display = 'none';
+    document.getElementById('view-area').style.display = 'block';
+    document.getElementById('view-area').innerHTML = `<div class="back-btn" onclick="onCatChange()">← 查找目錄</div><h2>${p.title}</h2><div class="body">${p.content}</div>`;
+    if (isAdmin) {
+      document.getElementById('admin-panel').style.display = 'block';
+      document.getElementById('btn-edit').style.display = 'inline-block';
+      switchMode('EDIT'); // 路徑進來預設開啟編輯
+    }
+  }
+
+  function toggleAuth() { const s = document.getElementById('auth-section'); s.style.display = s.style.display==='none'?'block':'none'; }
+  function verify() {
+    const inputPwd = document.getElementById('pwd').value;
+    if(inputPwd === '0831988') { 
+      isAdmin = true; currentPwd = inputPwd; sessionStorage.setItem('adminPwd', inputPwd);
+      document.getElementById('auth-section').style.display = 'none';
+      document.getElementById('admin-panel').style.display = 'block';
+      if (document.getElementById('view-area').style.display === 'block') { document.getElementById('btn-edit').style.display = 'inline-block'; switchMode('EDIT'); }
+    } else { alert("身份碼錯誤"); }
+  }
+
+  function switchMode(m) {
+    currentMode = m; isEditorOpen = true;
+    const trigger = document.getElementById('admin-trigger');
+    trigger.innerHTML = "取消<br>編輯"; trigger.classList.add('cancel-mode');
+    
+    document.getElementById('content-navigator').style.display = 'none';
+    document.getElementById('preface-area').style.display = 'none';
+    document.getElementById('list-area').style.display = 'none';
+    document.getElementById('view-area').style.display = 'none';
+    document.getElementById('editor-container').style.display = 'block';
+    
+    document.getElementById('del-btn').style.display = (m === 'EDIT') ? 'block' : 'none';
+
+    ['btn-add', 'btn-edit', 'btn-preface'].forEach(b => document.getElementById(b).classList.remove('active'));
+    document.getElementById('btn-'+m.toLowerCase()).classList.add('active');
+    
+    if (m === 'PREFACE') {
+      document.getElementById('fields-normal').style.display = 'none';
+      document.getElementById('p-content').value = document.getElementById('preface-area').innerText;
+    } else if (m === 'EDIT' && editingPost) {
+      document.getElementById('fields-normal').style.display = 'block';
+      document.getElementById('p-cat-select').value = editingPost.category;
+      toggleNewCatField(editingPost.category);
+      document.getElementById('p-title').value = editingPost.title;
+      document.getElementById('p-content').value = editingPost.content;
+    } else {
+      document.getElementById('fields-normal').style.display = 'block';
+      document.getElementById('p-cat-select').value = 'NEW_CAT';
+      toggleNewCatField('NEW_CAT');
+      document.getElementById('p-cat-input').value = '';
+      document.getElementById('p-title').value = ''; 
+      document.getElementById('p-content').value = '';
+    }
+  }
+
+  function submit() {
+    const catSelect = document.getElementById('p-cat-select').value;
+    const catInput = document.getElementById('p-cat-input').value;
+    const finalCategory = (catSelect === 'NEW_CAT') ? catInput : catSelect;
+    const data = { pwd: currentPwd, action: 'save', rowId: currentMode === 'PREFACE' ? 'PREFACE' : (currentMode === 'EDIT' ? editingPost.rowId : ''), category: finalCategory, title: document.getElementById('p-title').value, content: document.getElementById('p-content').value };
+    if(!data.content || (!data.category && currentMode !== 'PREFACE')) return;
+    const btn = document.getElementById('final-save-btn');
+    btn.innerText = "典藏中..."; btn.disabled = true;
+    fetch(API, { method: 'POST', body: new URLSearchParams(data), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }).then(() => { load(); goHome(); btn.innerText = "發表"; btn.disabled = false; });
+  }
+
+  function confirmDelete() {
+    if (confirm("確定刪除？")) {
+      const data = { pwd: currentPwd, action: 'delete', rowId: editingPost.rowId };
+      const btn = document.getElementById('del-btn');
+      btn.innerText = "刪除中..."; btn.disabled = true;
+      fetch(API, { method: 'POST', body: new URLSearchParams(data), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }).then(() => { load(); goHome(); btn.innerText = "刪除"; btn.disabled = false; });
+    }
+  }
+</script>
+</body>
+</html>
+
